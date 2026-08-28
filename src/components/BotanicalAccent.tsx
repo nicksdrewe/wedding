@@ -1,22 +1,28 @@
-// Placeholder fine-line botanical motif — swap for commissioned/generated artwork (see build brief §8).
-export function BotanicalAccent({ className = "" }: { className?: string }) {
+import Image from "next/image";
+
+// Original fine-line peony vector art (public/botanical) — generated for this
+// project, not sourced from a reference image. Swap the files in
+// public/botanical/ if the couple commissions replacement artwork later.
+export function BotanicalAccent({
+  className = "",
+  variant = "corner",
+}: {
+  className?: string;
+  variant?: "corner" | "divider";
+}) {
+  const src =
+    variant === "corner"
+      ? "/botanical/corner-spray.svg"
+      : "/botanical/divider-sprig.svg";
+
   return (
-    <svg
-      viewBox="0 0 200 200"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1"
+    <Image
+      src={src}
+      alt=""
+      width={variant === "corner" ? 200 : 600}
+      height={variant === "corner" ? 400 : 90}
       className={className}
-      aria-hidden="true"
-    >
-      <path d="M20 180 C 40 140, 30 100, 60 70 C 90 40, 130 40, 160 20" />
-      <ellipse cx="70" cy="65" rx="18" ry="10" transform="rotate(-30 70 65)" />
-      <ellipse cx="95" cy="48" rx="16" ry="9" transform="rotate(-15 95 48)" />
-      <ellipse cx="125" cy="35" rx="14" ry="8" transform="rotate(10 125 35)" />
-      <circle cx="155" cy="22" r="7" />
-      <path d="M60 70 C 45 85, 35 95, 20 100" />
-      <path d="M95 48 C 85 65, 75 75, 60 85" />
-      <ellipse cx="30" cy="105" rx="10" ry="6" transform="rotate(40 30 105)" />
-    </svg>
+      priority={false}
+    />
   );
 }

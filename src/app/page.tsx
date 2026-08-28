@@ -7,8 +7,8 @@ const WEDDING_DATE = "28.11.26";
 export default function LandingPage() {
   return (
     <main className="relative flex-1 overflow-hidden">
-      <BotanicalAccent className="pointer-events-none absolute -left-10 -top-10 h-64 w-64 text-gold/40 md:h-96 md:w-96" />
-      <BotanicalAccent className="pointer-events-none absolute -right-10 bottom-0 h-64 w-64 rotate-180 text-gold/30 md:h-96 md:w-96" />
+      <BotanicalAccent className="pointer-events-none absolute -left-10 -top-10 h-64 w-32 object-contain md:h-96 md:w-48" />
+      <BotanicalAccent className="pointer-events-none absolute -right-10 bottom-0 h-64 w-32 rotate-180 object-contain md:h-96 md:w-48" />
 
       <HeroReveal>
         <section className="relative flex min-h-[85vh] flex-col items-center justify-center px-6 text-center">
