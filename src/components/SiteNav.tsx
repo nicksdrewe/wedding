@@ -4,6 +4,7 @@ import type { RoleTier } from "@/lib/auth/roles";
 const LINKS: { href: string; label: string; roles: RoleTier[] }[] = [
   { href: "/categories", label: "Categories", roles: ["couple", "family"] },
   { href: "/diary", label: "Diary", roles: ["couple", "family"] },
+  { href: "/project", label: "Project Management", roles: ["couple", "wedding_party"] },
   { href: "/budget", label: "Budget", roles: ["couple"] },
   { href: "/guests", label: "Guest List", roles: ["couple"] },
 ];
