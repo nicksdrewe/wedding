@@ -57,6 +57,10 @@ body {
   0%, 100% { opacity: 0.55; }
   50% { opacity: 0.9; }
 }
+@keyframes attentionPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.22); }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

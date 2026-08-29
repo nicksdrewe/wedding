@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -11,6 +12,19 @@ const FRAME_SRC = (i: number) => `/hero-frames/frame-${String(i + 1).padStart(4,
 // How much scroll distance the sequence gets to play out over, in viewport
 // heights. Longer = slower/more deliberate scrub per frame.
 const PIN_DISTANCE_VH = 340;
+
+// The frame-index tween's duration is set explicitly to FRAME_COUNT - 1 (see
+// below), so 1 timeline "time unit" = exactly 1 frame. Every position below
+// is a literal frame number, not a guessed fraction — "20 frames earlier"
+// has an exact, checkable meaning against these.
+const HEADLINE_EXIT_FRAME = 39;
+const HEADLINE_EXIT_SPAN = 20;
+const CTA_ENTER_FRAME = 47; // 20 frames earlier than the previous 67
+const CTA_ENTER_SPAN = 26;
+const FOOTER_FRAME = 108;
+const FOOTER_SPAN = 18;
+
+const SCROLL_HINT_URGENT_MS = 10_000;
 
 export type HeroCta =
   | { kind: "guest" }
@@ -62,6 +76,7 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
 
   const [loadedCount, setLoadedCount] = useState(0);
   const [ready, setReady] = useState(false);
+  const [hintUrgent, setHintUrgent] = useState(false);
 
   // Preload every frame before any scroll-jacking is enabled — scrubbing
   // onto an undrawn frame would flash blank/broken. ~6MB across 129 frames
@@ -87,6 +102,16 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  // Most people don't instinctively scroll a hero that looks "finished" on
+  // first paint. If nothing's happened in 10s, the hint grows and pulses
+  // harder to make the affordance unmissable. No need to track/cancel this
+  // against later scrolling: once scrubbing starts, the scroll-tied fade
+  // below takes the whole prompt to opacity 0 regardless of this state.
+  useEffect(() => {
+    const t = setTimeout(() => setHintUrgent(true), SCROLL_HINT_URGENT_MS);
+    return () => clearTimeout(t);
   }, []);
 
   // Draw whichever frame is closest to the current scrub position, filling
@@ -167,22 +192,26 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
         },
       });
 
+      // Explicit duration = FRAME_COUNT - 1 makes every other position in
+      // this timeline a literal frame number (see constants above) instead
+      // of a fraction guessed against an implicit default duration.
       tl.to(frameStateRef.current, {
         frame: FRAME_COUNT - 1,
+        duration: FRAME_COUNT - 1,
         ease: "none",
         onUpdate: () => drawFrame(Math.round(frameStateRef.current.frame)),
       });
 
       // Scroll prompt: present at rest, fades as soon as scrubbing starts.
-      tl.to(promptRef.current, { opacity: 0, y: -12, duration: 0.08, ease: "power1.out" }, 0);
+      tl.to(promptRef.current, { opacity: 0, y: -12, duration: 6, ease: "power1.out" }, 0);
 
       // Headline rolls up and away right as the petals visibly start
-      // separating (around the sequence's midpoint) — rotateX + a bottom
-      // transform-origin reads as rolling away rather than just fading.
+      // separating — rotateX + a bottom transform-origin reads as rolling
+      // away rather than just fading.
       tl.to(
         headlineRef.current,
-        { opacity: 0, y: -60, rotateX: -70, duration: 0.16, ease: "power2.in" },
-        0.46
+        { opacity: 0, y: -60, rotateX: -70, duration: HEADLINE_EXIT_SPAN, ease: "power2.in" },
+        HEADLINE_EXIT_FRAME
       );
 
       // The RSVP/sign-in call to action rolls in from the same rest
@@ -191,8 +220,8 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
       tl.fromTo(
         ctaRef.current,
         { opacity: 0, y: 60, rotateX: 70 },
-        { opacity: 1, y: 0, rotateX: 0, duration: 0.2, ease: "power2.out" },
-        0.52
+        { opacity: 1, y: 0, rotateX: 0, duration: CTA_ENTER_SPAN, ease: "power2.out" },
+        CTA_ENTER_FRAME
       );
 
       // Domain credit stays essentially invisible until the sequence is
@@ -200,8 +229,8 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
       tl.fromTo(
         footerRef.current,
         { opacity: 0 },
-        { opacity: 1, duration: 0.16, ease: "power1.out" },
-        0.86
+        { opacity: 1, duration: FOOTER_SPAN, ease: "power1.out" },
+        FOOTER_FRAME
       );
     }, wrapRef);
 
@@ -220,7 +249,9 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
       <section className="relative flex h-screen items-center justify-center overflow-hidden bg-ink">
         <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
 
-        {/* soft vignette so overlaid text stays legible on any frame */}
+        {/* Cinematic edge vignette — deliberately weak at dead centre, so it
+            alone can't be relied on for text contrast (see the scrim panels
+            below, which are what actually guarantees it). */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
@@ -241,30 +272,39 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
 
         {/* Headline and CTA share the exact same centred position, stacked
             and cross-faded via GSAP, so the roll-away/roll-in reads as one
-            continuous swap rather than two independently placed blocks. */}
+            continuous swap rather than two independently placed blocks.
+            Each sits on its own dark scrim panel — the source frames are a
+            light grey backdrop throughout, so near-white text needs a
+            guaranteed-dark surface under it, not just a text-shadow, to
+            hold WCAG-legible contrast regardless of which frame is showing. */}
         <div className="absolute inset-0" style={{ perspective: 1000 }}>
           <div
             ref={headlineRef}
             className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center"
             style={{ transformOrigin: "50% 100%" }}
           >
-            <p className="font-serif text-[13px] font-medium tracking-[0.32em] text-cream/85 uppercase">
-              We&rsquo;re getting married
-            </p>
-            <TextEffect
-              as="h1"
-              per="char"
-              preset="fade-in-blur"
-              speedReveal={2.2}
-              delay={0.15}
-              className="mt-5 font-hero text-[15vw] leading-[0.94] font-semibold tracking-[-0.01em] text-cream sm:text-[110px] lg:text-[148px]"
-              style={{ textShadow: "0 2px 40px rgba(0,0,0,0.35)" }}
-            >
-              Nick & Ellie
-            </TextEffect>
-            <p className="mt-5 font-reading text-2xl text-cream/85 italic md:text-[26px]">
-              28 November 2026
-            </p>
+            <div className="rounded-[28px] bg-ink/72 px-8 py-9 backdrop-blur-[3px] sm:px-14 sm:py-11">
+              <p className="font-serif text-[13px] font-semibold tracking-[0.32em] text-cream uppercase">
+                We&rsquo;re getting married
+              </p>
+              <TextEffect
+                as="h1"
+                per="char"
+                preset="fade-in-blur"
+                speedReveal={2.2}
+                delay={0.15}
+                className="mt-5 font-hero text-[15vw] leading-[0.94] font-semibold tracking-[-0.01em] text-white sm:text-[110px] lg:text-[148px]"
+                style={{ textShadow: "0 2px 24px rgba(0,0,0,0.65), 0 1px 3px rgba(0,0,0,0.85)" }}
+              >
+                Nick & Ellie
+              </TextEffect>
+              <p
+                className="mt-5 font-reading text-2xl text-cream italic md:text-[26px]"
+                style={{ textShadow: "0 1px 12px rgba(0,0,0,0.55)" }}
+              >
+                28 November 2026
+              </p>
+            </div>
           </div>
 
           <div
@@ -272,38 +312,69 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
             className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center opacity-0"
             style={{ transformOrigin: "50% 0%" }}
           >
-            <p className="font-serif text-[13px] font-medium tracking-[0.32em] text-cream/85 uppercase">
-              {copy.eyebrow}
-            </p>
-            <h2 className="mt-4 font-hero text-[42px] leading-[1.05] font-semibold tracking-[-0.01em] text-cream sm:text-[52px]">
-              {copy.heading}
-            </h2>
-            <p className="mt-4 max-w-md font-reading text-lg text-cream/85 italic">
-              {copy.body}
-            </p>
-            <div className="mt-8 flex flex-wrap justify-center gap-4">
-              <PrimaryButton href={copy.primary.href}>{copy.primary.label}</PrimaryButton>
-              <GlassButton href={copy.secondary.href}>{copy.secondary.label}</GlassButton>
+            <div className="max-w-lg rounded-[28px] bg-ink/72 px-8 py-9 backdrop-blur-[3px] sm:px-14 sm:py-11">
+              <p className="font-serif text-[13px] font-semibold tracking-[0.32em] text-cream uppercase">
+                {copy.eyebrow}
+              </p>
+              <h2
+                className="mt-4 font-hero text-[38px] leading-[1.05] font-semibold tracking-[-0.01em] text-white sm:text-[50px]"
+                style={{ textShadow: "0 2px 20px rgba(0,0,0,0.6), 0 1px 3px rgba(0,0,0,0.8)" }}
+              >
+                {copy.heading}
+              </h2>
+              <p
+                className="mt-4 font-reading text-lg text-cream italic"
+                style={{ textShadow: "0 1px 12px rgba(0,0,0,0.55)" }}
+              >
+                {copy.body}
+              </p>
+              <div className="mt-8 flex flex-wrap justify-center gap-4">
+                <PrimaryButton href={copy.primary.href}>{copy.primary.label}</PrimaryButton>
+                <GlassButton href={copy.secondary.href}>{copy.secondary.label}</GlassButton>
+              </div>
             </div>
           </div>
         </div>
 
         <div
           ref={promptRef}
-          className="absolute bottom-10 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2"
-          style={{ animation: ready ? "bob 2.6s ease-in-out infinite" : undefined }}
+          className="absolute bottom-12 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2.5"
         >
-          <span
-            aria-hidden="true"
-            className="h-2.5 w-2.5 rounded-full bg-accent-soft"
+          {/* Inner wrapper carries the size/pulse animation; the outer
+              promptRef above is left untouched by anything but GSAP's own
+              opacity/y tween, so the two never fight over the transform. */}
+          <div
+            className="flex flex-col items-center gap-2.5 rounded-full bg-ink/72 px-6 py-4 backdrop-blur-[3px]"
             style={{
-              boxShadow: "0 0 14px 4px rgba(124,148,130,0.65)",
-              animation: ready ? "glowPulse 2.6s ease-in-out infinite" : undefined,
+              animation: ready
+                ? hintUrgent
+                  ? "attentionPulse 1.3s ease-in-out infinite, bob 2.6s ease-in-out infinite"
+                  : "bob 2.6s ease-in-out infinite"
+                : undefined,
+              transition: "transform 400ms ease",
             }}
-          />
-          <p className="font-serif text-[11px] tracking-[0.2em] text-cream/70 uppercase">
-            Scroll
-          </p>
+          >
+            <span
+              aria-hidden="true"
+              className={`rounded-full bg-accent-soft ${hintUrgent ? "h-4 w-4" : "h-3 w-3"}`}
+              style={{
+                boxShadow: "0 0 18px 6px rgba(124,148,130,0.75)",
+                animation: ready ? "glowPulse 2.6s ease-in-out infinite" : undefined,
+              }}
+            />
+            <p
+              className={`font-serif font-semibold tracking-[0.22em] text-cream uppercase ${
+                hintUrgent ? "text-sm" : "text-xs"
+              }`}
+            >
+              Scroll to explore
+            </p>
+            <ChevronDown
+              aria-hidden="true"
+              className={`text-cream ${hintUrgent ? "h-6 w-6" : "h-4 w-4"}`}
+              strokeWidth={2.5}
+            />
+          </div>
         </div>
 
         {/* Site credit lives here, not as a separate page footer — no white
@@ -311,7 +382,8 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
             settles at rest, where it reads as a quiet signature. */}
         <p
           ref={footerRef}
-          className="absolute bottom-5 left-1/2 z-10 -translate-x-1/2 text-center font-serif text-[10px] tracking-[0.2em] text-cream/35 uppercase opacity-0"
+          className="absolute bottom-5 left-1/2 z-10 -translate-x-1/2 text-center font-serif text-[10px] tracking-[0.2em] text-cream/40 uppercase opacity-0"
+          style={{ textShadow: "0 1px 8px rgba(0,0,0,0.5)" }}
         >
           weddingsweddings.co.uk
         </p>
@@ -337,10 +409,14 @@ function PrimaryButton({ href, children }: { href: string; children: React.React
 }
 
 function GlassButton({ href, children }: { href: string; children: React.ReactNode }) {
+  // Opaque light pill rather than a "glass over dark photo" treatment: the
+  // source frames are light grey, so near-white text on a translucent light
+  // background would be low-contrast regardless of blur. Solid ink text on
+  // a near-opaque cream surface holds contrast no matter what's behind it.
   return (
     <Link
       href={href}
-      className="inline-block rounded-full border border-white/60 bg-white/20 px-10 py-4 font-serif text-sm font-medium text-cream shadow-[0_8px_24px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-md transition-[transform,box-shadow,background] duration-300 ease-[cubic-bezier(.22,1,.36,1)] hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-white/30"
+      className="inline-block rounded-full border border-ink/10 bg-cream/95 px-10 py-4 font-serif text-sm font-medium text-ink shadow-[0_8px_24px_rgba(0,0,0,0.22)] backdrop-blur-md transition-[transform,box-shadow,background] duration-300 ease-[cubic-bezier(.22,1,.36,1)] hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-cream"
     >
       {children}
     </Link>
