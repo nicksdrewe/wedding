@@ -40,7 +40,15 @@ export async function updateSession(request: NextRequest) {
   if (!user && !isAuthRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    return NextResponse.redirect(url);
+    const redirectResponse = NextResponse.redirect(url);
+    // Carry over anything getUser() rewrote (notably a rotated refresh token,
+    // or the cleared cookies of a session that just failed to refresh).
+    // Returning a bare redirect drops them, so the browser keeps replaying a
+    // dead cookie and every later request bounces here again.
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie);
+    });
+    return redirectResponse;
   }
 
   return supabaseResponse;
