@@ -23,9 +23,6 @@ export default async function LandingPage() {
   return (
     <main className="relative">
       <ScrollFlowerHero cta={cta} />
-      <p className="bg-cream py-8 text-center font-serif text-[11px] tracking-[0.15em] text-ink-soft/80 uppercase">
-        weddingsweddings.co.uk
-      </p>
     </main>
   );
 }

@@ -6,8 +6,8 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { TextEffect } from "@/components/motion-primitives/text-effect";
 
-const FRAME_COUNT = 130;
-const FRAME_SRC = (i: number) => `/hero-frames/ezgif-frame-${String(i + 1).padStart(3, "0")}.jpg`;
+const FRAME_COUNT = 129;
+const FRAME_SRC = (i: number) => `/hero-frames/frame-${String(i + 1).padStart(4, "0")}.jpg`;
 // How much scroll distance the sequence gets to play out over, in viewport
 // heights. Longer = slower/more deliberate scrub per frame.
 const PIN_DISTANCE_VH = 340;
@@ -17,12 +17,44 @@ export type HeroCta =
   | { kind: "signed-in"; label: string; href: string }
   | { kind: "no-profile" };
 
+function ctaCopy(cta: HeroCta) {
+  switch (cta.kind) {
+    case "guest":
+      return {
+        eyebrow: "You're invited",
+        heading: "Let us know you're coming",
+        body: "RSVP to celebrate with us, or sign in to the hub to see the full details.",
+        primary: { href: "/rsvp", label: "RSVP" },
+        secondary: { href: "/login", label: "Sign in" },
+      };
+    case "signed-in":
+      return {
+        eyebrow: "Welcome back",
+        heading: "Jump back into planning",
+        body: "Pick up right where you left off.",
+        primary: { href: cta.href, label: cta.label },
+        secondary: { href: "/logout", label: "Sign out" },
+      };
+    case "no-profile":
+      return {
+        eyebrow: "You're signed in",
+        heading: "Almost there",
+        body: "We haven't added you to the guest list yet — give Nick or Ellie a nudge.",
+        primary: { href: "/no-access", label: "Continue" },
+        secondary: { href: "/logout", label: "Sign out" },
+      };
+  }
+}
+
 export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
+  const copy = ctaCopy(cta);
+
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
   const headlineRef = useRef<HTMLDivElement>(null);
   const promptRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLParagraphElement>(null);
 
   const imagesRef = useRef<HTMLImageElement[]>([]);
   const drawnFrameRef = useRef(-1);
@@ -32,8 +64,9 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
   const [ready, setReady] = useState(false);
 
   // Preload every frame before any scroll-jacking is enabled — scrubbing
-  // onto an undrawn frame would flash blank/broken, and 130 frames at ~18KB
-  // each is light enough (~2.4MB) to just wait out rather than stream in.
+  // onto an undrawn frame would flash blank/broken. ~6MB across 129 frames
+  // is a deliberate ceiling: heavy enough to look sharp, light enough to
+  // still clear on patchy venue wifi during the wedding week.
   useEffect(() => {
     let cancelled = false;
     const images: HTMLImageElement[] = [];
@@ -143,16 +176,32 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
       // Scroll prompt: present at rest, fades as soon as scrubbing starts.
       tl.to(promptRef.current, { opacity: 0, y: -12, duration: 0.08, ease: "power1.out" }, 0);
 
-      // Headline stays put through the first stretch of the sequence, then
-      // eases back and fades as the CTAs take over near the end.
-      tl.to(headlineRef.current, { opacity: 0, y: -28, duration: 0.22, ease: "power1.inOut" }, 0.62);
+      // Headline rolls up and away right as the petals visibly start
+      // separating (around the sequence's midpoint) — rotateX + a bottom
+      // transform-origin reads as rolling away rather than just fading.
+      tl.to(
+        headlineRef.current,
+        { opacity: 0, y: -60, rotateX: -70, duration: 0.16, ease: "power2.in" },
+        0.46
+      );
 
-      // CTAs reveal smoothly approaching the final frame.
+      // The RSVP/sign-in call to action rolls in from the same rest
+      // position the headline left, settling well before the sequence
+      // finishes so it's fully readable, not still animating, by the end.
       tl.fromTo(
         ctaRef.current,
-        { opacity: 0, y: 22 },
-        { opacity: 1, y: 0, duration: 0.24, ease: "power2.out" },
-        0.74
+        { opacity: 0, y: 60, rotateX: 70 },
+        { opacity: 1, y: 0, rotateX: 0, duration: 0.2, ease: "power2.out" },
+        0.52
+      );
+
+      // Domain credit stays essentially invisible until the sequence is
+      // nearly done, then eases up to a still-subtle presence at rest.
+      tl.fromTo(
+        footerRef.current,
+        { opacity: 0 },
+        { opacity: 1, duration: 0.16, ease: "power1.out" },
+        0.86
       );
     }, wrapRef);
 
@@ -190,24 +239,53 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
           </div>
         )}
 
-        <div ref={headlineRef} className="relative z-10 flex flex-col items-center px-6 text-center">
-          <p className="font-serif text-[13px] font-medium tracking-[0.32em] text-cream/85 uppercase">
-            We&rsquo;re getting married
-          </p>
-          <TextEffect
-            as="h1"
-            per="char"
-            preset="fade-in-blur"
-            speedReveal={2.2}
-            delay={0.15}
-            className="mt-5 font-hero text-[15vw] leading-[0.94] font-semibold tracking-[-0.01em] text-cream sm:text-[110px] lg:text-[148px]"
-            style={{ textShadow: "0 2px 40px rgba(0,0,0,0.35)" }}
+        {/* Headline and CTA share the exact same centred position, stacked
+            and cross-faded via GSAP, so the roll-away/roll-in reads as one
+            continuous swap rather than two independently placed blocks. */}
+        <div className="absolute inset-0" style={{ perspective: 1000 }}>
+          <div
+            ref={headlineRef}
+            className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center"
+            style={{ transformOrigin: "50% 100%" }}
           >
-            Nick & Ellie
-          </TextEffect>
-          <p className="mt-5 font-reading text-2xl text-cream/85 italic md:text-[26px]">
-            28 November 2026
-          </p>
+            <p className="font-serif text-[13px] font-medium tracking-[0.32em] text-cream/85 uppercase">
+              We&rsquo;re getting married
+            </p>
+            <TextEffect
+              as="h1"
+              per="char"
+              preset="fade-in-blur"
+              speedReveal={2.2}
+              delay={0.15}
+              className="mt-5 font-hero text-[15vw] leading-[0.94] font-semibold tracking-[-0.01em] text-cream sm:text-[110px] lg:text-[148px]"
+              style={{ textShadow: "0 2px 40px rgba(0,0,0,0.35)" }}
+            >
+              Nick & Ellie
+            </TextEffect>
+            <p className="mt-5 font-reading text-2xl text-cream/85 italic md:text-[26px]">
+              28 November 2026
+            </p>
+          </div>
+
+          <div
+            ref={ctaRef}
+            className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center opacity-0"
+            style={{ transformOrigin: "50% 0%" }}
+          >
+            <p className="font-serif text-[13px] font-medium tracking-[0.32em] text-cream/85 uppercase">
+              {copy.eyebrow}
+            </p>
+            <h2 className="mt-4 font-hero text-[42px] leading-[1.05] font-semibold tracking-[-0.01em] text-cream sm:text-[52px]">
+              {copy.heading}
+            </h2>
+            <p className="mt-4 max-w-md font-reading text-lg text-cream/85 italic">
+              {copy.body}
+            </p>
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
+              <PrimaryButton href={copy.primary.href}>{copy.primary.label}</PrimaryButton>
+              <GlassButton href={copy.secondary.href}>{copy.secondary.label}</GlassButton>
+            </div>
+          </div>
         </div>
 
         <div
@@ -228,29 +306,15 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
           </p>
         </div>
 
-        <div
-          ref={ctaRef}
-          className="absolute bottom-16 left-1/2 z-10 flex -translate-x-1/2 flex-wrap justify-center gap-4 opacity-0"
+        {/* Site credit lives here, not as a separate page footer — no white
+            bar under a full-bleed graphic. Understated until the sequence
+            settles at rest, where it reads as a quiet signature. */}
+        <p
+          ref={footerRef}
+          className="absolute bottom-5 left-1/2 z-10 -translate-x-1/2 text-center font-serif text-[10px] tracking-[0.2em] text-cream/35 uppercase opacity-0"
         >
-          {cta.kind === "guest" && (
-            <>
-              <PrimaryButton href="/rsvp">RSVP</PrimaryButton>
-              <GlassButton href="/login">Sign in</GlassButton>
-            </>
-          )}
-          {cta.kind === "signed-in" && (
-            <>
-              <PrimaryButton href={cta.href}>{cta.label}</PrimaryButton>
-              <GlassButton href="/logout">Sign out</GlassButton>
-            </>
-          )}
-          {cta.kind === "no-profile" && (
-            <>
-              <PrimaryButton href="/no-access">You&rsquo;re signed in</PrimaryButton>
-              <GlassButton href="/logout">Sign out</GlassButton>
-            </>
-          )}
-        </div>
+          weddingsweddings.co.uk
+        </p>
       </section>
     </div>
   );
