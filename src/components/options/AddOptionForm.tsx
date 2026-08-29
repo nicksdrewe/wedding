@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { addOption } from "@/lib/options/actions";
 
 export function AddOptionForm({
@@ -12,13 +12,19 @@ export function AddOptionForm({
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   return (
     <form
       ref={formRef}
       action={(formData) =>
         startTransition(async () => {
-          await addOption(formData);
+          setError(null);
+          const result = await addOption(formData);
+          if (result?.error) {
+            setError(result.error);
+            return;
+          }
           formRef.current?.reset();
         })
       }
@@ -74,6 +80,7 @@ export function AddOptionForm({
       >
         {pending ? "Adding…" : "Add option"}
       </button>
+      {error && <p className="w-full font-reading text-xs text-alert">{error}</p>}
     </form>
   );
 }

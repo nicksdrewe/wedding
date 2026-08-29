@@ -69,7 +69,7 @@ export async function addOption(formData: FormData) {
   });
 
   const supabase = await createClient();
-  await supabase.from("page_options").insert({
+  const { error } = await supabase.from("page_options").insert({
     option_group_id: parsed.groupId,
     name: parsed.name,
     predicted_cost: parsed.predictedCost,
@@ -80,7 +80,16 @@ export async function addOption(formData: FormData) {
     contact_email: parsed.contactEmail || null,
   });
 
+  // Revalidate every surface that reads page_options, not just whichever
+  // page the form happened to be rendered on — an option added from the
+  // category board also needs Project Management's cross-category
+  // comparison to pick it up, and vice versa. This was previously only
+  // revalidating the single passed-in path.
   revalidatePath(parsed.revalidate);
+  revalidatePath("/categories");
+  revalidatePath("/project");
+
+  return { error: error?.message ?? null };
 }
 
 export async function selectWinner(
