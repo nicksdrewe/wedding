@@ -18,19 +18,17 @@ const PIN_DISTANCE_VH = 340;
 //
 // Intro build, entirely scroll-scrubbed (reversible — scroll up and it
 // un-builds in the same order): the centred prompt is the only thing
-// visible at rest, then as scrolling starts each piece fades/rises/
-// sharpens in in sequence — Nick, then Ellie, then the eyebrow line, then
-// the date — before the whole assembled block rolls away and the CTA
-// takes over.
+// visible at rest, then as scrolling starts Nick and Ellie converge in
+// from opposite sides together (not staggered — reads as "coming
+// together", not a list), then the eyebrow line, then the date — before
+// the whole assembled block rolls away and the CTA takes over.
 const PROMPT_FADE_SPAN = 5;
-const NICK_IN_FRAME = 3;
-const NICK_IN_SPAN = 8;
-const ELLIE_IN_FRAME = 10;
-const ELLIE_IN_SPAN = 8;
-const EYEBROW_IN_FRAME = 17;
-const EYEBROW_IN_SPAN = 7;
-const DATE_IN_FRAME = 23;
-const DATE_IN_SPAN = 7;
+const NAMES_IN_FRAME = 4;
+const NAMES_IN_SPAN = 11;
+const EYEBROW_IN_FRAME = 14;
+const EYEBROW_IN_SPAN = 8;
+const DATE_IN_FRAME = 21;
+const DATE_IN_SPAN = 8;
 const HEADLINE_EXIT_FRAME = 39;
 const HEADLINE_EXIT_SPAN = 20;
 const CTA_ENTER_FRAME = 47;
@@ -40,11 +38,19 @@ const FOOTER_SPAN = 18;
 
 const SCROLL_HINT_URGENT_MS = 10_000;
 
-// fade + rise + sharpen-from-blur — the one reveal "shape" used for every
-// scroll-scrubbed text piece below, so they read as one consistent motion
-// language even though each is its own tween on its own frame window.
+// fade + rise + sharpen-from-blur — the one reveal "shape" used for the
+// eyebrow and date, so they read as one consistent motion language even
+// though each is its own tween on its own frame window.
 const REVEAL_FROM = { opacity: 0, y: 16, filter: "blur(10px)" };
 const REVEAL_TO_BASE = { opacity: 1, y: 0, filter: "blur(0px)", ease: "power2.out" };
+
+// Nick and Ellie use the same fade/blur language but converge horizontally
+// from opposite edges instead of rising, so the two names visibly close
+// the gap toward each other rather than each just fading in place.
+const NAME_CONVERGE_DISTANCE = 64;
+const NAME_FROM_LEFT = { opacity: 0, x: -NAME_CONVERGE_DISTANCE, filter: "blur(10px)" };
+const NAME_FROM_RIGHT = { opacity: 0, x: NAME_CONVERGE_DISTANCE, filter: "blur(10px)" };
+const NAME_TO = { opacity: 1, x: 0, filter: "blur(0px)", duration: NAMES_IN_SPAN, ease: "power2.out" };
 
 export type HeroCta =
   | { kind: "guest" }
@@ -94,6 +100,7 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
   const promptRef = useRef<HTMLDivElement>(null);
   const promptInnerRef = useRef<HTMLDivElement>(null);
   const footerRef = useRef<HTMLParagraphElement>(null);
+  const spotlightRef = useRef<HTMLDivElement>(null);
 
   const imagesRef = useRef<HTMLImageElement[]>([]);
   const drawnFrameRef = useRef(-1);
@@ -137,6 +144,53 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
   useEffect(() => {
     const t = setTimeout(() => setHintUrgent(true), SCROLL_HINT_URGENT_MS);
     return () => clearTimeout(t);
+  }, []);
+
+  // A soft key light that trails the cursor — like a studio softbox always
+  // aimed at whatever point the mouse is over, gently lifting text and
+  // buttons it passes across. Desktop-with-a-mouse only (a touch device has
+  // no hover point to light), and skipped entirely under reduced-motion.
+  useEffect(() => {
+    const el = spotlightRef.current;
+    if (!el) return;
+    if (!window.matchMedia("(pointer: fine)").matches) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    let targetX = window.innerWidth / 2;
+    let targetY = window.innerHeight / 2;
+    let currentX = targetX;
+    let currentY = targetY;
+    let raf = 0;
+    let revealed = false;
+
+    function onPointerMove(e: PointerEvent) {
+      targetX = e.clientX;
+      targetY = e.clientY;
+      if (!revealed && el) {
+        revealed = true;
+        el.style.opacity = "1";
+      }
+    }
+
+    function tick() {
+      // Heavily damped trailing follow (8% per frame) rather than snapping
+      // straight to the cursor — a real light rig drifts, it doesn't jump.
+      currentX += (targetX - currentX) * 0.08;
+      currentY += (targetY - currentY) * 0.08;
+      if (el) {
+        el.style.setProperty("--spot-x", `${currentX}px`);
+        el.style.setProperty("--spot-y", `${currentY}px`);
+      }
+      raf = requestAnimationFrame(tick);
+    }
+
+    window.addEventListener("pointermove", onPointerMove);
+    raf = requestAnimationFrame(tick);
+
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      cancelAnimationFrame(raf);
+    };
   }, []);
 
   // Draw whichever frame is closest to the current scrub position, filling
@@ -231,11 +285,13 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
       // the instant scrubbing starts to hand off to the name build-in.
       tl.to(promptRef.current, { opacity: 0, y: -12, duration: PROMPT_FADE_SPAN, ease: "power1.out" }, 0);
 
-      // Nick, then Ellie, then the framing copy above and below them —
-      // each its own scroll-scrubbed reveal, so scrolling back up un-builds
-      // them in reverse.
-      tl.fromTo(nickRef.current, REVEAL_FROM, { ...REVEAL_TO_BASE, duration: NICK_IN_SPAN }, NICK_IN_FRAME);
-      tl.fromTo(ellieRef.current, REVEAL_FROM, { ...REVEAL_TO_BASE, duration: ELLIE_IN_SPAN }, ELLIE_IN_FRAME);
+      // Nick and Ellie converge from opposite sides at the same frame —
+      // reads as the two of them coming together, not a staggered list —
+      // then the framing copy above and below them. Each its own
+      // scroll-scrubbed reveal, so scrolling back up un-builds them in
+      // reverse.
+      tl.fromTo(nickRef.current, NAME_FROM_LEFT, NAME_TO, NAMES_IN_FRAME);
+      tl.fromTo(ellieRef.current, NAME_FROM_RIGHT, NAME_TO, NAMES_IN_FRAME);
       tl.fromTo(eyebrowRef.current, REVEAL_FROM, { ...REVEAL_TO_BASE, duration: EYEBROW_IN_SPAN }, EYEBROW_IN_FRAME);
       tl.fromTo(dateRef.current, REVEAL_FROM, { ...REVEAL_TO_BASE, duration: DATE_IN_SPAN }, DATE_IN_FRAME);
 
@@ -431,6 +487,23 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
         >
           weddingsweddings.co.uk
         </p>
+
+        {/* Cursor-trailing key light — a soft-light blend so it reads as
+            studio lighting catching whatever it passes over (text, button
+            faces, the photo itself) rather than a flat highlight sitting on
+            top. Last in the DOM so it blends against everything beneath it.
+            Placed after the overlay/vignette on purpose: it needs to light
+            the wash too, not just the content stacked above it. */}
+        <div
+          ref={spotlightRef}
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-20 opacity-0 transition-opacity duration-700 ease-out"
+          style={{
+            background:
+              "radial-gradient(circle 34vw at var(--spot-x, 50%) var(--spot-y, 50%), rgba(255,244,224,0.16) 0%, rgba(255,244,224,0.06) 45%, transparent 72%)",
+            mixBlendMode: "soft-light",
+          }}
+        />
       </section>
     </div>
   );
