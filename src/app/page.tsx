@@ -1,20 +1,17 @@
 import Link from "next/link";
 import { BotanicalAccent } from "@/components/BotanicalAccent";
 import { HeroReveal } from "@/components/HeroReveal";
-import { getCurrentProfile } from "@/lib/auth/roles";
+import { getAuthState, HOME_FOR_ROLE } from "@/lib/auth/roles";
 
 const WEDDING_DATE = "28.11.26";
 
-// Where each tier lands when they follow "Enter the planning hub".
-const HOME_FOR_ROLE = {
-  couple: "/guests",
-  family: "/categories",
-  wedding_party: "/categories",
-  guest: "/rsvp",
-} as const;
+// Reads the session so a signed-in visitor is never shown the anonymous
+// call-to-action — previously this page looked identical either way, which
+// made a successful sign-in indistinguishable from a failed one.
+export const dynamic = "force-dynamic";
 
 export default async function LandingPage() {
-  const profile = await getCurrentProfile();
+  const state = await getAuthState();
 
   return (
     <main className="relative flex-1 overflow-hidden">
@@ -33,14 +30,15 @@ export default async function LandingPage() {
             {WEDDING_DATE}
           </p>
 
-          {profile ? (
+          {state.status === "ok" ? (
             <>
               <p className="mt-10 font-serif text-ink-soft">
-                Signed in{profile.full_name ? ` as ${profile.full_name}` : ""}.
+                Signed in
+                {state.profile.full_name ? ` as ${state.profile.full_name}` : ""}.
               </p>
               <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                 <Link
-                  href={HOME_FOR_ROLE[profile.role]}
+                  href={HOME_FOR_ROLE[state.profile.role]}
                   className="rounded-full bg-ink px-8 py-3 font-serif text-cream transition hover:bg-ink-soft"
                 >
                   Enter the planning hub
@@ -53,6 +51,21 @@ export default async function LandingPage() {
                 </Link>
               </div>
             </>
+          ) : state.status === "no-profile" ? (
+            <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+              <Link
+                href="/no-access"
+                className="rounded-full bg-ink px-8 py-3 font-serif text-cream transition hover:bg-ink-soft"
+              >
+                You&rsquo;re signed in
+              </Link>
+              <Link
+                href="/logout"
+                className="rounded-full border border-ink/30 px-8 py-3 font-serif text-ink transition hover:border-ink"
+              >
+                Sign out
+              </Link>
+            </div>
           ) : (
             <div className="mt-10 flex flex-col gap-3 sm:flex-row">
               <Link

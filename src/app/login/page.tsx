@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 // Typed code rather than a clickable magic link: email security scanners
@@ -10,14 +10,15 @@ import { createClient } from "@/lib/supabase/client";
 // real click always arrived with a spent token. A code has no URL to prefetch.
 //
 // Supabase's OTP length is configurable and currently returns 8 digits, so
-// accept a range rather than pinning to one length — a hard maxLength of 6
-// silently truncates a valid code and makes sign-in impossible.
+// accept a range rather than pinning to one length.
 const CODE_MIN = 6;
 const CODE_MAX = 10;
 const PENDING_EMAIL_KEY = "pending-signin-email";
 
-export default function LoginPage() {
-  const router = useRouter();
+function LoginForm() {
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") || "/hub";
+
   const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -25,7 +26,6 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  // Survive a reload, or reading the email on another device and coming back.
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(PENDING_EMAIL_KEY);
@@ -34,7 +34,7 @@ export default function LoginPage() {
         setStep("code");
       }
     } catch {
-      // storage unavailable (private mode, blocked cookies) — start at step 1
+      // storage unavailable (private mode) — start at step 1
     }
   }, []);
 
@@ -43,7 +43,7 @@ export default function LoginPage() {
       if (value) window.localStorage.setItem(PENDING_EMAIL_KEY, value);
       else window.localStorage.removeItem(PENDING_EMAIL_KEY);
     } catch {
-      // non-fatal; the in-memory state still carries the flow
+      // non-fatal
     }
   }
 
@@ -52,51 +52,38 @@ export default function LoginPage() {
     setBusy(true);
     setError(null);
     setNotice(null);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { shouldCreateUser: false },
-    });
+    const { error } = await createClient().auth.signInWithOtp({ email });
     setBusy(false);
     if (error) {
-      setError(
-        error.message.toLowerCase().includes("signups not allowed")
-          ? "We don't have that email on our guest list. Double-check it, or ask Nick or Ellie to add you."
-          : error.message
-      );
+      setError(error.message);
       return;
     }
     rememberEmail(email);
     setStep("code");
-    setNotice(`Code sent to ${email}.`);
+    setNotice(`Code sent to ${email}. It can take a minute to arrive.`);
   }
 
   async function verifyCode(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const supabase = createClient();
-    const { error } = await supabase.auth.verifyOtp({
+    const { error } = await createClient().auth.verifyOtp({
       email,
       token: code.trim(),
       type: "email",
     });
-    setBusy(false);
     if (error) {
+      setBusy(false);
       setError("That code wasn't right, or it's expired. Try again.");
       return;
     }
     rememberEmail(null);
-    router.push("/");
-    router.refresh();
-  }
 
-  function startOver() {
-    rememberEmail(null);
-    setStep("email");
-    setCode("");
-    setError(null);
-    setNotice(null);
+    // Full page load, not router.push(): the client router cache may still be
+    // holding the signed-out render of the destination, which would show a
+    // logged-out page immediately after a successful sign-in. A hard
+    // navigation guarantees the server re-renders with the new session cookie.
+    window.location.assign(next);
   }
 
   return (
@@ -128,10 +115,7 @@ export default function LoginPage() {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setStep("code");
-                  setNotice(null);
-                }}
+                onClick={() => setStep("code")}
                 className="font-serif text-sm text-ink-soft underline"
               >
                 I already have a code
@@ -141,27 +125,18 @@ export default function LoginPage() {
         ) : (
           <>
             <p className="mt-2 font-serif text-ink-soft">
-              Enter the code from your email
-              {email ? (
-                <>
-                  {" "}
-                  (sent to <span className="text-ink">{email}</span>)
-                </>
-              ) : null}
-              .
+              Enter the code from your email.
             </p>
             <form onSubmit={verifyCode} className="mt-8 flex flex-col gap-3">
-              {!email && (
-                <input
-                  type="email"
-                  required
-                  autoComplete="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="rounded-full border border-ink/20 bg-cream px-5 py-3 text-center font-serif text-ink outline-none focus:border-ink"
-                />
-              )}
+              <input
+                type="email"
+                required
+                autoComplete="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="rounded-full border border-ink/20 bg-cream px-5 py-3 text-center font-serif text-sm text-ink outline-none focus:border-ink"
+              />
               <input
                 type="text"
                 inputMode="numeric"
@@ -178,11 +153,17 @@ export default function LoginPage() {
                 disabled={busy || code.length < CODE_MIN || !email}
                 className="rounded-full bg-ink px-5 py-3 font-serif text-cream transition hover:bg-ink-soft disabled:opacity-60"
               >
-                {busy ? "Checking…" : "Sign in"}
+                {busy ? "Signing you in…" : "Sign in"}
               </button>
               <button
                 type="button"
-                onClick={startOver}
+                onClick={() => {
+                  rememberEmail(null);
+                  setStep("email");
+                  setCode("");
+                  setError(null);
+                  setNotice(null);
+                }}
                 className="font-serif text-sm text-ink-soft underline"
               >
                 Send a new code
@@ -197,5 +178,13 @@ export default function LoginPage() {
         {error && <p className="mt-4 font-serif text-sm text-red-700">{error}</p>}
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

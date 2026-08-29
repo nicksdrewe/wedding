@@ -1,6 +1,14 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+// Routes reachable without a session. Everything else requires one.
+const PUBLIC_PREFIXES = ["/login", "/auth", "/logout", "/rsvp", "/no-access"];
+
+function isPublic(pathname: string) {
+  if (pathname === "/") return true;
+  return PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -25,47 +33,38 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Refreshes the auth session if expired — required for server components to see a valid session.
+  // Also refreshes an expiring session so server components see a valid one.
   const {
     data: { user },
-    error,
   } = await supabase.auth.getUser();
 
-  const isAuthRoute =
-    request.nextUrl.pathname.startsWith("/login") ||
-    request.nextUrl.pathname.startsWith("/auth") ||
-    request.nextUrl.pathname.startsWith("/logout") ||
-    request.nextUrl.pathname.startsWith("/whoami") ||
-    request.nextUrl.pathname === "/" ||
-    request.nextUrl.pathname.startsWith("/rsvp");
+  const { pathname } = request.nextUrl;
 
-  if (!user && !isAuthRoute) {
+  // Carry over any cookies getUser() rewrote (a rotated refresh token, or the
+  // clearing of a session that failed to refresh). A bare redirect drops them,
+  // leaving the browser to replay a dead cookie on every subsequent request.
+  const withCookies = (response: NextResponse) => {
+    supabaseResponse.cookies.getAll().forEach((c) => response.cookies.set(c));
+    return response;
+  };
+
+  if (!user && !isPublic(pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    const redirectResponse = NextResponse.redirect(url);
-    // Carry over anything getUser() rewrote (notably a rotated refresh token,
-    // or the cleared cookies of a session that just failed to refresh).
-    // Returning a bare redirect drops them, so the browser keeps replaying a
-    // dead cookie and every later request bounces here again.
-    supabaseResponse.cookies.getAll().forEach((cookie) => {
-      redirectResponse.cookies.set(cookie);
-    });
-    return redirectResponse;
+    url.search = "";
+    // Remember where they were headed so sign-in can return them there.
+    url.searchParams.set("next", pathname);
+    return withCookies(NextResponse.redirect(url));
   }
 
-  // Report what the edge runtime saw, for /whoami. Must go on the *request*
-  // headers — response headers set here aren't readable from a server
-  // component via headers().
-  const diagnosticHeaders = new Headers(request.headers);
-  diagnosticHeaders.set(
-    "x-mw-user",
-    user ? `OK ${user.email}` : `NULL${error ? ` — ${error.message}` : ""}`
-  );
-  const passthrough = NextResponse.next({
-    request: { headers: diagnosticHeaders },
-  });
-  supabaseResponse.cookies.getAll().forEach((cookie) => {
-    passthrough.cookies.set(cookie);
-  });
-  return passthrough;
+  // A signed-in user hitting the sign-in page should go on to their hub
+  // rather than be asked to sign in again.
+  if (user && pathname.startsWith("/login")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/hub";
+    url.search = "";
+    return withCookies(NextResponse.redirect(url));
+  }
+
+  return supabaseResponse;
 }
