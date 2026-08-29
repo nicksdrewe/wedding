@@ -44,9 +44,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${ui.variable} ${display.variable} ${reading.variable} ${hero.variable} h-full antialiased`}
+      className={`${ui.variable} ${display.variable} ${reading.variable} ${hero.variable} antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-cream text-ink font-serif">
+      {/* No h-full on <html>/<body>: that pins <html> to exactly one
+          viewport tall while content (like the scroll-scrubbed landing
+          hero, ~4.5 viewports) grows past it on <body> — the browser still
+          scrolls correctly either way, but it left GSAP's ScrollTrigger
+          reading the wrong element's scrollTop and stuck at 0. min-h-screen
+          keeps the flex-col layout filling short pages without capping tall
+          ones. */}
+      <body className="min-h-screen flex flex-col bg-cream text-ink font-serif">
         {children}
       </body>
     </html>
