@@ -2,13 +2,13 @@ import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/auth/roles";
 import { SiteNav } from "@/components/SiteNav";
 
-export default async function AdminLayout({
+export default async function FamilyLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const profile = await getCurrentProfile();
-  if (!profile || profile.role !== "couple") {
+  if (!profile || (profile.role !== "couple" && profile.role !== "family")) {
     redirect("/login");
   }
 
