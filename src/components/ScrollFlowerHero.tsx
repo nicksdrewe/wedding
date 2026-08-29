@@ -12,6 +12,7 @@ import {
   MorphingPopoverTrigger,
 } from "@/components/motion-primitives/morphing-popover";
 import { Spotlight } from "@/components/motion-primitives/spotlight";
+import { SignInFields } from "@/components/SignInFields";
 
 const FRAME_COUNT = 129;
 const FRAME_SRC = (i: number) => `/hero-frames/frame-${String(i + 1).padStart(4, "0")}.jpg`;
@@ -483,17 +484,29 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-4">
               {cta.kind === "guest" ? (
-                // Only this button actually animates (it morphs into the
-                // RSVP panel) — position: relative lifts it into its own
-                // stacking context so that motion stays above the static
-                // Sign in button beside it instead of tucking underneath.
-                <div className="relative z-10">
-                  <RsvpMorphingButton />
-                </div>
+                <>
+                  {/* Only these two actually animate (they morph into
+                      panels) — position: relative lifts each into its own
+                      stacking context so their motion stays above the
+                      static Engagement party link beside them instead of
+                      tucking underneath. */}
+                  <div className="relative z-10">
+                    <RsvpMorphingButton />
+                  </div>
+                  <div className="relative z-10">
+                    <SignInMorphingButton />
+                  </div>
+                </>
               ) : (
-                <PrimaryButton href={copy.primary.href}>{copy.primary.label}</PrimaryButton>
+                <>
+                  <PrimaryButton href={copy.primary.href}>{copy.primary.label}</PrimaryButton>
+                  <GlassButton href={copy.secondary.href}>{copy.secondary.label}</GlassButton>
+                </>
               )}
-              <GlassButton href={copy.secondary.href}>{copy.secondary.label}</GlassButton>
+              {/* Independent of sign-in state — the engagement party is its
+                  own open, separately-run RSVP, not part of the account
+                  flow above. */}
+              <GhostButton href="/engagement">Engagement party</GhostButton>
             </div>
           </div>
         </div>
@@ -557,31 +570,38 @@ function PrimaryButton({ href, children }: { href: string; children: React.React
   );
 }
 
-// The generic /rsvp page just tells an un-linked visitor "this isn't your
-// link yet, ask Nick or Ellie" — not enough content to justify a full page
-// navigation. Instead the RSVP button morphs in place into that same
-// message, expanding from the button itself via the shared layoutId
-// between trigger and content (see morphing-popover.tsx).
-function RsvpMorphingButton() {
-  const [open, setOpen] = useState(false);
-  const spotlightWrapRef = useRef<HTMLDivElement>(null);
+const GHOST_BUTTON_CLASS =
+  "inline-block rounded-full border border-cream/35 px-8 py-4 font-serif text-sm font-medium text-cream/90 transition-[transform,border-color,color] duration-300 ease-[cubic-bezier(.22,1,.36,1)] hover:-translate-y-0.5 hover:border-cream/70 hover:text-cream";
 
-  // Spotlight (vendored from motion-primitives) only lights up once it's
-  // seen a real mouseenter/mousemove over its parent — by design, so it
-  // reads as reactive rather than static. But a click that opens this
-  // panel doesn't itself count as "entering" it (the cursor was already
-  // there when the listener got attached), so without a nudge the glow
-  // would silently never appear unless the user happened to wiggle the
-  // mouse afterward. Fire one synthetic mousemove at the panel's centre
-  // once it's mounted, so the rim is visibly lit as soon as it settles,
-  // with real cursor movement taking over from there. The delay covers
-  // Spotlight's own two-effect mount chain (it re-renders once to learn
-  // its parent before attaching listeners) — well under the panel's own
-  // 450ms open transition, so it reads as part of the same reveal.
+// The third, always-visible option — separate from the RSVP/sign-in pair
+// above since it isn't gated by account state at all: anyone can add
+// themselves to the engagement party regardless of whether they're on the
+// wedding guest list or signed in.
+function GhostButton({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link href={href} className={GHOST_BUTTON_CLASS}>
+      {children}
+    </Link>
+  );
+}
+
+// Spotlight (vendored from motion-primitives) only lights up once it's seen
+// a real mouseenter/mousemove over its parent — by design, so it reads as
+// reactive rather than static. But a click that opens one of these panels
+// doesn't itself count as "entering" it (the cursor was already there when
+// the listener got attached), so without a nudge the glow would silently
+// never appear unless the visitor happened to wiggle the mouse afterward.
+// Fires one synthetic mousemove at the panel's centre shortly after it
+// mounts, so the rim is visibly lit as soon as the panel settles, with real
+// cursor movement taking over from there. The delay covers Spotlight's own
+// two-effect mount chain (it re-renders once to learn its parent before
+// attaching listeners) — well under either panel's own 450ms open
+// transition, so it reads as part of the same reveal.
+function useSpotlightReveal(open: boolean, ref: React.RefObject<HTMLDivElement | null>) {
   useEffect(() => {
     if (!open) return;
     const t = setTimeout(() => {
-      const el = spotlightWrapRef.current;
+      const el = ref.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
       const cx = rect.left + rect.width / 2;
@@ -590,7 +610,18 @@ function RsvpMorphingButton() {
       el.dispatchEvent(new MouseEvent("mousemove", { clientX: cx, clientY: cy }));
     }, 120);
     return () => clearTimeout(t);
-  }, [open]);
+  }, [open, ref]);
+}
+
+// The generic /rsvp page just tells an un-linked visitor "this isn't your
+// link yet, ask Nick or Ellie" — not enough content to justify a full page
+// navigation. Instead the RSVP button morphs in place into that same
+// message, expanding from the button itself via the shared layoutId
+// between trigger and content (see morphing-popover.tsx).
+function RsvpMorphingButton() {
+  const [open, setOpen] = useState(false);
+  const spotlightWrapRef = useRef<HTMLDivElement>(null);
+  useSpotlightReveal(open, spotlightWrapRef);
 
   return (
     <>
@@ -667,6 +698,81 @@ function RsvpMorphingButton() {
                 that to respond. Can&rsquo;t find it? Let Nick or Ellie know
                 and they&rsquo;ll resend it.
               </p>
+            </div>
+          </div>
+        </MorphingPopoverContent>
+      </MorphingPopover>
+    </>
+  );
+}
+
+// Mirrors RsvpMorphingButton's structure (same morph, same spotlight-border
+// treatment) but in light glass rather than dark — this is the "you're
+// already one of ours, just prove it" panel rather than the "here's what to
+// do next" one, so it reads as a distinct, cooler surface. Nests the same
+// sign-in form used on the standalone /login page (kept as a no-JS/bookmark
+// fallback) rather than re-implementing it.
+function SignInMorphingButton() {
+  const [open, setOpen] = useState(false);
+  const spotlightWrapRef = useRef<HTMLDivElement>(null);
+  useSpotlightReveal(open, spotlightWrapRef);
+
+  return (
+    <>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            key="signin-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 z-30 bg-ink/70 backdrop-blur-sm"
+          />
+        )}
+      </AnimatePresence>
+      <MorphingPopover
+        open={open}
+        onOpenChange={setOpen}
+        variants={{
+          initial: { opacity: 0, filter: "blur(10px)" },
+          animate: { opacity: 1, filter: "blur(0px)" },
+          exit: { opacity: 0, filter: "blur(10px)" },
+        }}
+        transition={{ type: "spring", bounce: 0.12, duration: 0.45 }}
+      >
+        <MorphingPopoverTrigger asChild>
+          <button
+            type="button"
+            className="inline-block rounded-full border border-ink/10 bg-cream/95 px-10 py-4 font-serif text-sm font-medium text-ink shadow-[0_8px_24px_rgba(0,0,0,0.22)] backdrop-blur-md transition-[transform,box-shadow,background] duration-300 ease-[cubic-bezier(.22,1,.36,1)] hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-cream"
+          >
+            Sign in
+          </button>
+        </MorphingPopoverTrigger>
+        <MorphingPopoverContent
+          // See RsvpMorphingButton for why the dark: variant needs
+          // neutralising explicitly here too.
+          className="fixed top-1/2 left-1/2 z-40 max-h-[85vh] w-[min(90vw,26rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[28px] border-none bg-transparent p-0 text-ink shadow-[0_30px_90px_rgba(0,0,0,0.35)] dark:border-none dark:bg-transparent dark:text-ink"
+        >
+          <div ref={spotlightWrapRef} className="relative overflow-hidden rounded-[28px] bg-ink/10 p-[2px]">
+            <Spotlight className="from-accent via-accent-soft to-accent blur-3xl" size={260} />
+            <div className="relative h-full w-full rounded-[26px] bg-gradient-to-b from-white/80 via-cream/85 to-cream-deep/90 p-8 text-center text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-2xl">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="Close"
+                className="absolute top-4 right-4 text-ink/40 transition-colors hover:text-ink"
+              >
+                <X className="h-5 w-5" strokeWidth={2} />
+              </button>
+              <p className="font-serif text-xs font-bold tracking-[0.28em] text-ink-soft uppercase">
+                Nick &amp; Ellie
+              </p>
+              <h3 className="mt-3 font-hero text-2xl font-semibold text-ink">Sign in</h3>
+              <div className="mt-6">
+                <SignInFields next="/hub" />
+              </div>
             </div>
           </div>
         </MorphingPopoverContent>

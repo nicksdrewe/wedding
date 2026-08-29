@@ -1,4 +1,5 @@
 import { ScrollFlowerHero, type HeroCta } from "@/components/ScrollFlowerHero";
+import { SiteGate } from "@/components/SiteGate";
 import { getAuthState, HOME_FOR_ROLE } from "@/lib/auth/roles";
 
 // Reads the session so a signed-in visitor is never shown the anonymous
@@ -22,7 +23,9 @@ export default async function LandingPage() {
 
   return (
     <main className="relative">
-      <ScrollFlowerHero cta={cta} />
+      <SiteGate>
+        <ScrollFlowerHero cta={cta} />
+      </SiteGate>
     </main>
   );
 }

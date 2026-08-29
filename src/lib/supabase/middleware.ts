@@ -2,7 +2,24 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 // Routes reachable without a session. Everything else requires one.
-const PUBLIC_PREFIXES = ["/login", "/auth", "/logout", "/rsvp", "/no-access"];
+//
+// /api/rsvp was missing here despite its own route comment calling it
+// "public, unauthenticated" — pathname for that route is "/api/rsvp/...",
+// which doesn't start with "/rsvp", so unauthenticated requests were
+// actually being redirected to /login (returning login-page HTML instead
+// of JSON) rather than reaching the handler. Listed explicitly now,
+// alongside the same for the two newer public API routes.
+const PUBLIC_PREFIXES = [
+  "/login",
+  "/auth",
+  "/logout",
+  "/rsvp",
+  "/no-access",
+  "/engagement",
+  "/api/rsvp",
+  "/api/engagement-rsvp",
+  "/api/auth/request-code",
+];
 
 function isPublic(pathname: string) {
   if (pathname === "/") return true;
