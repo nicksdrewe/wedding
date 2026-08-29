@@ -1,10 +1,21 @@
 import Link from "next/link";
 import { BotanicalAccent } from "@/components/BotanicalAccent";
 import { HeroReveal } from "@/components/HeroReveal";
+import { getCurrentProfile } from "@/lib/auth/roles";
 
 const WEDDING_DATE = "28.11.26";
 
-export default function LandingPage() {
+// Where each tier lands when they follow "Enter the planning hub".
+const HOME_FOR_ROLE = {
+  couple: "/guests",
+  family: "/categories",
+  wedding_party: "/categories",
+  guest: "/rsvp",
+} as const;
+
+export default async function LandingPage() {
+  const profile = await getCurrentProfile();
+
   return (
     <main className="relative flex-1 overflow-hidden">
       <BotanicalAccent className="pointer-events-none absolute -left-10 -top-10 h-64 w-32 object-contain md:h-96 md:w-48" />
@@ -22,20 +33,42 @@ export default function LandingPage() {
             {WEDDING_DATE}
           </p>
 
-          <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-            <Link
-              href="/rsvp"
-              className="rounded-full bg-ink px-8 py-3 font-serif text-cream transition hover:bg-ink-soft"
-            >
-              RSVP
-            </Link>
-            <Link
-              href="/login"
-              className="rounded-full border border-ink/30 px-8 py-3 font-serif text-ink transition hover:border-ink"
-            >
-              Sign in
-            </Link>
-          </div>
+          {profile ? (
+            <>
+              <p className="mt-10 font-serif text-ink-soft">
+                Signed in{profile.full_name ? ` as ${profile.full_name}` : ""}.
+              </p>
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                <Link
+                  href={HOME_FOR_ROLE[profile.role]}
+                  className="rounded-full bg-ink px-8 py-3 font-serif text-cream transition hover:bg-ink-soft"
+                >
+                  Enter the planning hub
+                </Link>
+                <Link
+                  href="/logout"
+                  className="rounded-full border border-ink/30 px-8 py-3 font-serif text-ink transition hover:border-ink"
+                >
+                  Sign out
+                </Link>
+              </div>
+            </>
+          ) : (
+            <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+              <Link
+                href="/rsvp"
+                className="rounded-full bg-ink px-8 py-3 font-serif text-cream transition hover:bg-ink-soft"
+              >
+                RSVP
+              </Link>
+              <Link
+                href="/login"
+                className="rounded-full border border-ink/30 px-8 py-3 font-serif text-ink transition hover:border-ink"
+              >
+                Sign in
+              </Link>
+            </div>
+          )}
         </section>
       </HeroReveal>
     </main>
