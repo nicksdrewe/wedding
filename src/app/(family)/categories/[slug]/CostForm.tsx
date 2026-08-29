@@ -27,7 +27,7 @@ export function CostForm({
           type="number"
           step="0.01"
           defaultValue={predictedCost}
-          className="w-32 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-ink"
+          className="w-32 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
         />
       </div>
       <div className="flex flex-col">
@@ -37,7 +37,7 @@ export function CostForm({
           type="number"
           step="0.01"
           defaultValue={actualCost}
-          className="w-32 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-ink"
+          className="w-32 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
         />
       </div>
       <button

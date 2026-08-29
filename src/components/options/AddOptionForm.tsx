@@ -30,42 +30,42 @@ export function AddOptionForm({
         name="name"
         required
         placeholder="Option name"
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-ink"
+        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
       />
       <input
         name="predictedCost"
         type="number"
         step="0.01"
         placeholder="Predicted £"
-        className="w-32 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-ink"
+        className="w-32 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
       />
       <input
         name="actualCost"
         type="number"
         step="0.01"
         placeholder="Actual £"
-        className="w-32 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-ink"
+        className="w-32 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
       />
       <input
         name="optionDate"
         type="date"
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-ink"
+        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
       />
       <input
         name="contactName"
         placeholder="Contact name"
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-ink"
+        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
       />
       <input
         name="contactPhone"
         placeholder="Contact phone"
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-ink"
+        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
       />
       <input
         name="contactEmail"
         type="email"
         placeholder="Contact email"
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-ink"
+        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
       />
       <button
         type="submit"

@@ -14,15 +14,15 @@ export default async function CategoriesPage() {
 
   return (
     <div>
-      <h1 className="font-script text-4xl">Categories</h1>
-      <p className="mt-2 font-serif text-ink-soft">
+      <h1 className="font-display text-[34px] tracking-tight">Categories</h1>
+      <p className="mt-2 font-reading text-[15px] text-ink-soft">
         Venue, outfits, flowers, catering — everything with a cost, a
         contact, or a date lives here.
       </p>
 
       {profile?.role === "couple" && <NewCategoryForm />}
 
-      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+      <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
         {(pages ?? []).map((p) => {
           const cost = Array.isArray(p.category_costs)
             ? p.category_costs[0]
@@ -31,10 +31,10 @@ export default async function CategoriesPage() {
             <Link
               key={p.id}
               href={`/categories/${p.slug}`}
-              className="rounded-2xl border border-ink/10 bg-cream-deep/50 p-5 transition hover:border-ink/30"
+              className="rounded-[10px] border border-ink/10 bg-white p-5 transition hover:border-accent/50"
             >
-              <h2 className="font-serif text-lg font-semibold">{p.title}</h2>
-              <p className="mt-1 text-sm text-ink-soft">
+              <h2 className="font-serif text-[15px] font-semibold">{p.title}</h2>
+              <p className="mt-1.5 font-reading text-[13px] text-ink-soft">
                 Predicted: £{cost?.predicted_cost ?? "—"} · Actual: £
                 {cost?.actual_cost ?? "—"}
               </p>
@@ -42,7 +42,7 @@ export default async function CategoriesPage() {
           );
         })}
         {(!pages || pages.length === 0) && (
-          <p className="font-serif text-ink-soft">
+          <p className="font-reading text-ink-soft">
             No categories yet — add your first one above.
           </p>
         )}

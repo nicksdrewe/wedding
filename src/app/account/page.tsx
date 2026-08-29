@@ -12,7 +12,7 @@ export default async function AccountPage() {
       {state.status === "ok" && <SiteNav role={state.profile.role} />}
       <div className="flex flex-col items-center px-6 py-16">
         <div className="w-full max-w-sm">
-          <h1 className="text-center font-script text-4xl">Your account</h1>
+          <h1 className="text-center font-display text-4xl">Your account</h1>
           <p className="mt-2 text-center font-serif text-ink-soft">
             Set a password so you can sign in instantly next time, without
             waiting on an email code.

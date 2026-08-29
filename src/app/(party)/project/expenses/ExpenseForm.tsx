@@ -27,7 +27,7 @@ export function ExpenseForm({
           name="description"
           required
           placeholder="What was it for?"
-          className="flex-1 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-ink"
+          className="flex-1 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
         />
         <input
           name="amount"
@@ -36,13 +36,13 @@ export function ExpenseForm({
           min="0.01"
           required
           placeholder="Amount (£)"
-          className="w-40 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-ink"
+          className="w-40 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
         />
         <select
           name="paidByContactId"
           required
           defaultValue=""
-          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-ink"
+          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
         >
           <option value="" disabled>
             Paid by…

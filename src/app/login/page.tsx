@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Botanical } from "@/components/Botanical";
 
 // Typed code rather than a clickable magic link: email security scanners
 // (Gmail's especially) fetch links in a message before the recipient clicks,
@@ -15,13 +16,15 @@ const CODE_MIN = 6;
 const CODE_MAX = 10;
 const PENDING_EMAIL_KEY = "pending-signin-email";
 
-type Mode = "code-email" | "code-verify" | "password";
+type Track = "code" | "password";
+type CodeStep = "email" | "verify";
 
 function LoginForm() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/hub";
 
-  const [mode, setMode] = useState<Mode>("code-email");
+  const [track, setTrack] = useState<Track>("code");
+  const [codeStep, setCodeStep] = useState<CodeStep>("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
@@ -34,7 +37,7 @@ function LoginForm() {
       const saved = window.localStorage.getItem(PENDING_EMAIL_KEY);
       if (saved) {
         setEmail(saved);
-        setMode("code-verify");
+        setCodeStep("verify");
       }
     } catch {
       // storage unavailable (private mode) — start at step 1
@@ -58,6 +61,12 @@ function LoginForm() {
     window.location.assign(next);
   }
 
+  function switchTrack(t: Track) {
+    setTrack(t);
+    setError(null);
+    setNotice(null);
+  }
+
   async function sendCode(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -70,7 +79,7 @@ function LoginForm() {
       return;
     }
     rememberEmail(email);
-    setMode("code-verify");
+    setCodeStep("verify");
     setNotice(`Code sent to ${email}. It can take a minute to arrive.`);
   }
 
@@ -106,16 +115,51 @@ function LoginForm() {
   }
 
   return (
-    <main className="flex flex-1 items-center justify-center px-6 py-16">
-      <div className="w-full max-w-sm text-center">
-        <h1 className="font-script text-4xl">Sign in</h1>
+    <main className="relative flex flex-1 items-center justify-center overflow-hidden px-6 py-16">
+      <Botanical
+        seed={7}
+        stems={1}
+        width={110}
+        height={170}
+        spread={8}
+        strokeOpacity={0.7}
+        fillOpacity={0.35}
+        className="pointer-events-none absolute -top-2 -right-2"
+      />
 
-        {mode === "code-email" && (
+      <div className="relative z-10 w-full max-w-sm text-center">
+        <p className="font-serif text-xs tracking-[0.25em] text-ink-soft uppercase">
+          Nick &amp; Ellie
+        </p>
+        <h1 className="mt-3 font-display text-4xl tracking-tight">Sign in</h1>
+
+        <div className="mx-auto mt-7 flex max-w-[220px] gap-0.5 rounded-full bg-cream-deep p-1">
+          <button
+            type="button"
+            onClick={() => switchTrack("code")}
+            className={`flex-1 rounded-full py-2 font-serif text-xs tracking-wide transition ${
+              track === "code" ? "bg-ink text-cream" : "text-ink-soft"
+            }`}
+          >
+            Code
+          </button>
+          <button
+            type="button"
+            onClick={() => switchTrack("password")}
+            className={`flex-1 rounded-full py-2 font-serif text-xs tracking-wide transition ${
+              track === "password" ? "bg-ink text-cream" : "text-ink-soft"
+            }`}
+          >
+            Password
+          </button>
+        </div>
+
+        {track === "code" && codeStep === "email" && (
           <>
-            <p className="mt-2 font-serif text-ink-soft">
+            <p className="mt-6 font-reading text-[15px] text-ink-soft">
               Pop in your email and we&rsquo;ll send you a sign-in code.
             </p>
-            <form onSubmit={sendCode} className="mt-8 flex flex-col gap-3">
+            <form onSubmit={sendCode} className="mt-6 flex flex-col gap-3">
               <input
                 type="email"
                 required
@@ -123,45 +167,32 @@ function LoginForm() {
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="rounded-full border border-ink/20 bg-cream px-5 py-3 text-center font-serif text-ink outline-none focus:border-ink"
+                className="rounded-full border border-ink/20 bg-white px-5 py-3.5 text-center font-reading text-[15px] text-ink outline-none focus:border-accent"
               />
               <button
                 type="submit"
                 disabled={busy}
-                className="rounded-full bg-ink px-5 py-3 font-serif text-cream transition hover:bg-ink-soft disabled:opacity-60"
+                className="rounded-full bg-ink px-5 py-3.5 font-serif text-sm text-cream transition hover:bg-ink-soft disabled:opacity-60"
               >
                 {busy ? "Sending…" : "Send my code"}
               </button>
-              <div className="mt-1 flex justify-center gap-4 text-sm">
-                <button
-                  type="button"
-                  onClick={() => setMode("code-verify")}
-                  className="font-serif text-ink-soft underline"
-                >
-                  I already have a code
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setError(null);
-                    setNotice(null);
-                    setMode("password");
-                  }}
-                  className="font-serif text-ink-soft underline"
-                >
-                  Use a password instead
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setCodeStep("verify")}
+                className="mt-1 font-serif text-xs text-ink-soft underline"
+              >
+                I already have a code
+              </button>
             </form>
           </>
         )}
 
-        {mode === "code-verify" && (
+        {track === "code" && codeStep === "verify" && (
           <>
-            <p className="mt-2 font-serif text-ink-soft">
+            <p className="mt-6 font-reading text-[15px] text-ink-soft">
               Enter the code from your email.
             </p>
-            <form onSubmit={verifyCode} className="mt-8 flex flex-col gap-3">
+            <form onSubmit={verifyCode} className="mt-6 flex flex-col gap-3">
               <input
                 type="email"
                 required
@@ -169,7 +200,7 @@ function LoginForm() {
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="rounded-full border border-ink/20 bg-cream px-5 py-3 text-center font-serif text-sm text-ink outline-none focus:border-ink"
+                className="rounded-full border border-ink/20 bg-white px-5 py-3 text-center font-reading text-sm text-ink outline-none focus:border-accent"
               />
               <input
                 type="text"
@@ -180,12 +211,12 @@ function LoginForm() {
                 placeholder="Your code"
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                className="rounded-full border border-ink/20 bg-cream px-5 py-3 text-center font-serif text-2xl tracking-[0.3em] text-ink outline-none focus:border-ink"
+                className="rounded-full border border-ink/20 bg-white px-5 py-3.5 text-center font-serif text-2xl tracking-[0.3em] text-ink outline-none focus:border-accent"
               />
               <button
                 type="submit"
                 disabled={busy || code.length < CODE_MIN || !email}
-                className="rounded-full bg-ink px-5 py-3 font-serif text-cream transition hover:bg-ink-soft disabled:opacity-60"
+                className="rounded-full bg-ink px-5 py-3.5 font-serif text-sm text-cream transition hover:bg-ink-soft disabled:opacity-60"
               >
                 {busy ? "Signing you in…" : "Sign in"}
               </button>
@@ -193,12 +224,12 @@ function LoginForm() {
                 type="button"
                 onClick={() => {
                   rememberEmail(null);
-                  setMode("code-email");
+                  setCodeStep("email");
                   setCode("");
                   setError(null);
                   setNotice(null);
                 }}
-                className="font-serif text-sm text-ink-soft underline"
+                className="mt-1 font-serif text-xs text-ink-soft underline"
               >
                 Send a new code
               </button>
@@ -206,12 +237,12 @@ function LoginForm() {
           </>
         )}
 
-        {mode === "password" && (
+        {track === "password" && (
           <>
-            <p className="mt-2 font-serif text-ink-soft">
+            <p className="mt-6 font-reading text-[15px] text-ink-soft">
               Sign in with your email and password.
             </p>
-            <form onSubmit={signInWithPassword} className="mt-8 flex flex-col gap-3">
+            <form onSubmit={signInWithPassword} className="mt-6 flex flex-col gap-3">
               <input
                 type="email"
                 required
@@ -219,7 +250,7 @@ function LoginForm() {
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="rounded-full border border-ink/20 bg-cream px-5 py-3 text-center font-serif text-ink outline-none focus:border-ink"
+                className="rounded-full border border-ink/20 bg-white px-5 py-3.5 text-center font-reading text-[15px] text-ink outline-none focus:border-accent"
               />
               <input
                 type="password"
@@ -228,26 +259,16 @@ function LoginForm() {
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="rounded-full border border-ink/20 bg-cream px-5 py-3 text-center font-serif text-ink outline-none focus:border-ink"
+                className="rounded-full border border-ink/20 bg-white px-5 py-3.5 text-center font-reading text-[15px] text-ink outline-none focus:border-accent"
               />
               <button
                 type="submit"
                 disabled={busy}
-                className="rounded-full bg-ink px-5 py-3 font-serif text-cream transition hover:bg-ink-soft disabled:opacity-60"
+                className="rounded-full bg-ink px-5 py-3.5 font-serif text-sm text-cream transition hover:bg-ink-soft disabled:opacity-60"
               >
                 {busy ? "Signing you in…" : "Sign in"}
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setError(null);
-                  setMode("code-email");
-                }}
-                className="font-serif text-sm text-ink-soft underline"
-              >
-                I&rsquo;d rather use a code
-              </button>
-              <p className="mt-1 font-serif text-xs text-ink-soft">
+              <p className="mt-1 font-reading text-xs text-ink-soft italic">
                 Haven&rsquo;t set a password yet? Sign in with a code first,
                 then set one from your account page.
               </p>
@@ -255,10 +276,8 @@ function LoginForm() {
           </>
         )}
 
-        {notice && (
-          <p className="mt-4 font-serif text-sm text-ink-soft">{notice}</p>
-        )}
-        {error && <p className="mt-4 font-serif text-sm text-red-700">{error}</p>}
+        {notice && <p className="mt-5 font-reading text-sm text-ink-soft">{notice}</p>}
+        {error && <p className="mt-5 font-reading text-sm text-alert">{error}</p>}
       </div>
     </main>
   );

@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { OptionGroupPanel } from "@/components/options/OptionGroupPanel";
 import { IdeaForm } from "./IdeaForm";
 import { TaskForm } from "./TaskForm";
 import { TaskRow } from "./TaskRow";
 import { NewOptionGroupForm } from "./NewOptionGroupForm";
+import { ProjectTabs } from "./ProjectTabs";
 
 export default async function ProjectPage() {
   const supabase = await createClient();
@@ -34,33 +34,31 @@ export default async function ProjectPage() {
 
   return (
     <div>
-      <h1 className="font-script text-4xl">Project Management</h1>
-      <p className="mt-2 font-serif text-ink-soft">
-        Ideas, plans, and who&rsquo;s doing what — plus{" "}
-        <Link href="/project/expenses" className="underline">
-          expense splitting
-        </Link>
-        .
+      <h1 className="font-display text-[34px] tracking-tight">Project Management</h1>
+      <p className="mt-2 font-reading text-[15px] text-ink-soft">
+        Ideas, plans, and who&rsquo;s doing what — plus expense splitting.
       </p>
 
-      <div className="mt-10 grid grid-cols-1 gap-10 md:grid-cols-2">
+      <ProjectTabs active="project" />
+
+      <div className="mt-9 grid grid-cols-1 gap-10 md:grid-cols-2">
         <section>
-          <h2 className="font-serif text-lg font-semibold">Idea board</h2>
+          <h2 className="font-serif text-[15px] font-semibold tracking-wide">Idea board</h2>
           <IdeaForm />
-          <ul className="mt-4 flex flex-col gap-3">
+          <ul className="mt-4 flex flex-col gap-2.5">
             {(ideas ?? []).map((idea) => (
               <li
                 key={idea.id}
-                className="rounded-2xl border border-ink/10 bg-cream-deep/50 p-4"
+                className="rounded-[10px] border border-ink/10 bg-white p-4"
               >
-                <p className="font-serif font-semibold">{idea.title}</p>
+                <p className="font-serif text-sm font-semibold">{idea.title}</p>
                 {idea.body && (
-                  <p className="mt-1 font-serif text-sm text-ink-soft">{idea.body}</p>
+                  <p className="mt-1.5 font-reading text-[13px] text-ink-soft">{idea.body}</p>
                 )}
               </li>
             ))}
             {(!ideas || ideas.length === 0) && (
-              <p className="font-serif text-sm text-ink-soft">
+              <p className="font-reading text-sm text-ink-soft">
                 No ideas yet — add the first one.
               </p>
             )}
@@ -68,7 +66,7 @@ export default async function ProjectPage() {
         </section>
 
         <section>
-          <h2 className="font-serif text-lg font-semibold">Tasks</h2>
+          <h2 className="font-serif text-[15px] font-semibold tracking-wide">Tasks</h2>
           <TaskForm contacts={contacts ?? []} />
           <ul className="mt-4 flex flex-col gap-2">
             {(tasks ?? []).map((t) => {
@@ -85,31 +83,29 @@ export default async function ProjectPage() {
               );
             })}
             {(!tasks || tasks.length === 0) && (
-              <p className="font-serif text-sm text-ink-soft">No tasks yet.</p>
+              <p className="font-reading text-sm text-ink-soft">No tasks yet.</p>
             )}
           </ul>
         </section>
       </div>
 
-      <section className="mt-10">
-        <h2 className="font-serif text-lg font-semibold">
-          Compare options
-        </h2>
-        <p className="mt-1 font-serif text-sm text-ink-soft">
+      <section className="mt-12">
+        <h2 className="font-serif text-[15px] font-semibold tracking-wide">Compare options</h2>
+        <p className="mt-2 font-reading text-sm text-ink-soft italic">
           For stag/hen venues, activities — anything worth comparing before
           deciding.
         </p>
         <NewOptionGroupForm />
 
-        <div className="mt-4 flex flex-col gap-6">
+        <div className="mt-5 flex flex-col gap-7">
           {(optionGroups ?? []).map((g) => (
-            <div key={g.id} className="rounded-2xl border border-ink/10 p-4">
-              <h3 className="font-serif font-semibold">{g.title}</h3>
+            <div key={g.id}>
+              <h3 className="font-serif text-sm font-semibold">{g.title}</h3>
               <OptionGroupPanel groupId={g.id} categoryPageId={null} revalidate="/project" />
             </div>
           ))}
           {(!optionGroups || optionGroups.length === 0) && (
-            <p className="font-serif text-sm text-ink-soft">
+            <p className="font-reading text-sm text-ink-soft">
               Nothing being compared yet — start a comparison above.
             </p>
           )}

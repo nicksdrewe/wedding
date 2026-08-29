@@ -1,18 +1,33 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, Parisienne } from "next/font/google";
+import { Archivo, Source_Serif_4, Manrope } from "next/font/google";
 import "./globals.css";
 
-// Placeholder pairing — swap once the couple approves fonts (see build brief §8).
-const serif = Cormorant_Garamond({
-  variable: "--font-serif",
+// Grotesque carries UI, structure and numbers; serif carries reading copy.
+// Never mixed within one line — see docs/design-brief.md.
+const ui = Archivo({
+  variable: "--font-ui",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
 
-const script = Parisienne({
-  variable: "--font-script",
+const display = Archivo({
+  variable: "--font-display",
   subsets: ["latin"],
-  weight: ["400"],
+  weight: ["700"],
+});
+
+const reading = Source_Serif_4({
+  variable: "--font-reading",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
+});
+
+// Landing only — the single oversized "Nick & Ellie" moment.
+const hero = Manrope({
+  variable: "--font-hero",
+  subsets: ["latin"],
+  weight: ["500", "600"],
 });
 
 export const metadata: Metadata = {
@@ -22,14 +37,14 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#faf6ef",
+  themeColor: "#f4f1ec",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${serif.variable} ${script.variable} h-full antialiased`}
+      className={`${ui.variable} ${display.variable} ${reading.variable} ${hero.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-cream text-ink font-serif">
         {children}

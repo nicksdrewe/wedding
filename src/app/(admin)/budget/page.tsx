@@ -23,41 +23,47 @@ export default async function BudgetPage() {
 
   return (
     <div>
-      <h1 className="font-script text-4xl">Budget Tracker</h1>
-      <p className="mt-2 font-serif text-ink-soft">
+      <h1 className="font-display text-[34px] tracking-tight">Budget Tracker</h1>
+      <p className="mt-2 font-reading text-[15px] text-ink-soft">
         Rolls up automatically from the cost fields on every category page.
       </p>
 
-      <div className="mt-8 overflow-x-auto rounded-2xl border border-ink/10">
-        <table className="w-full text-left font-serif text-sm">
+      <div className="mt-8 overflow-x-auto rounded-[8px] border border-ink/10">
+        <table className="w-full min-w-[520px] text-left font-serif text-[13px] tabular-nums">
           <thead className="bg-cream-deep">
             <tr>
-              <th className="px-4 py-3">Category</th>
-              <th className="px-4 py-3">Predicted</th>
-              <th className="px-4 py-3">Actual</th>
-              <th className="px-4 py-3">Difference</th>
+              <th className="px-5 py-3 text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
+                Category
+              </th>
+              <th className="px-5 py-3 text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
+                Predicted
+              </th>
+              <th className="px-5 py-3 text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
+                Actual
+              </th>
+              <th className="px-5 py-3 text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
+                Diff
+              </th>
             </tr>
           </thead>
           <tbody>
-            {items.map((i) => (
-              <tr key={i.title} className="border-t border-ink/10">
-                <td className="px-4 py-3">{i.title}</td>
-                <td className="px-4 py-3">£{Number(i.predicted).toFixed(2)}</td>
-                <td className="px-4 py-3">£{Number(i.actual).toFixed(2)}</td>
-                <td
-                  className={`px-4 py-3 ${
-                    Number(i.actual) > Number(i.predicted)
-                      ? "text-red-700"
-                      : "text-ink-soft"
-                  }`}
-                >
-                  £{(Number(i.actual) - Number(i.predicted)).toFixed(2)}
-                </td>
-              </tr>
-            ))}
+            {items.map((i) => {
+              const diff = Number(i.actual) - Number(i.predicted);
+              const overBudget = diff > 0;
+              return (
+                <tr key={i.title} className="border-t border-ink/8">
+                  <td className="px-5 py-3.5">{i.title}</td>
+                  <td className="px-5 py-3.5">£{Number(i.predicted).toFixed(2)}</td>
+                  <td className="px-5 py-3.5">£{Number(i.actual).toFixed(2)}</td>
+                  <td className={`px-5 py-3.5 ${overBudget ? "text-alert" : "text-accent"}`}>
+                    {overBudget ? "+" : "−"}£{Math.abs(diff).toFixed(2)}
+                  </td>
+                </tr>
+              );
+            })}
             {items.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-ink-soft">
+                <td colSpan={4} className="px-5 py-8 text-center font-reading text-ink-soft">
                   No categories yet — costs entered on category pages show up
                   here.
                 </td>
@@ -65,12 +71,13 @@ export default async function BudgetPage() {
             )}
           </tbody>
           <tfoot>
-            <tr className="border-t border-ink/20 font-semibold">
-              <td className="px-4 py-3">Total</td>
-              <td className="px-4 py-3">£{totalPredicted.toFixed(2)}</td>
-              <td className="px-4 py-3">£{totalActual.toFixed(2)}</td>
-              <td className="px-4 py-3">
-                £{(totalActual - totalPredicted).toFixed(2)}
+            <tr className="border-t border-ink/15 font-semibold">
+              <td className="px-5 py-3.5">Total</td>
+              <td className="px-5 py-3.5">£{totalPredicted.toFixed(2)}</td>
+              <td className="px-5 py-3.5">£{totalActual.toFixed(2)}</td>
+              <td className={`px-5 py-3.5 ${totalActual > totalPredicted ? "text-alert" : "text-accent"}`}>
+                {totalActual > totalPredicted ? "+" : "−"}£
+                {Math.abs(totalActual - totalPredicted).toFixed(2)}
               </td>
             </tr>
           </tfoot>

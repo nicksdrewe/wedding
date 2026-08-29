@@ -23,7 +23,7 @@ export function AddContactForm() {
         <input
           name="fullName"
           required
-          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-ink"
+          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
         />
       </div>
       <div className="flex flex-col">
@@ -31,14 +31,14 @@ export function AddContactForm() {
         <input
           name="email"
           type="email"
-          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-ink"
+          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
         />
       </div>
       <div className="flex flex-col">
         <label className="text-xs text-ink-soft">Phone</label>
         <input
           name="phone"
-          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-ink"
+          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
         />
       </div>
       <div className="flex flex-col">
@@ -46,7 +46,7 @@ export function AddContactForm() {
         <select
           name="role"
           defaultValue="guest"
-          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-ink"
+          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
         >
           <option value="guest">Guest</option>
           <option value="family">Family</option>

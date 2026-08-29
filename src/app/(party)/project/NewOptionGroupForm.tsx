@@ -22,7 +22,7 @@ export function NewOptionGroupForm() {
         name="title"
         required
         placeholder="e.g. Stag do venue"
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-ink"
+        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
       />
       <button
         type="submit"

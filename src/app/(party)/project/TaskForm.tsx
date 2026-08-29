@@ -26,12 +26,12 @@ export function TaskForm({
         name="title"
         required
         placeholder="Task"
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-ink"
+        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
       />
       <select
         name="ownerContactId"
         defaultValue=""
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-ink"
+        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
       >
         <option value="">Unassigned</option>
         {contacts.map((c) => (
@@ -43,7 +43,7 @@ export function TaskForm({
       <input
         name="dueDate"
         type="date"
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-ink"
+        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
       />
       <button
         type="submit"

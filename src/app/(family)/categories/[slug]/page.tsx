@@ -52,7 +52,7 @@ export default async function CategoryDetailPage({
 
   return (
     <div className="max-w-3xl">
-      <h1 className="font-script text-4xl">{page.title}</h1>
+      <h1 className="font-display text-4xl">{page.title}</h1>
 
       <section className="mt-8">
         <div className="flex items-center justify-between">

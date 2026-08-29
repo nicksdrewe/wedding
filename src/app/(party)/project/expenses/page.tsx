@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ExpenseForm } from "./ExpenseForm";
 import { SettleButton } from "./SettleButton";
+import { ProjectTabs } from "../ProjectTabs";
 
 export default async function ExpensesPage() {
   const supabase = await createClient();
@@ -44,35 +44,30 @@ export default async function ExpensesPage() {
 
   return (
     <div>
-      <div className="flex items-center gap-3">
-        <Link href="/project" className="font-serif text-sm text-ink-soft underline">
-          ← Project Management
-        </Link>
-      </div>
-      <h1 className="mt-2 font-script text-4xl">Expense Splitting</h1>
-      <p className="mt-2 font-serif text-ink-soft">
+      <h1 className="font-display text-[34px] tracking-tight">Expense Splitting</h1>
+      <p className="mt-2 font-reading text-[15px] text-ink-soft">
         Log a cost, split it evenly among whoever&rsquo;s in on it, settle up
         when it&rsquo;s paid back.
       </p>
 
-      <ExpenseForm contacts={contacts ?? []} />
+      <ProjectTabs active="expenses" />
+
+      <div className="mt-9">
+        <ExpenseForm contacts={contacts ?? []} />
+      </div>
 
       <section className="mt-10">
-        <h2 className="font-serif text-lg font-semibold">Balances</h2>
-        <ul className="mt-3 flex flex-col gap-2">
+        <h2 className="font-serif text-[15px] font-semibold tracking-wide">Balances</h2>
+        <ul className="mt-3 flex max-w-[520px] flex-col gap-2">
           {balances.map((b) => (
             <li
               key={b.name}
-              className="flex items-center justify-between rounded-2xl border border-ink/10 bg-cream-deep/50 px-4 py-3 font-serif text-sm"
+              className="flex items-center justify-between rounded-[10px] border border-ink/10 bg-white px-4.5 py-3.5 font-serif text-[13px]"
             >
               <span>{b.name}</span>
               <span
                 className={
-                  b.balance > 0
-                    ? "text-green-700"
-                    : b.balance < 0
-                    ? "text-red-700"
-                    : "text-ink-soft"
+                  b.balance > 0 ? "text-accent" : b.balance < 0 ? "text-alert" : "text-ink-soft"
                 }
               >
                 {b.balance > 0 && "owed £"}
@@ -83,27 +78,29 @@ export default async function ExpensesPage() {
             </li>
           ))}
           {balances.length === 0 && (
-            <p className="font-serif text-sm text-ink-soft">No one to split with yet.</p>
+            <p className="font-reading text-sm text-ink-soft">No one to split with yet.</p>
           )}
         </ul>
       </section>
 
       <section className="mt-10">
-        <h2 className="font-serif text-lg font-semibold">Expenses</h2>
-        <ul className="mt-3 flex flex-col gap-3">
+        <h2 className="font-serif text-[15px] font-semibold tracking-wide">Expenses</h2>
+        <ul className="mt-3 flex max-w-[640px] flex-col gap-2.5">
           {(expenses ?? []).map((e) => {
             const payer = Array.isArray(e.contacts) ? e.contacts[0] : e.contacts;
             const mySplits = (splits ?? []).filter((s) => s.expense_id === e.id);
             return (
               <li
                 key={e.id}
-                className="rounded-2xl border border-ink/10 bg-cream-deep/50 p-4 font-serif text-sm"
+                className="rounded-[10px] border border-ink/10 bg-white p-4"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold">{e.description}</span>
-                  <span>£{Number(e.amount).toFixed(2)}</span>
+                  <span className="font-serif text-sm font-semibold">{e.description}</span>
+                  <span className="font-serif text-sm">£{Number(e.amount).toFixed(2)}</span>
                 </div>
-                <p className="mt-1 text-ink-soft">Paid by {payer?.full_name ?? "—"}</p>
+                <p className="mt-1.5 font-reading text-[13px] text-ink-soft">
+                  Paid by {payer?.full_name ?? "—"}
+                </p>
                 <ul className="mt-2 flex flex-col gap-1">
                   {mySplits.map((s) => {
                     const splitContact = (Array.isArray(s.contacts) ? s.contacts[0] : s.contacts) as
@@ -111,7 +108,10 @@ export default async function ExpensesPage() {
                       | undefined;
                     const name = splitContact?.full_name;
                     return (
-                      <li key={s.id} className="flex items-center justify-between text-xs text-ink-soft">
+                      <li
+                        key={s.id}
+                        className="flex items-center justify-between font-serif text-xs text-ink-soft"
+                      >
                         <span>
                           {name} — £{Number(s.amount).toFixed(2)}{" "}
                           {s.settled ? "(settled)" : ""}
@@ -125,7 +125,7 @@ export default async function ExpensesPage() {
             );
           })}
           {(!expenses || expenses.length === 0) && (
-            <p className="font-serif text-sm text-ink-soft">No expenses logged yet.</p>
+            <p className="font-reading text-sm text-ink-soft">No expenses logged yet.</p>
           )}
         </ul>
       </section>

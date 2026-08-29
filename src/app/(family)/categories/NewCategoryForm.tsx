@@ -24,7 +24,7 @@ export function NewCategoryForm() {
           name="title"
           required
           placeholder="e.g. Venue"
-          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-ink"
+          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
         />
       </div>
       <button

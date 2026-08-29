@@ -23,13 +23,13 @@ export function DateForm({ categoryPageId }: { categoryPageId: string }) {
         name="title"
         required
         placeholder="What's happening"
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-ink"
+        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
       />
       <input
         name="entryDate"
         type="date"
         required
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-ink"
+        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
       />
       <button
         type="submit"

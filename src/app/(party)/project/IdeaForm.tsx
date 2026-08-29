@@ -22,13 +22,13 @@ export function IdeaForm() {
         name="title"
         required
         placeholder="Idea title"
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-ink"
+        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
       />
       <textarea
         name="body"
         placeholder="Details (optional)"
         rows={2}
-        className="rounded-2xl border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-ink"
+        className="rounded-2xl border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
       />
       <button
         type="submit"
