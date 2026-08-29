@@ -28,12 +28,14 @@ export async function updateSession(request: NextRequest) {
   // Refreshes the auth session if expired — required for server components to see a valid session.
   const {
     data: { user },
+    error,
   } = await supabase.auth.getUser();
 
   const isAuthRoute =
     request.nextUrl.pathname.startsWith("/login") ||
     request.nextUrl.pathname.startsWith("/auth") ||
     request.nextUrl.pathname.startsWith("/logout") ||
+    request.nextUrl.pathname.startsWith("/whoami") ||
     request.nextUrl.pathname === "/" ||
     request.nextUrl.pathname.startsWith("/rsvp");
 
@@ -51,5 +53,19 @@ export async function updateSession(request: NextRequest) {
     return redirectResponse;
   }
 
-  return supabaseResponse;
+  // Report what the edge runtime saw, for /whoami. Must go on the *request*
+  // headers — response headers set here aren't readable from a server
+  // component via headers().
+  const diagnosticHeaders = new Headers(request.headers);
+  diagnosticHeaders.set(
+    "x-mw-user",
+    user ? `OK ${user.email}` : `NULL${error ? ` — ${error.message}` : ""}`
+  );
+  const passthrough = NextResponse.next({
+    request: { headers: diagnosticHeaders },
+  });
+  supabaseResponse.cookies.getAll().forEach((cookie) => {
+    passthrough.cookies.set(cookie);
+  });
+  return passthrough;
 }
