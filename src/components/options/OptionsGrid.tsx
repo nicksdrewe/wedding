@@ -2,6 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { selectWinner } from "@/lib/options/actions";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from "@/components/motion-primitives/dialog";
 
 export type OptionRow = {
   id: string;
@@ -34,12 +42,28 @@ export function OptionsGrid({
   options: OptionRow[];
 }) {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  // Only category-linked groups get the confirm dialog first — that's the
+  // path that rewrites the live budget/diary/contacts everywhere they
+  // appear, which is worth a deliberate stop. A standalone (Project
+  // Management) group's winner is informational only, so it goes straight
+  // into the commit ritual.
+  const [pendingId, setPendingId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   const hasWinner = options.some((o) => o.is_winner);
+  const pendingOption = options.find((o) => o.id === pendingId);
 
-  function select(optionId: string) {
+  function requestSelect(optionId: string) {
     if (confirmingId || hasWinner) return;
+    if (categoryPageId) {
+      setPendingId(optionId);
+      return;
+    }
+    commit(optionId);
+  }
+
+  function commit(optionId: string) {
+    setPendingId(null);
     setConfirmingId(optionId);
     setTimeout(() => {
       startTransition(async () => {
@@ -95,7 +119,7 @@ export function OptionsGrid({
             <button
               type="button"
               disabled={!!confirmingId}
-              onClick={() => select(o.id)}
+              onClick={() => requestSelect(o.id)}
               className="mt-4 rounded-full border border-ink/20 px-4.5 py-2 font-serif text-xs text-ink-soft transition hover:border-ink/40 disabled:opacity-60"
             >
               {confirmingId === o.id ? "Confirming…" : "Select this option"}
@@ -108,6 +132,32 @@ export function OptionsGrid({
           No options logged yet — add at least two to compare.
         </p>
       )}
+
+      <Dialog open={!!pendingId} onOpenChange={(open) => !open && setPendingId(null)}>
+        <DialogContent className="w-[320px] max-w-[90vw] bg-cream p-7">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-base font-semibold text-ink">
+              Confirm {pendingOption?.name}?
+            </DialogTitle>
+            <DialogDescription className="font-reading text-sm text-ink-soft">
+              This updates the cost, date and contact for this category
+              everywhere they appear.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-5 flex gap-2.5">
+            <button
+              type="button"
+              onClick={() => pendingId && commit(pendingId)}
+              className="rounded-full bg-ink px-5 py-2 font-serif text-xs text-cream transition hover:bg-ink-soft"
+            >
+              Confirm
+            </button>
+            <DialogClose className="rounded-full border border-ink/20 px-5 py-2 font-serif text-xs text-ink-soft transition hover:border-ink/40">
+              Cancel
+            </DialogClose>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

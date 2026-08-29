@@ -1,4 +1,7 @@
+import { AnimatedHeading } from "@/components/AnimatedHeading";
 import { createClient } from "@/lib/supabase/server";
+import { AnimatedNumber } from "@/components/motion-primitives/animated-number";
+import { InView } from "@/components/motion-primitives/in-view";
 import { ExpenseForm } from "./ExpenseForm";
 import { SettleButton } from "./SettleButton";
 import { ProjectTabs } from "../ProjectTabs";
@@ -44,7 +47,7 @@ export default async function ExpensesPage() {
 
   return (
     <div>
-      <h1 className="font-display text-[34px] tracking-tight">Expense Splitting</h1>
+      <AnimatedHeading className="font-display text-[34px] tracking-tight">Expense Splitting</AnimatedHeading>
       <p className="mt-2 font-reading text-[15px] text-ink-soft">
         Log a cost, split it evenly among whoever&rsquo;s in on it, settle up
         when it&rsquo;s paid back.
@@ -59,10 +62,14 @@ export default async function ExpensesPage() {
       <section className="mt-10">
         <h2 className="font-serif text-[15px] font-semibold tracking-wide">Balances</h2>
         <ul className="mt-3 flex max-w-[520px] flex-col gap-2">
-          {balances.map((b) => (
-            <li
+          {balances.map((b, i) => (
+            <InView
               key={b.name}
+              as="li"
+              once
               className="flex items-center justify-between rounded-[10px] border border-ink/10 bg-white px-4.5 py-3.5 font-serif text-[13px]"
+              variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }}
+              transition={{ duration: 0.3, delay: i * 0.05 }}
             >
               <span>{b.name}</span>
               <span
@@ -73,9 +80,11 @@ export default async function ExpensesPage() {
                 {b.balance > 0 && "owed £"}
                 {b.balance < 0 && "owes £"}
                 {b.balance === 0 && "settled up"}
-                {b.balance !== 0 && Math.abs(b.balance).toFixed(2)}
+                {b.balance !== 0 && (
+                  <AnimatedNumber value={Math.abs(b.balance)} springOptions={{ bounce: 0 }} />
+                )}
               </span>
-            </li>
+            </InView>
           ))}
           {balances.length === 0 && (
             <p className="font-reading text-sm text-ink-soft">No one to split with yet.</p>

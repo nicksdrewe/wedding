@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Botanical } from "@/components/Botanical";
+import { TextEffect } from "@/components/motion-primitives/text-effect";
 import { getAuthState, HOME_FOR_ROLE } from "@/lib/auth/roles";
 
 const WEDDING_DATE = "28 November 2026";
@@ -72,14 +73,19 @@ export default async function LandingPage() {
         <p className="font-serif text-[13px] font-medium tracking-[0.32em] text-ink-soft uppercase">
           We&rsquo;re getting married
         </p>
-        <h1
+        <TextEffect
+          as="h1"
+          per="char"
+          preset="fade-in-blur"
+          speedReveal={2.2}
+          delay={0.15}
           className="mt-5 font-hero text-[15vw] leading-[0.94] font-semibold tracking-[-0.01em] text-ink sm:text-[110px] lg:text-[148px]"
           style={{
             textShadow: "0 2px 40px rgba(76,107,82,0.22), 0 1px 0 rgba(255,255,255,0.6)",
           }}
         >
-          Nick &amp; Ellie
-        </h1>
+          Nick & Ellie
+        </TextEffect>
         <p className="mt-5 font-reading text-2xl text-ink-soft italic md:text-[26px]">
           {WEDDING_DATE}
         </p>

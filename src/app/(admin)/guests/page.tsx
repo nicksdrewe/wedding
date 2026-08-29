@@ -1,4 +1,6 @@
+import { AnimatedHeading } from "@/components/AnimatedHeading";
 import { createClient } from "@/lib/supabase/server";
+import { InView } from "@/components/motion-primitives/in-view";
 import { AddContactForm } from "./AddContactForm";
 
 const STATUS_STYLE: Record<string, string> = {
@@ -16,7 +18,7 @@ export default async function GuestsPage() {
 
   return (
     <div>
-      <h1 className="font-display text-[34px] tracking-tight">Guest List</h1>
+      <AnimatedHeading className="font-display text-[34px] tracking-tight">Guest List</AnimatedHeading>
       <p className="mt-2 font-reading text-[15px] text-ink-soft">
         Your working guest list — doubles as the CRM for RSVP links, tags,
         and reminders.
@@ -37,8 +39,15 @@ export default async function GuestsPage() {
             </tr>
           </thead>
           <tbody>
-            {(contacts ?? []).map((c) => (
-              <tr key={c.id} className="border-t border-ink/8">
+            {(contacts ?? []).map((c, i) => (
+              <InView
+                key={c.id}
+                as="tr"
+                once
+                variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }}
+                transition={{ duration: 0.3, delay: Math.min(i, 12) * 0.03 }}
+                className="border-t border-ink/8"
+              >
                 <td className="px-5 py-3.5">{c.full_name}</td>
                 <td className="px-5 py-3.5">{c.email}</td>
                 <td className="px-5 py-3.5 capitalize">{c.role.replace("_", " ")}</td>
@@ -53,7 +62,7 @@ export default async function GuestsPage() {
                     {c.rsvp_status}
                   </span>
                 </td>
-              </tr>
+              </InView>
             ))}
             {(!contacts || contacts.length === 0) && (
               <tr>

@@ -1,4 +1,6 @@
+import { AnimatedHeading } from "@/components/AnimatedHeading";
 import { createClient } from "@/lib/supabase/server";
+import { AnimatedNumber } from "@/components/motion-primitives/animated-number";
 
 export default async function BudgetPage() {
   const supabase = await createClient();
@@ -23,7 +25,7 @@ export default async function BudgetPage() {
 
   return (
     <div>
-      <h1 className="font-display text-[34px] tracking-tight">Budget Tracker</h1>
+      <AnimatedHeading className="font-display text-[34px] tracking-tight">Budget Tracker</AnimatedHeading>
       <p className="mt-2 font-reading text-[15px] text-ink-soft">
         Rolls up automatically from the cost fields on every category page.
       </p>
@@ -73,11 +75,18 @@ export default async function BudgetPage() {
           <tfoot>
             <tr className="border-t border-ink/15 font-semibold">
               <td className="px-5 py-3.5">Total</td>
-              <td className="px-5 py-3.5">£{totalPredicted.toFixed(2)}</td>
-              <td className="px-5 py-3.5">£{totalActual.toFixed(2)}</td>
+              <td className="px-5 py-3.5">
+                £<AnimatedNumber value={totalPredicted} springOptions={{ bounce: 0 }} />
+              </td>
+              <td className="px-5 py-3.5">
+                £<AnimatedNumber value={totalActual} springOptions={{ bounce: 0 }} />
+              </td>
               <td className={`px-5 py-3.5 ${totalActual > totalPredicted ? "text-alert" : "text-accent"}`}>
                 {totalActual > totalPredicted ? "+" : "−"}£
-                {Math.abs(totalActual - totalPredicted).toFixed(2)}
+                <AnimatedNumber
+                  value={Math.abs(totalActual - totalPredicted)}
+                  springOptions={{ bounce: 0 }}
+                />
               </td>
             </tr>
           </tfoot>

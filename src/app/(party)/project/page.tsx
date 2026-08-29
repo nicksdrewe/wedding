@@ -1,3 +1,4 @@
+import { AnimatedHeading } from "@/components/AnimatedHeading";
 import { createClient } from "@/lib/supabase/server";
 import { OptionGroupPanel } from "@/components/options/OptionGroupPanel";
 import { IdeaForm } from "./IdeaForm";
@@ -34,7 +35,7 @@ export default async function ProjectPage() {
 
   return (
     <div>
-      <h1 className="font-display text-[34px] tracking-tight">Project Management</h1>
+      <AnimatedHeading className="font-display text-[34px] tracking-tight">Project Management</AnimatedHeading>
       <p className="mt-2 font-reading text-[15px] text-ink-soft">
         Ideas, plans, and who&rsquo;s doing what — plus expense splitting.
       </p>

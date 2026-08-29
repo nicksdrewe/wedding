@@ -2,6 +2,11 @@
 
 import { use, useEffect, useState } from "react";
 import { Botanical } from "@/components/Botanical";
+import {
+  Disclosure,
+  DisclosureTrigger,
+  DisclosureContent,
+} from "@/components/motion-primitives/disclosure";
 
 type EventRow = { id: string; name: string; starts_at: string | null; location: string | null };
 type RsvpRow = {
@@ -170,6 +175,8 @@ function EventCard({
   onSubmit: (form: HTMLFormElement, attending: boolean) => void;
 }) {
   const [attending, setAttending] = useState<boolean | null>(existing?.attending ?? null);
+  const hasExtras = !!(existing?.dietary_requirements || existing?.notes);
+  const [extrasOpen, setExtrasOpen] = useState(hasExtras);
 
   return (
     <form
@@ -233,20 +240,34 @@ function EventCard({
         </div>
       )}
 
-      <textarea
-        name="dietaryRequirements"
-        placeholder="Dietary requirements"
-        defaultValue={existing?.dietary_requirements ?? ""}
-        className="mt-3 w-full rounded-2xl border border-ink/20 bg-white px-4.5 py-3 font-reading text-sm outline-none focus:border-accent"
-        rows={2}
-      />
-      <textarea
-        name="notes"
-        placeholder="Anything else we should know?"
-        defaultValue={existing?.notes ?? ""}
-        className="mt-2.5 w-full rounded-2xl border border-ink/20 bg-white px-4.5 py-3 font-reading text-sm outline-none focus:border-accent"
-        rows={2}
-      />
+      <Disclosure open={extrasOpen} onOpenChange={setExtrasOpen} className="mt-3">
+        <DisclosureTrigger>
+          <button
+            type="button"
+            className="font-serif text-xs text-ink-soft underline underline-offset-2"
+          >
+            {extrasOpen ? "− Hide" : "+ Add"} dietary requirements &amp; notes
+          </button>
+        </DisclosureTrigger>
+        <DisclosureContent>
+          <div className="flex flex-col gap-2.5 pt-3">
+            <textarea
+              name="dietaryRequirements"
+              placeholder="Dietary requirements"
+              defaultValue={existing?.dietary_requirements ?? ""}
+              className="w-full rounded-2xl border border-ink/20 bg-white px-4.5 py-3 font-reading text-sm outline-none focus:border-accent"
+              rows={2}
+            />
+            <textarea
+              name="notes"
+              placeholder="Anything else we should know?"
+              defaultValue={existing?.notes ?? ""}
+              className="w-full rounded-2xl border border-ink/20 bg-white px-4.5 py-3 font-reading text-sm outline-none focus:border-accent"
+              rows={2}
+            />
+          </div>
+        </DisclosureContent>
+      </Disclosure>
 
       <div className="mt-5 flex items-center justify-between">
         <button
