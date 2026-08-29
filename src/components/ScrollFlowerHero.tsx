@@ -5,7 +5,6 @@ import { ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { TextEffect } from "@/components/motion-primitives/text-effect";
 
 const FRAME_COUNT = 129;
 const FRAME_SRC = (i: number) => `/hero-frames/frame-${String(i + 1).padStart(4, "0")}.jpg`;
@@ -13,18 +12,39 @@ const FRAME_SRC = (i: number) => `/hero-frames/frame-${String(i + 1).padStart(4,
 // heights. Longer = slower/more deliberate scrub per frame.
 const PIN_DISTANCE_VH = 340;
 
-// The frame-index tween's duration is set explicitly to FRAME_COUNT - 1 (see
-// below), so 1 timeline "time unit" = exactly 1 frame. Every position below
-// is a literal frame number, not a guessed fraction — "20 frames earlier"
-// has an exact, checkable meaning against these.
+// The frame-index tween's duration is set explicitly to FRAME_COUNT - 1, so
+// 1 timeline "time unit" = exactly 1 frame — every position below is a
+// literal, checkable frame number.
+//
+// Intro build, entirely scroll-scrubbed (reversible — scroll up and it
+// un-builds in the same order): the centred prompt is the only thing
+// visible at rest, then as scrolling starts each piece fades/rises/
+// sharpens in in sequence — Nick, then Ellie, then the eyebrow line, then
+// the date — before the whole assembled block rolls away and the CTA
+// takes over.
+const PROMPT_FADE_SPAN = 5;
+const NICK_IN_FRAME = 3;
+const NICK_IN_SPAN = 8;
+const ELLIE_IN_FRAME = 10;
+const ELLIE_IN_SPAN = 8;
+const EYEBROW_IN_FRAME = 17;
+const EYEBROW_IN_SPAN = 7;
+const DATE_IN_FRAME = 23;
+const DATE_IN_SPAN = 7;
 const HEADLINE_EXIT_FRAME = 39;
 const HEADLINE_EXIT_SPAN = 20;
-const CTA_ENTER_FRAME = 47; // 20 frames earlier than the previous 67
+const CTA_ENTER_FRAME = 47;
 const CTA_ENTER_SPAN = 26;
 const FOOTER_FRAME = 108;
 const FOOTER_SPAN = 18;
 
 const SCROLL_HINT_URGENT_MS = 10_000;
+
+// fade + rise + sharpen-from-blur — the one reveal "shape" used for every
+// scroll-scrubbed text piece below, so they read as one consistent motion
+// language even though each is its own tween on its own frame window.
+const REVEAL_FROM = { opacity: 0, y: 16, filter: "blur(10px)" };
+const REVEAL_TO_BASE = { opacity: 1, y: 0, filter: "blur(0px)", ease: "power2.out" };
 
 export type HeroCta =
   | { kind: "guest" }
@@ -67,7 +87,12 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
   const headlineRef = useRef<HTMLDivElement>(null);
+  const nickRef = useRef<HTMLSpanElement>(null);
+  const ellieRef = useRef<HTMLSpanElement>(null);
+  const eyebrowRef = useRef<HTMLParagraphElement>(null);
+  const dateRef = useRef<HTMLParagraphElement>(null);
   const promptRef = useRef<HTMLDivElement>(null);
+  const promptInnerRef = useRef<HTMLDivElement>(null);
   const footerRef = useRef<HTMLParagraphElement>(null);
 
   const imagesRef = useRef<HTMLImageElement[]>([]);
@@ -202,12 +227,21 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
         onUpdate: () => drawFrame(Math.round(frameStateRef.current.frame)),
       });
 
-      // Scroll prompt: present at rest, fades as soon as scrubbing starts.
-      tl.to(promptRef.current, { opacity: 0, y: -12, duration: 6, ease: "power1.out" }, 0);
+      // The centred prompt is the only thing on screen at rest; it fades
+      // the instant scrubbing starts to hand off to the name build-in.
+      tl.to(promptRef.current, { opacity: 0, y: -12, duration: PROMPT_FADE_SPAN, ease: "power1.out" }, 0);
 
-      // Headline rolls up and away right as the petals visibly start
-      // separating — rotateX + a bottom transform-origin reads as rolling
-      // away rather than just fading.
+      // Nick, then Ellie, then the framing copy above and below them —
+      // each its own scroll-scrubbed reveal, so scrolling back up un-builds
+      // them in reverse.
+      tl.fromTo(nickRef.current, REVEAL_FROM, { ...REVEAL_TO_BASE, duration: NICK_IN_SPAN }, NICK_IN_FRAME);
+      tl.fromTo(ellieRef.current, REVEAL_FROM, { ...REVEAL_TO_BASE, duration: ELLIE_IN_SPAN }, ELLIE_IN_FRAME);
+      tl.fromTo(eyebrowRef.current, REVEAL_FROM, { ...REVEAL_TO_BASE, duration: EYEBROW_IN_SPAN }, EYEBROW_IN_FRAME);
+      tl.fromTo(dateRef.current, REVEAL_FROM, { ...REVEAL_TO_BASE, duration: DATE_IN_SPAN }, DATE_IN_FRAME);
+
+      // Once fully assembled, the whole block rolls up and away right as
+      // the petals visibly start separating — rotateX + a bottom
+      // transform-origin reads as rolling away rather than just fading.
       tl.to(
         headlineRef.current,
         { opacity: 0, y: -60, rotateX: -70, duration: HEADLINE_EXIT_SPAN, ease: "power2.in" },
@@ -249,15 +283,19 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
       <section className="relative flex h-screen items-center justify-center overflow-hidden bg-ink">
         <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
 
-        {/* Cinematic edge vignette — deliberately weak at dead centre, so it
-            alone can't be relied on for text contrast (see the scrim panels
-            below, which are what actually guarantees it). */}
+        {/* One flat, page-wide wash — not a box behind any one piece of
+            text — plus the existing edge vignette for cinematic depth.
+            Alpha chosen from actual WCAG math (see commit message) against
+            the lightest plausible frame background, paired with every text
+            size below qualifying for the "large text" 3:1 AA threshold
+            rather than the stricter 4.5:1 normal-text one. */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-ink/48" />
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse at 50% 42%, rgba(23,20,15,0) 30%, rgba(23,20,15,0.55) 100%)",
+              "radial-gradient(ellipse at 50% 42%, rgba(23,20,15,0) 30%, rgba(23,20,15,0.4) 100%)",
           }}
         />
 
@@ -270,41 +308,87 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
           </div>
         )}
 
-        {/* Headline and CTA share the exact same centred position, stacked
-            and cross-faded via GSAP, so the roll-away/roll-in reads as one
-            continuous swap rather than two independently placed blocks.
-            Each sits on its own dark scrim panel — the source frames are a
-            light grey backdrop throughout, so near-white text needs a
-            guaranteed-dark surface under it, not just a text-shadow, to
-            hold WCAG-legible contrast regardless of which frame is showing. */}
+        {/* Prompt, headline and CTA all share the exact same centred
+            position, stacked in one perspective container and driven
+            entirely by the scrubbed timeline above — no independent
+            mount-triggered animation, so scrolling up un-builds everything
+            in reverse. */}
         <div className="absolute inset-0" style={{ perspective: 1000 }}>
+          <div
+            ref={promptRef}
+            className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center"
+          >
+            <div
+              ref={promptInnerRef}
+              className="flex flex-col items-center gap-3"
+              style={{
+                animation: ready
+                  ? hintUrgent
+                    ? "attentionPulse 1.3s ease-in-out infinite"
+                    : undefined
+                  : undefined,
+              }}
+            >
+              <span
+                aria-hidden="true"
+                className={`rounded-full bg-accent-soft ${hintUrgent ? "h-5 w-5" : "h-3.5 w-3.5"}`}
+                style={{
+                  boxShadow: "0 0 20px 7px rgba(124,148,130,0.8)",
+                  animation: ready ? "glowPulse 2.6s ease-in-out infinite" : undefined,
+                }}
+              />
+              <p
+                className={`font-serif font-bold tracking-[0.24em] text-white uppercase ${
+                  hintUrgent ? "text-2xl" : "text-xl"
+                }`}
+                style={{ textShadow: "0 2px 16px rgba(0,0,0,0.7), 0 1px 3px rgba(0,0,0,0.9)" }}
+              >
+                Scroll to explore
+              </p>
+              <ChevronDown
+                aria-hidden="true"
+                className={`text-white ${hintUrgent ? "h-9 w-9" : "h-7 w-7"}`}
+                style={{ filter: "drop-shadow(0 2px 10px rgba(0,0,0,0.7))" }}
+                strokeWidth={2.5}
+              />
+            </div>
+          </div>
+
           <div
             ref={headlineRef}
             className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center"
             style={{ transformOrigin: "50% 100%" }}
           >
-            <div className="rounded-[28px] bg-ink/72 px-8 py-9 backdrop-blur-[3px] sm:px-14 sm:py-11">
-              <p className="font-serif text-[13px] font-semibold tracking-[0.32em] text-cream uppercase">
-                We&rsquo;re getting married
-              </p>
-              <TextEffect
-                as="h1"
-                per="char"
-                preset="fade-in-blur"
-                speedReveal={2.2}
-                delay={0.15}
-                className="mt-5 font-hero text-[15vw] leading-[0.94] font-semibold tracking-[-0.01em] text-white sm:text-[110px] lg:text-[148px]"
-                style={{ textShadow: "0 2px 24px rgba(0,0,0,0.65), 0 1px 3px rgba(0,0,0,0.85)" }}
+            <p
+              ref={eyebrowRef}
+              className="font-serif text-xl font-bold tracking-[0.28em] text-white uppercase"
+              style={{ textShadow: "0 2px 14px rgba(0,0,0,0.65), 0 1px 3px rgba(0,0,0,0.85)" }}
+            >
+              We&rsquo;re getting married
+            </p>
+            <h1 className="mt-5 font-hero text-[15vw] leading-[0.94] font-semibold tracking-[-0.01em] text-white sm:text-[110px] lg:text-[148px]">
+              <span
+                ref={nickRef}
+                className="inline-block"
+                style={{ textShadow: "0 2px 24px rgba(0,0,0,0.7), 0 1px 3px rgba(0,0,0,0.9)" }}
               >
-                Nick & Ellie
-              </TextEffect>
-              <p
-                className="mt-5 font-reading text-2xl text-cream italic md:text-[26px]"
-                style={{ textShadow: "0 1px 12px rgba(0,0,0,0.55)" }}
+                Nick
+              </span>{" "}
+              <span
+                ref={ellieRef}
+                className="inline-block"
+                style={{ textShadow: "0 2px 24px rgba(0,0,0,0.7), 0 1px 3px rgba(0,0,0,0.9)" }}
               >
-                28 November 2026
-              </p>
-            </div>
+                &amp; Ellie
+              </span>
+            </h1>
+            <p
+              ref={dateRef}
+              className="mt-5 font-reading text-2xl text-cream italic md:text-[28px]"
+              style={{ textShadow: "0 1px 14px rgba(0,0,0,0.6)" }}
+            >
+              28 November 2026
+            </p>
           </div>
 
           <div
@@ -312,68 +396,28 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
             className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center opacity-0"
             style={{ transformOrigin: "50% 0%" }}
           >
-            <div className="max-w-lg rounded-[28px] bg-ink/72 px-8 py-9 backdrop-blur-[3px] sm:px-14 sm:py-11">
-              <p className="font-serif text-[13px] font-semibold tracking-[0.32em] text-cream uppercase">
-                {copy.eyebrow}
-              </p>
-              <h2
-                className="mt-4 font-hero text-[38px] leading-[1.05] font-semibold tracking-[-0.01em] text-white sm:text-[50px]"
-                style={{ textShadow: "0 2px 20px rgba(0,0,0,0.6), 0 1px 3px rgba(0,0,0,0.8)" }}
-              >
-                {copy.heading}
-              </h2>
-              <p
-                className="mt-4 font-reading text-lg text-cream italic"
-                style={{ textShadow: "0 1px 12px rgba(0,0,0,0.55)" }}
-              >
-                {copy.body}
-              </p>
-              <div className="mt-8 flex flex-wrap justify-center gap-4">
-                <PrimaryButton href={copy.primary.href}>{copy.primary.label}</PrimaryButton>
-                <GlassButton href={copy.secondary.href}>{copy.secondary.label}</GlassButton>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div
-          ref={promptRef}
-          className="absolute bottom-12 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2.5"
-        >
-          {/* Inner wrapper carries the size/pulse animation; the outer
-              promptRef above is left untouched by anything but GSAP's own
-              opacity/y tween, so the two never fight over the transform. */}
-          <div
-            className="flex flex-col items-center gap-2.5 rounded-full bg-ink/72 px-6 py-4 backdrop-blur-[3px]"
-            style={{
-              animation: ready
-                ? hintUrgent
-                  ? "attentionPulse 1.3s ease-in-out infinite, bob 2.6s ease-in-out infinite"
-                  : "bob 2.6s ease-in-out infinite"
-                : undefined,
-              transition: "transform 400ms ease",
-            }}
-          >
-            <span
-              aria-hidden="true"
-              className={`rounded-full bg-accent-soft ${hintUrgent ? "h-4 w-4" : "h-3 w-3"}`}
-              style={{
-                boxShadow: "0 0 18px 6px rgba(124,148,130,0.75)",
-                animation: ready ? "glowPulse 2.6s ease-in-out infinite" : undefined,
-              }}
-            />
             <p
-              className={`font-serif font-semibold tracking-[0.22em] text-cream uppercase ${
-                hintUrgent ? "text-sm" : "text-xs"
-              }`}
+              className="font-serif text-xl font-bold tracking-[0.28em] text-white uppercase"
+              style={{ textShadow: "0 2px 14px rgba(0,0,0,0.65), 0 1px 3px rgba(0,0,0,0.85)" }}
             >
-              Scroll to explore
+              {copy.eyebrow}
             </p>
-            <ChevronDown
-              aria-hidden="true"
-              className={`text-cream ${hintUrgent ? "h-6 w-6" : "h-4 w-4"}`}
-              strokeWidth={2.5}
-            />
+            <h2
+              className="mt-4 font-hero text-[38px] leading-[1.05] font-semibold tracking-[-0.01em] text-white sm:text-[50px]"
+              style={{ textShadow: "0 2px 20px rgba(0,0,0,0.65), 0 1px 3px rgba(0,0,0,0.85)" }}
+            >
+              {copy.heading}
+            </h2>
+            <p
+              className="mt-4 max-w-md font-reading text-2xl text-cream italic"
+              style={{ textShadow: "0 1px 14px rgba(0,0,0,0.6)" }}
+            >
+              {copy.body}
+            </p>
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
+              <PrimaryButton href={copy.primary.href}>{copy.primary.label}</PrimaryButton>
+              <GlassButton href={copy.secondary.href}>{copy.secondary.label}</GlassButton>
+            </div>
           </div>
         </div>
 
@@ -382,7 +426,7 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
             settles at rest, where it reads as a quiet signature. */}
         <p
           ref={footerRef}
-          className="absolute bottom-5 left-1/2 z-10 -translate-x-1/2 text-center font-serif text-[10px] tracking-[0.2em] text-cream/40 uppercase opacity-0"
+          className="absolute bottom-5 left-1/2 z-10 -translate-x-1/2 text-center font-serif text-xs tracking-[0.2em] text-cream/50 uppercase opacity-0"
           style={{ textShadow: "0 1px 8px rgba(0,0,0,0.5)" }}
         >
           weddingsweddings.co.uk
