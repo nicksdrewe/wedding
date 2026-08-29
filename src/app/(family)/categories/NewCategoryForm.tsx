@@ -1,18 +1,24 @@
 "use client";
 
-import { useRef, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { createCategoryPage } from "./actions";
 
 export function NewCategoryForm() {
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   return (
     <form
       ref={formRef}
       action={(formData) =>
         startTransition(async () => {
-          await createCategoryPage(formData);
+          setError(null);
+          const result = await createCategoryPage(formData);
+          if (result?.error) {
+            setError(result.error);
+            return;
+          }
           formRef.current?.reset();
         })
       }
@@ -34,6 +40,7 @@ export function NewCategoryForm() {
       >
         {pending ? "Adding…" : "Add category"}
       </button>
+      {error && <p className="pb-2 font-reading text-xs text-alert">{error}</p>}
     </form>
   );
 }

@@ -1,18 +1,24 @@
 "use client";
 
-import { useRef, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { addContact } from "./actions";
 
 export function AddContactForm() {
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   return (
     <form
       ref={formRef}
       action={(formData) =>
         startTransition(async () => {
-          await addContact(formData);
+          setError(null);
+          const result = await addContact(formData);
+          if (result?.error) {
+            setError(result.error);
+            return;
+          }
           formRef.current?.reset();
         })
       }
@@ -65,6 +71,7 @@ export function AddContactForm() {
       >
         {pending ? "Adding…" : "Add guest"}
       </button>
+      {error && <p className="pb-2 font-reading text-xs text-alert">{error}</p>}
     </form>
   );
 }

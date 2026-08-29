@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { updateCategoryCost } from "../actions";
 
 export function CostForm({
@@ -13,10 +13,17 @@ export function CostForm({
   actualCost: number | string;
 }) {
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   return (
     <form
-      action={(formData) => startTransition(() => updateCategoryCost(formData))}
+      action={(formData) =>
+        startTransition(async () => {
+          setError(null);
+          const result = await updateCategoryCost(formData);
+          if (result?.error) setError(result.error);
+        })
+      }
       className="mt-2 flex flex-wrap items-end gap-3"
     >
       <input type="hidden" name="categoryPageId" value={categoryPageId} />
@@ -47,6 +54,7 @@ export function CostForm({
       >
         {pending ? "Saving…" : "Save"}
       </button>
+      {error && <p className="w-full font-reading text-xs text-alert">{error}</p>}
     </form>
   );
 }

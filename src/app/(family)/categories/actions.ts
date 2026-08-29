@@ -16,12 +16,30 @@ export async function createCategoryPage(formData: FormData) {
   const title = z.string().min(1).parse(formData.get("title"));
   const supabase = await createClient();
 
-  await supabase.from("category_pages").insert({
-    title,
-    slug: slugify(title),
-  });
+  // slug has a unique constraint (0001_init.sql) — two titles that
+  // normalise to the same slug ("Venue" / "venue ") previously failed this
+  // insert silently (the error was never checked), so the page looked like
+  // it did nothing while an earlier, differently-titled category with the
+  // same slug sat there unexplained. Dedupe against existing slugs instead
+  // of just hoping for the best.
+  const base = slugify(title);
+  const { data: clashes } = await supabase
+    .from("category_pages")
+    .select("slug")
+    .like("slug", `${base}%`);
+
+  const taken = new Set((clashes ?? []).map((c) => c.slug));
+  let slug = base;
+  let n = 2;
+  while (taken.has(slug)) {
+    slug = `${base}-${n}`;
+    n += 1;
+  }
+
+  const { error } = await supabase.from("category_pages").insert({ title, slug });
 
   revalidatePath("/categories");
+  return { error: error?.message ?? null };
 }
 
 const costSchema = z.object({
@@ -45,25 +63,24 @@ export async function updateCategoryCost(formData: FormData) {
     .eq("category_page_id", parsed.categoryPageId)
     .maybeSingle();
 
-  if (existing) {
-    await supabase
-      .from("category_costs")
-      .update({
+  const { error } = existing
+    ? await supabase
+        .from("category_costs")
+        .update({
+          predicted_cost: parsed.predictedCost,
+          actual_cost: parsed.actualCost,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existing.id)
+    : await supabase.from("category_costs").insert({
+        category_page_id: parsed.categoryPageId,
         predicted_cost: parsed.predictedCost,
         actual_cost: parsed.actualCost,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", existing.id);
-  } else {
-    await supabase.from("category_costs").insert({
-      category_page_id: parsed.categoryPageId,
-      predicted_cost: parsed.predictedCost,
-      actual_cost: parsed.actualCost,
-    });
-  }
+      });
 
   revalidatePath("/categories");
   revalidatePath("/budget");
+  return { error: error?.message ?? null };
 }
 
 const contactSchema = z.object({
@@ -84,7 +101,7 @@ export async function addCategoryContact(formData: FormData) {
   });
 
   const supabase = await createClient();
-  await supabase.from("category_contacts").insert({
+  const { error } = await supabase.from("category_contacts").insert({
     category_page_id: parsed.categoryPageId,
     name: parsed.name,
     role: parsed.role ?? null,
@@ -93,6 +110,7 @@ export async function addCategoryContact(formData: FormData) {
   });
 
   revalidatePath("/categories");
+  return { error: error?.message ?? null };
 }
 
 const dateSchema = z.object({
@@ -109,7 +127,7 @@ export async function addCategoryDate(formData: FormData) {
   });
 
   const supabase = await createClient();
-  await supabase.from("diary_entries").insert({
+  const { error } = await supabase.from("diary_entries").insert({
     title: parsed.title,
     entry_date: parsed.entryDate,
     source: "category_page",
@@ -118,4 +136,5 @@ export async function addCategoryDate(formData: FormData) {
 
   revalidatePath("/categories");
   revalidatePath("/diary");
+  return { error: error?.message ?? null };
 }

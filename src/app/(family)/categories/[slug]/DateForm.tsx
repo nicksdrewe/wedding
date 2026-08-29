@@ -1,18 +1,24 @@
 "use client";
 
-import { useRef, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { addCategoryDate } from "../actions";
 
 export function DateForm({ categoryPageId }: { categoryPageId: string }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   return (
     <form
       ref={formRef}
       action={(formData) =>
         startTransition(async () => {
-          await addCategoryDate(formData);
+          setError(null);
+          const result = await addCategoryDate(formData);
+          if (result?.error) {
+            setError(result.error);
+            return;
+          }
           formRef.current?.reset();
         })
       }
@@ -38,6 +44,7 @@ export function DateForm({ categoryPageId }: { categoryPageId: string }) {
       >
         {pending ? "Adding…" : "Add date"}
       </button>
+      {error && <p className="w-full font-reading text-xs text-alert">{error}</p>}
     </form>
   );
 }

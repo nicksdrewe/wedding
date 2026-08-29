@@ -22,7 +22,7 @@ export async function addContact(formData: FormData) {
   });
 
   const supabase = await createClient();
-  await supabase.from("contacts").insert({
+  const { error } = await supabase.from("contacts").insert({
     full_name: parsed.fullName,
     email: parsed.email || null,
     phone: parsed.phone || null,
@@ -31,4 +31,5 @@ export async function addContact(formData: FormData) {
   });
 
   revalidatePath("/guests");
+  return { error: error?.message ?? null };
 }
