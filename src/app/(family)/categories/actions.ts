@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentProfile } from "@/lib/auth/roles";
 
 function slugify(title: string) {
   return title
@@ -36,10 +37,30 @@ export async function createCategoryPage(formData: FormData) {
     n += 1;
   }
 
-  const { error } = await supabase.from("category_pages").insert({ title, slug });
+  const { data: page, error } = await supabase
+    .from("category_pages")
+    .insert({ title, slug })
+    .select("id")
+    .single();
+
+  if (error) {
+    revalidatePath("/categories");
+    return { error: error.message };
+  }
+
+  // Every category gets its options board from the moment it exists —
+  // there's no real reason for a category to ever NOT have one (see
+  // migration 0007, which backfills this for categories created before
+  // this existed). Not fatal if this fails: the category itself was
+  // created fine, and the category page falls back to a manual "Start
+  // Options Mode" button for the rare case this is missing.
+  const profile = await getCurrentProfile();
+  await supabase
+    .from("option_groups")
+    .insert({ category_page_id: page.id, title, created_by: profile?.id ?? null });
 
   revalidatePath("/categories");
-  return { error: error?.message ?? null };
+  return { error: null };
 }
 
 const costSchema = z.object({
