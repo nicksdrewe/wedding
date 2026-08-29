@@ -390,10 +390,15 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
               ref={promptInnerRef}
               className="flex flex-col items-center gap-3"
               style={{
+                // Gentle continuous float from the moment it's ready, not
+                // just once the 10s escalation kicks in — otherwise the
+                // hint reads as static/frozen for the first 10 seconds,
+                // which is exactly the window most likely to lose someone
+                // who doesn't think to scroll.
                 animation: ready
                   ? hintUrgent
                     ? "attentionPulse 1.3s ease-in-out infinite"
-                    : undefined
+                    : "bob 3.2s ease-in-out infinite"
                   : undefined,
               }}
             >
@@ -485,17 +490,19 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
             <div className="mt-8 flex flex-wrap justify-center gap-4">
               {cta.kind === "guest" ? (
                 <>
-                  {/* Only these two actually animate (they morph into
-                      panels) — position: relative lifts each into its own
-                      stacking context so their motion stays above the
-                      static Engagement party link beside them instead of
-                      tucking underneath. */}
-                  <div className="relative z-10">
-                    <RsvpMorphingButton />
-                  </div>
-                  <div className="relative z-10">
-                    <SignInMorphingButton />
-                  </div>
+                  {/* Deliberately NOT wrapped in their own "relative z-10"
+                      divs: each MorphingPopoverContent is already
+                      position:fixed with its own z-40, meant to compare
+                      against the page's real top-level stacking context.
+                      Wrapping each trigger in its own positioned+z-indexed
+                      div traps its whole popover (including that z-40)
+                      inside a small sibling stacking context instead —
+                      whichever trigger is later in the DOM (Sign in) then
+                      paints its entire popover over the other's, in full,
+                      regardless of the z-40. That was the "sign in sits in
+                      front of RSVP" bug. */}
+                  <RsvpMorphingButton />
+                  <SignInMorphingButton />
                 </>
               ) : (
                 <>
@@ -674,8 +681,20 @@ function RsvpMorphingButton() {
               hairline — visible enough to register as a rim through the
               blur without reading as a thick outline. */}
           <div ref={spotlightWrapRef} className="relative overflow-hidden rounded-[28px] bg-cream/10 p-[2px]">
+            {/* A self-contained arbitrary radial-gradient, not the
+                from/via/to colour-stop utilities — confirmed by direct
+                inspection that this project's Tailwind build never
+                populates the --tw-gradient-stops variable from those
+                utilities alone (v4 seems to need a direction utility such
+                as bg-linear or bg-radial present to wire that variable up
+                at all), which is what the vendored Spotlight component's
+                own base classes rely on. Baking the colours directly into
+                the gradient function sidesteps that variable entirely;
+                twMerge still correctly lets this override the base
+                component's own background image value, since both are
+                recognised as the same conflict group. */}
             <Spotlight
-              className="from-accent-soft via-cream to-accent-soft/80 blur-3xl"
+              className="bg-[radial-gradient(circle,#7c9482,#f4f1ec_45%,transparent_78%)] blur-3xl"
               size={260}
             />
             <div className="relative h-full w-full rounded-[26px] bg-gradient-to-b from-ink/55 via-ink/72 to-ink/85 p-8 text-center text-cream shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-2xl">
@@ -751,13 +770,30 @@ function SignInMorphingButton() {
           </button>
         </MorphingPopoverTrigger>
         <MorphingPopoverContent
-          // See RsvpMorphingButton for why the dark: variant needs
-          // neutralising explicitly here too.
-          className="fixed top-1/2 left-1/2 z-40 max-h-[85vh] w-[min(90vw,26rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[28px] border-none bg-transparent p-0 text-ink shadow-[0_30px_90px_rgba(0,0,0,0.35)] dark:border-none dark:bg-transparent dark:text-ink"
+          // Sized/positioned only, no height cap here — see the comment
+          // below on why max-height + scrolling lives one level deeper
+          // instead of on this element. See RsvpMorphingButton for why the
+          // dark: variant needs neutralising explicitly too.
+          className="fixed top-1/2 left-1/2 z-40 w-[min(90vw,26rem)] -translate-x-1/2 -translate-y-1/2 rounded-[28px] border-none bg-transparent p-0 text-ink shadow-[0_30px_90px_rgba(0,0,0,0.35)] dark:border-none dark:bg-transparent dark:text-ink"
         >
           <div ref={spotlightWrapRef} className="relative overflow-hidden rounded-[28px] bg-ink/10 p-[2px]">
-            <Spotlight className="from-accent via-accent-soft to-accent blur-3xl" size={260} />
-            <div className="relative h-full w-full rounded-[26px] bg-gradient-to-b from-white/80 via-cream/85 to-cream-deep/90 p-8 text-center text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-2xl">
+            {/* Self-contained gradient — see RsvpMorphingButton's Spotlight
+                for why the colour-stop utilities don't work here. */}
+            <Spotlight
+              className="bg-[radial-gradient(circle,#4c6b52,#7c9482_45%,transparent_78%)] blur-3xl"
+              size={260}
+            />
+            {/* max-h/overflow-y-auto live here, not on MorphingPopoverContent
+                itself: that element carries the shared layoutId Framer
+                Motion animates between the trigger and this panel, and
+                constraining ITS height mid-animation was the likely cause
+                of the panel visually vanishing after opening — Framer's
+                layout projection re-measuring against a height-clamped,
+                scrolling box mid-transition. Clamping one level deeper
+                keeps the FLIP-tracked box's own geometry simple and
+                stable, while the sign-in form (taller than RSVP's message)
+                still gets to scroll internally on short viewports. */}
+            <div className="relative max-h-[85vh] w-full overflow-y-auto overflow-x-hidden rounded-[26px] bg-gradient-to-b from-white/45 via-cream/55 to-cream-deep/60 p-8 text-center text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] backdrop-blur-2xl">
               <button
                 type="button"
                 onClick={() => setOpen(false)}
