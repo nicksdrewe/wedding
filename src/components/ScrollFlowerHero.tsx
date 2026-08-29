@@ -1,10 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import {
+  MorphingPopover,
+  MorphingPopoverContent,
+  MorphingPopoverTrigger,
+} from "@/components/motion-primitives/morphing-popover";
 
 const FRAME_COUNT = 129;
 const FRAME_SRC = (i: number) => `/hero-frames/frame-${String(i + 1).padStart(4, "0")}.jpg`;
@@ -31,7 +37,11 @@ const DATE_IN_FRAME = 21;
 const DATE_IN_SPAN = 8;
 const HEADLINE_EXIT_FRAME = 39;
 const HEADLINE_EXIT_SPAN = 20;
-const CTA_ENTER_FRAME = 47;
+// Starts once the headline's own roll-away is essentially finished
+// (39 + 20 = 59) rather than 12 frames into it — the two were briefly
+// overlapping mid-scroll, reading as the CTA flipping down onto still-
+// visible headline text instead of a clean handoff.
+const CTA_ENTER_FRAME = 57;
 const CTA_ENTER_SPAN = 26;
 const FOOTER_FRAME = 108;
 const FOOTER_SPAN = 18;
@@ -471,7 +481,11 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
               {copy.body}
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-4">
-              <PrimaryButton href={copy.primary.href}>{copy.primary.label}</PrimaryButton>
+              {cta.kind === "guest" ? (
+                <RsvpMorphingButton />
+              ) : (
+                <PrimaryButton href={copy.primary.href}>{copy.primary.label}</PrimaryButton>
+              )}
               <GlassButton href={copy.secondary.href}>{copy.secondary.label}</GlassButton>
             </div>
           </div>
@@ -509,19 +523,100 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
   );
 }
 
-function PrimaryButton({ href, children }: { href: string; children: React.ReactNode }) {
+// Shared by the Link-based PrimaryButton and the button-based RSVP
+// popover trigger below, so the two look identical regardless of which
+// element they actually render as.
+const PRIMARY_BUTTON_CLASS =
+  "group relative inline-block overflow-hidden rounded-full bg-gradient-to-br from-[#2b2e28] to-[#1b1d19] px-10 py-4 font-serif text-sm font-medium text-cream shadow-[0_10px_30px_rgba(76,107,82,0.35),inset_0_1px_0_rgba(255,255,255,0.15)] transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(.22,1,.36,1)] hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-[0_16px_40px_rgba(76,107,82,0.45),inset_0_1px_0_rgba(255,255,255,0.2)]";
+
+function ButtonShineLabel({ children }: { children: React.ReactNode }) {
   return (
-    <Link
-      href={href}
-      className="group relative inline-block overflow-hidden rounded-full bg-gradient-to-br from-[#2b2e28] to-[#1b1d19] px-10 py-4 font-serif text-sm font-medium text-cream shadow-[0_10px_30px_rgba(76,107,82,0.35),inset_0_1px_0_rgba(255,255,255,0.15)] transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(.22,1,.36,1)] hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-[0_16px_40px_rgba(76,107,82,0.45),inset_0_1px_0_rgba(255,255,255,0.2)]"
-    >
+    <>
       <span className="relative z-10">{children}</span>
       <span
         aria-hidden="true"
         className="pointer-events-none absolute top-0 left-0 h-full w-2/5 bg-gradient-to-r from-transparent via-white/35 to-transparent"
         style={{ animation: "shine 4.5s ease-in-out infinite" }}
       />
+    </>
+  );
+}
+
+function PrimaryButton({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link href={href} className={PRIMARY_BUTTON_CLASS}>
+      <ButtonShineLabel>{children}</ButtonShineLabel>
     </Link>
+  );
+}
+
+// The generic /rsvp page just tells an un-linked visitor "this isn't your
+// link yet, ask Nick or Ellie" — not enough content to justify a full page
+// navigation. Instead the RSVP button morphs in place into that same
+// message, expanding from the button itself via the shared layoutId
+// between trigger and content (see morphing-popover.tsx).
+function RsvpMorphingButton() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            key="rsvp-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 z-30 bg-ink/70 backdrop-blur-sm"
+          />
+        )}
+      </AnimatePresence>
+      <MorphingPopover
+        open={open}
+        onOpenChange={setOpen}
+        variants={{
+          initial: { opacity: 0, filter: "blur(10px)" },
+          animate: { opacity: 1, filter: "blur(0px)" },
+          exit: { opacity: 0, filter: "blur(10px)" },
+        }}
+        transition={{ type: "spring", bounce: 0.12, duration: 0.45 }}
+      >
+        <MorphingPopoverTrigger asChild>
+          <button type="button" className={PRIMARY_BUTTON_CLASS}>
+            <ButtonShineLabel>RSVP</ButtonShineLabel>
+          </button>
+        </MorphingPopoverTrigger>
+        <MorphingPopoverContent
+          // Very dark glassmorphic panel, fixed and centred over the
+          // hero's own text — not positioned relative to the trigger's
+          // DOM parent — so it reads as taking over the whole scene rather
+          // than a small dropdown near the button.
+          className="fixed top-1/2 left-1/2 z-40 w-[min(90vw,26rem)] -translate-x-1/2 -translate-y-1/2 rounded-[28px] border border-cream/15 bg-ink/90 p-8 text-center text-cream shadow-[0_30px_90px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
+        >
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            aria-label="Close"
+            className="absolute top-4 right-4 text-cream/50 transition-colors hover:text-cream"
+          >
+            <X className="h-5 w-5" strokeWidth={2} />
+          </button>
+          <p className="font-serif text-xs font-bold tracking-[0.28em] text-cream/70 uppercase">
+            You&rsquo;re invited
+          </p>
+          <h3 className="mt-3 font-hero text-2xl font-semibold text-white">
+            Check your invitation
+          </h3>
+          <p className="mt-4 font-reading text-base text-cream/85 italic">
+            Your invitation email contains a personal RSVP link — follow that
+            to respond. Can&rsquo;t find it? Let Nick or Ellie know and
+            they&rsquo;ll resend it.
+          </p>
+        </MorphingPopoverContent>
+      </MorphingPopover>
+    </>
   );
 }
 
