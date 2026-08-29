@@ -564,6 +564,33 @@ function PrimaryButton({ href, children }: { href: string; children: React.React
 // between trigger and content (see morphing-popover.tsx).
 function RsvpMorphingButton() {
   const [open, setOpen] = useState(false);
+  const spotlightWrapRef = useRef<HTMLDivElement>(null);
+
+  // Spotlight (vendored from motion-primitives) only lights up once it's
+  // seen a real mouseenter/mousemove over its parent — by design, so it
+  // reads as reactive rather than static. But a click that opens this
+  // panel doesn't itself count as "entering" it (the cursor was already
+  // there when the listener got attached), so without a nudge the glow
+  // would silently never appear unless the user happened to wiggle the
+  // mouse afterward. Fire one synthetic mousemove at the panel's centre
+  // once it's mounted, so the rim is visibly lit as soon as it settles,
+  // with real cursor movement taking over from there. The delay covers
+  // Spotlight's own two-effect mount chain (it re-renders once to learn
+  // its parent before attaching listeners) — well under the panel's own
+  // 450ms open transition, so it reads as part of the same reveal.
+  useEffect(() => {
+    if (!open) return;
+    const t = setTimeout(() => {
+      const el = spotlightWrapRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      el.dispatchEvent(new MouseEvent("mouseenter", { clientX: cx, clientY: cy }));
+      el.dispatchEvent(new MouseEvent("mousemove", { clientX: cx, clientY: cy }));
+    }, 120);
+    return () => clearTimeout(t);
+  }, [open]);
 
   return (
     <>
@@ -608,17 +635,19 @@ function RsvpMorphingButton() {
           // grey fill through. Neutralised explicitly below.
           className="fixed top-1/2 left-1/2 z-40 w-[min(90vw,26rem)] -translate-x-1/2 -translate-y-1/2 rounded-[28px] border-none bg-transparent p-0 text-cream shadow-[0_30px_90px_rgba(0,0,0,0.6)] dark:border-none dark:bg-transparent dark:text-cream"
         >
-          {/* Spotlight-border sliver: a 1px gap around the glass panel,
-              tinted just enough to read as a hairline, with the mouse-
-              tracking Spotlight glow (from motion-primitives) sitting in
-              that gap so it shows as a soft glowing rim rather than a
-              highlight sitting on top of the content. */}
-          <div className="relative overflow-hidden rounded-[28px] bg-cream/10 p-px">
+          {/* Spotlight-border: a slim gap around the glass panel, tinted
+              just enough to read as a hairline, with the mouse-tracking
+              Spotlight glow (from motion-primitives) sitting in that gap
+              so it shows as a soft glowing rim rather than a highlight
+              sitting on top of the content. 2px rather than a true 1px
+              hairline — visible enough to register as a rim through the
+              blur without reading as a thick outline. */}
+          <div ref={spotlightWrapRef} className="relative overflow-hidden rounded-[28px] bg-cream/10 p-[2px]">
             <Spotlight
               className="from-accent-soft via-cream to-accent-soft/80 blur-3xl"
-              size={200}
+              size={260}
             />
-            <div className="relative rounded-[28px] bg-gradient-to-b from-ink/55 via-ink/72 to-ink/85 p-8 text-center text-cream shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-2xl">
+            <div className="relative h-full w-full rounded-[26px] bg-gradient-to-b from-ink/55 via-ink/72 to-ink/85 p-8 text-center text-cream shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-2xl">
               <button
                 type="button"
                 onClick={() => setOpen(false)}
