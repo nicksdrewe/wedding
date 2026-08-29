@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { OptionGroupPanel } from "@/components/options/OptionGroupPanel";
 import { IdeaForm } from "./IdeaForm";
 import { TaskForm } from "./TaskForm";
 import { TaskRow } from "./TaskRow";
+import { NewOptionGroupForm } from "./NewOptionGroupForm";
 
 export default async function ProjectPage() {
   const supabase = await createClient();
 
-  const [{ data: ideas }, { data: tasks }, { data: contacts }] = await Promise.all([
+  const [{ data: ideas }, { data: tasks }, { data: contacts }, { data: optionGroups }] = await Promise.all([
     supabase
       .from("idea_boards")
       .select("id, title, body, created_at")
@@ -23,6 +25,11 @@ export default async function ProjectPage() {
       .select("id, full_name")
       .in("role", ["couple", "wedding_party"])
       .order("full_name"),
+    supabase
+      .from("option_groups")
+      .select("id, title")
+      .is("category_page_id", null)
+      .order("created_at", { ascending: false }),
   ]);
 
   return (
@@ -83,6 +90,31 @@ export default async function ProjectPage() {
           </ul>
         </section>
       </div>
+
+      <section className="mt-10">
+        <h2 className="font-serif text-lg font-semibold">
+          Compare options
+        </h2>
+        <p className="mt-1 font-serif text-sm text-ink-soft">
+          For stag/hen venues, activities — anything worth comparing before
+          deciding.
+        </p>
+        <NewOptionGroupForm />
+
+        <div className="mt-4 flex flex-col gap-6">
+          {(optionGroups ?? []).map((g) => (
+            <div key={g.id} className="rounded-2xl border border-ink/10 p-4">
+              <h3 className="font-serif font-semibold">{g.title}</h3>
+              <OptionGroupPanel groupId={g.id} categoryPageId={null} revalidate="/project" />
+            </div>
+          ))}
+          {(!optionGroups || optionGroups.length === 0) && (
+            <p className="font-serif text-sm text-ink-soft">
+              Nothing being compared yet — start a comparison above.
+            </p>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

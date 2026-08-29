@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
+import { OptionGroupPanel } from "@/components/options/OptionGroupPanel";
 import { CostForm } from "./CostForm";
 import { ContactForm } from "./ContactForm";
 import { DateForm } from "./DateForm";
+import { StartOptionsModeButton } from "./StartOptionsModeButton";
 
 export default async function CategoryDetailPage({
   params,
@@ -21,6 +23,12 @@ export default async function CategoryDetailPage({
     .maybeSingle();
 
   if (!page) notFound();
+
+  const { data: optionGroup } = await supabase
+    .from("option_groups")
+    .select("id")
+    .eq("category_page_id", page.id)
+    .maybeSingle();
 
   const [{ data: cost }, { data: contacts }, { data: dates }] = await Promise.all([
     supabase
@@ -45,6 +53,37 @@ export default async function CategoryDetailPage({
   return (
     <div className="max-w-3xl">
       <h1 className="font-script text-4xl">{page.title}</h1>
+
+      <section className="mt-8">
+        <div className="flex items-center justify-between">
+          <h2 className="font-serif text-lg font-semibold">Options</h2>
+          {isCouple && !optionGroup && (
+            <StartOptionsModeButton
+              categoryPageId={page.id}
+              title={page.title}
+              revalidate={`/categories/${page.slug}`}
+            />
+          )}
+        </div>
+        {optionGroup ? (
+          <>
+            <p className="mt-1 font-serif text-sm text-ink-soft">
+              Compare alternatives below — selecting one updates the cost,
+              key dates, and contacts for this category.
+            </p>
+            <OptionGroupPanel
+              groupId={optionGroup.id}
+              categoryPageId={page.id}
+              revalidate={`/categories/${page.slug}`}
+            />
+          </>
+        ) : (
+          <p className="mt-1 font-serif text-sm text-ink-soft">
+            Not comparing options right now — the fields below are the live
+            values for this category.
+          </p>
+        )}
+      </section>
 
       <section className="mt-8">
         <h2 className="font-serif text-lg font-semibold">Costs</h2>
