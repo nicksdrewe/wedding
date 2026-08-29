@@ -11,6 +11,7 @@ import {
   MorphingPopoverContent,
   MorphingPopoverTrigger,
 } from "@/components/motion-primitives/morphing-popover";
+import { Spotlight } from "@/components/motion-primitives/spotlight";
 
 const FRAME_COUNT = 129;
 const FRAME_SRC = (i: number) => `/hero-frames/frame-${String(i + 1).padStart(4, "0")}.jpg`;
@@ -482,7 +483,13 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-4">
               {cta.kind === "guest" ? (
-                <RsvpMorphingButton />
+                // Only this button actually animates (it morphs into the
+                // RSVP panel) — position: relative lifts it into its own
+                // stacking context so that motion stays above the static
+                // Sign in button beside it instead of tucking underneath.
+                <div className="relative z-10">
+                  <RsvpMorphingButton />
+                </div>
               ) : (
                 <PrimaryButton href={copy.primary.href}>{copy.primary.label}</PrimaryButton>
               )}
@@ -589,31 +596,50 @@ function RsvpMorphingButton() {
           </button>
         </MorphingPopoverTrigger>
         <MorphingPopoverContent
-          // Very dark glassmorphic panel, fixed and centred over the
-          // hero's own text — not positioned relative to the trigger's
-          // DOM parent — so it reads as taking over the whole scene rather
-          // than a small dropdown near the button.
-          className="fixed top-1/2 left-1/2 z-40 w-[min(90vw,26rem)] -translate-x-1/2 -translate-y-1/2 rounded-[28px] border border-cream/15 bg-ink/90 p-8 text-center text-cream shadow-[0_30px_90px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
+          // Positioning/sizing only — fixed and centred over the hero's own
+          // text, not relative to the trigger's DOM parent, so it reads as
+          // taking over the whole scene rather than a small dropdown near
+          // the button. The actual glass surface lives in the two divs
+          // below: the library's own default bg/border/padding are
+          // stripped here so they don't show through underneath it.
+          // The library's default classes include a dark: variant
+          // (dark:bg-zinc-700) that a plain `bg-transparent` doesn't
+          // cancel — this site's dev/system dark mode was leaking that
+          // grey fill through. Neutralised explicitly below.
+          className="fixed top-1/2 left-1/2 z-40 w-[min(90vw,26rem)] -translate-x-1/2 -translate-y-1/2 rounded-[28px] border-none bg-transparent p-0 text-cream shadow-[0_30px_90px_rgba(0,0,0,0.6)] dark:border-none dark:bg-transparent dark:text-cream"
         >
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            aria-label="Close"
-            className="absolute top-4 right-4 text-cream/50 transition-colors hover:text-cream"
-          >
-            <X className="h-5 w-5" strokeWidth={2} />
-          </button>
-          <p className="font-serif text-xs font-bold tracking-[0.28em] text-cream/70 uppercase">
-            You&rsquo;re invited
-          </p>
-          <h3 className="mt-3 font-hero text-2xl font-semibold text-white">
-            Check your invitation
-          </h3>
-          <p className="mt-4 font-reading text-base text-cream/85 italic">
-            Your invitation email contains a personal RSVP link — follow that
-            to respond. Can&rsquo;t find it? Let Nick or Ellie know and
-            they&rsquo;ll resend it.
-          </p>
+          {/* Spotlight-border sliver: a 1px gap around the glass panel,
+              tinted just enough to read as a hairline, with the mouse-
+              tracking Spotlight glow (from motion-primitives) sitting in
+              that gap so it shows as a soft glowing rim rather than a
+              highlight sitting on top of the content. */}
+          <div className="relative overflow-hidden rounded-[28px] bg-cream/10 p-px">
+            <Spotlight
+              className="from-accent-soft via-cream to-accent-soft/80 blur-3xl"
+              size={200}
+            />
+            <div className="relative rounded-[28px] bg-gradient-to-b from-ink/55 via-ink/72 to-ink/85 p-8 text-center text-cream shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-2xl">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="Close"
+                className="absolute top-4 right-4 text-cream/50 transition-colors hover:text-cream"
+              >
+                <X className="h-5 w-5" strokeWidth={2} />
+              </button>
+              <p className="font-serif text-xs font-bold tracking-[0.28em] text-cream/70 uppercase">
+                You&rsquo;re invited
+              </p>
+              <h3 className="mt-3 font-hero text-2xl font-semibold text-white">
+                Check your invitation
+              </h3>
+              <p className="mt-4 font-reading text-base text-cream/85 italic">
+                Your invitation email contains a personal RSVP link — follow
+                that to respond. Can&rsquo;t find it? Let Nick or Ellie know
+                and they&rsquo;ll resend it.
+              </p>
+            </div>
+          </div>
         </MorphingPopoverContent>
       </MorphingPopover>
     </>
