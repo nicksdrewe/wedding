@@ -1,6 +1,12 @@
 @import "tailwindcss";
 
 :root {
+  /* Belt-and-suspenders alongside the colorScheme viewport export in
+     layout.tsx — see that file's comment for why this matters. Some
+     browsers check this CSS property directly rather than only the meta
+     tag it renders as. */
+  color-scheme: light;
+
   --color-cream: #f4f1ec;
   --color-cream-deep: #ece7dc;
   --color-ink: #232520;

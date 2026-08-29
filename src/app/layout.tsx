@@ -38,6 +38,15 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#f4f1ec",
+  // Without this, Chrome/Edge's "force dark mode for websites" feature can
+  // auto-recolor the whole page using its own heuristics whenever the OS
+  // is in dark mode — even though every color here is already explicitly
+  // set. Those heuristics sometimes invert a text/background pair to
+  // nearly the same resulting color, which reads as "the text is just not
+  // there" regardless of what color it's actually set to. This site has
+  // exactly one deliberately-designed light theme; declaring that
+  // explicitly opts it out of any such browser-level recoloring.
+  colorScheme: "light",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

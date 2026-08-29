@@ -1,5 +1,5 @@
 'use client';
-import { ReactNode, useRef, useState } from 'react';
+import { ReactNode, useMemo, useRef, useState } from 'react';
 import {
   motion,
   useInView,
@@ -49,16 +49,32 @@ export function InView({
   // complex" against motion.create's full overload set) once a ref is
   // involved. Narrowed to just the props this component actually passes,
   // same approach as the AnimatedNumber cast.
-  const MotionComponent = motion.create(as as keyof React.JSX.IntrinsicElements) as unknown as React.ForwardRefExoticComponent<{
-    ref?: React.Ref<HTMLElement>;
-    className?: string;
-    initial?: string;
-    animate?: string;
-    variants?: InViewProps["variants"];
-    transition?: Transition;
-    onAnimationComplete?: () => void;
-    children?: ReactNode;
-  }>;
+  //
+  // Unlike `motion[tag]`, `motion.create(tag)` is NOT cached internally by
+  // framer-motion (see node_modules/framer-motion/dist/es/render/components/
+  // create-proxy.mjs — bracket access hits a Map cache, `.create` always
+  // calls `createMotionComponent` fresh). Calling it directly in the render
+  // body therefore produced a brand-new component *type* on every render,
+  // so every time `isInView`/`isViewed` flipped, React tore down the whole
+  // subtree and remounted a fresh instance — interrupting the in-flight
+  // hidden→visible animation and restarting it from `initial="hidden"`
+  // instead of letting the same instance transition through. `useMemo`d on
+  // `as` so the component type is stable across re-renders, matching what
+  // `motion[tag]` already gives you for free.
+  const MotionComponent = useMemo(
+    () =>
+      motion.create(as as keyof React.JSX.IntrinsicElements) as unknown as React.ForwardRefExoticComponent<{
+        ref?: React.Ref<HTMLElement>;
+        className?: string;
+        initial?: string;
+        animate?: string;
+        variants?: InViewProps["variants"];
+        transition?: Transition;
+        onAnimationComplete?: () => void;
+        children?: ReactNode;
+      }>,
+    [as]
+  );
 
   return (
     <MotionComponent
