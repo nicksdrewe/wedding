@@ -1,12 +1,15 @@
 import Link from "next/link";
 import type { RoleTier } from "@/lib/auth/roles";
 
+const ALL_ROLES: RoleTier[] = ["couple", "family", "wedding_party", "guest"];
+
 const LINKS: { href: string; label: string; roles: RoleTier[] }[] = [
   { href: "/categories", label: "Categories", roles: ["couple", "family"] },
   { href: "/diary", label: "Diary", roles: ["couple", "family"] },
   { href: "/project", label: "Project Management", roles: ["couple", "wedding_party"] },
   { href: "/budget", label: "Budget", roles: ["couple"] },
   { href: "/guests", label: "Guest List", roles: ["couple"] },
+  { href: "/account", label: "Account", roles: ALL_ROLES },
 ];
 
 export function SiteNav({ role }: { role: RoleTier }) {
