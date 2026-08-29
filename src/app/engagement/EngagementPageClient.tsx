@@ -10,7 +10,7 @@ import {
   DisclosureContent,
 } from "@/components/motion-primitives/disclosure";
 import { ImageUpload } from "@/components/ImageUpload";
-import { addEngagementPhoto, removeEngagementPhoto } from "@/lib/engagement/actions";
+import { addEngagementPhoto, removeEngagementPhoto, updateEngagementPhoto } from "@/lib/engagement/actions";
 
 const EASE = [0.22, 1, 0.36, 1] as [number, number, number, number];
 const FADE_UP = { hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } };
@@ -18,6 +18,7 @@ const FADE_UP = { hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }
 const VENUE_NAME = "The Black Lion";
 const VENUE_ADDRESS = "The Black Lion, Hammersmith, London";
 const PARTY_DATE = "24 October 2026";
+const PARTY_TIME = "7pm";
 
 export type EngagementPhoto = {
   id: string;
@@ -84,21 +85,47 @@ function RealPolaroidCard({
     });
   }
 
+  function handleReplaced(url: string) {
+    startTransition(async () => {
+      await updateEngagementPhoto(photo.id, url);
+    });
+  }
+
+  const image = (
+    // eslint-disable-next-line @next/next/no-img-element -- Drive-hosted, arbitrary host
+    <img src={photo.image_url} alt={photo.caption ?? "Engagement photo"} className="h-full w-full object-cover" />
+  );
+
   return (
     <div
       className="group relative rounded-[4px] border border-ink/5 bg-white p-3 pb-7 shadow-[0_14px_30px_rgba(35,37,32,0.14)]"
       style={{ transform: `rotate(${rotate}deg)` }}
     >
       <div className={`relative w-full overflow-hidden rounded-[2px] ${aspect}`}>
-        {/* eslint-disable-next-line @next/next/no-img-element -- Drive-hosted, arbitrary host */}
-        <img src={photo.image_url} alt={photo.caption ?? "Engagement photo"} className="h-full w-full object-cover" />
+        {isCouple ? (
+          // The X button below is a sibling of this label, not nested
+          // inside it — clicking it removes the photo without also
+          // opening the file picker the label wraps.
+          <ImageUpload onUploaded={handleReplaced} className="h-full w-full">
+            <div className="relative h-full w-full">
+              {image}
+              <div className="absolute inset-0 flex items-center justify-center bg-ink/0 opacity-0 transition-[opacity,background-color] duration-150 group-hover:bg-ink/35 group-hover:opacity-100">
+                <span className="rounded-full bg-cream/95 px-3 py-1 font-serif text-[11px] tracking-wide text-ink uppercase">
+                  Click to replace
+                </span>
+              </div>
+            </div>
+          </ImageUpload>
+        ) : (
+          image
+        )}
         {isCouple && (
           <button
             type="button"
             onClick={handleRemove}
             disabled={removing}
             aria-label="Remove photo"
-            className="absolute top-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-ink/70 text-cream opacity-0 transition-opacity group-hover:opacity-100 disabled:opacity-100"
+            className="absolute top-1.5 right-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-ink/70 text-cream opacity-0 transition-opacity group-hover:opacity-100 disabled:opacity-100"
           >
             {removing ? <Loader2 className="h-3 w-3 animate-spin" strokeWidth={2.5} /> : <X className="h-3 w-3" strokeWidth={2.5} />}
           </button>
@@ -111,16 +138,39 @@ function RealPolaroidCard({
   );
 }
 
-function PlaceholderPolaroidCard({ photo }: { photo: (typeof PLACEHOLDER_PHOTOS)[number] }) {
+function PlaceholderPolaroidCard({
+  photo,
+  isCouple,
+  onUploaded,
+}: {
+  photo: (typeof PLACEHOLDER_PHOTOS)[number];
+  isCouple: boolean;
+  onUploaded: (url: string) => void;
+}) {
+  const wash = (
+    <div
+      className="flex h-full w-full items-center justify-center"
+      style={{ background: `linear-gradient(135deg, ${photo.from}, ${photo.to})` }}
+    >
+      <Camera className="h-6 w-6 text-ink/25" strokeWidth={1.5} aria-hidden="true" />
+      {isCouple && (
+        <span className="absolute bottom-2 rounded-full bg-white/90 px-2.5 py-1 font-serif text-[10px] tracking-wide text-ink-soft uppercase">
+          Click to add a photo
+        </span>
+      )}
+    </div>
+  );
+
   return (
     <div className="rounded-[4px] border border-ink/5 bg-white p-3 pb-7 shadow-[0_14px_30px_rgba(35,37,32,0.14)]">
       <div className={`relative w-full overflow-hidden rounded-[2px] ${photo.aspect}`}>
-        <div
-          className="flex h-full w-full items-center justify-center"
-          style={{ background: `linear-gradient(135deg, ${photo.from}, ${photo.to})` }}
-        >
-          <Camera className="h-6 w-6 text-ink/25" strokeWidth={1.5} aria-hidden="true" />
-        </div>
+        {isCouple ? (
+          <ImageUpload onUploaded={onUploaded} className="h-full w-full">
+            {wash}
+          </ImageUpload>
+        ) : (
+          wash
+        )}
       </div>
       <p className="mt-3 text-center font-reading text-xs text-ink-soft italic">{photo.caption}</p>
     </div>
@@ -268,7 +318,7 @@ function GallerySection({ photos, isCouple }: { photos: EngagementPhoto[]; isCou
                 transition={{ duration: 0.6, delay: i * 0.07, ease: EASE }}
                 className="mb-5 break-inside-avoid"
               >
-                <PlaceholderPolaroidCard photo={photo} />
+                <PlaceholderPolaroidCard photo={photo} isCouple={isCouple} onUploaded={handleUploaded} />
               </InView>
             ))}
       </div>
@@ -298,9 +348,9 @@ function DetailsSection() {
         >
           <div>
             <p className="flex items-center gap-2 font-serif text-xs tracking-[0.2em] text-ink-soft/70 uppercase">
-              <Calendar className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" /> Date
+              <Calendar className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" /> Date &amp; time
             </p>
-            <p className="mt-1.5 font-display text-xl text-ink">{PARTY_DATE}</p>
+            <p className="mt-1.5 font-display text-xl text-ink">{PARTY_DATE}, {PARTY_TIME}</p>
           </div>
           <div className="h-px w-full bg-ink/10" />
           <div>
@@ -310,8 +360,8 @@ function DetailsSection() {
             <p className="mt-1.5 font-display text-xl text-ink">{VENUE_NAME}, Hammersmith</p>
           </div>
           <p className="font-reading text-sm text-ink-soft">
-            We&rsquo;ll share exact timing closer to the date — RSVP now and
-            we&rsquo;ll keep you posted.
+            This one&rsquo;s drinks and catching up rather than a sit-down
+            meal — come fed! RSVP below and we&rsquo;ll see you there.
           </p>
         </InView>
 
@@ -329,13 +379,13 @@ function DetailsSection() {
             referrerPolicy="no-referrer-when-downgrade"
             title={`Map to ${VENUE_NAME}, Hammersmith`}
           />
+          {/* No label overlay here — Google's own embed already places a
+              "The Black Lion" pin/label on the map itself now that it
+              points at a real, resolvable venue, and a second label of
+              ours sitting on top of it just duplicated and overlapped it.
+              The venue name is already stated in the text card beside
+              this one. */}
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/15" />
-          <div className="absolute top-4 left-4 flex items-center gap-2 rounded-full bg-cream/95 px-4 py-2 shadow-[0_8px_20px_rgba(0,0,0,0.18)]">
-            <MapPin className="h-3.5 w-3.5 text-accent" strokeWidth={2} aria-hidden="true" />
-            <span className="font-serif text-[11px] tracking-[0.16em] text-ink-soft uppercase">
-              {VENUE_NAME}, Hammersmith
-            </span>
-          </div>
         </InView>
       </div>
     </section>

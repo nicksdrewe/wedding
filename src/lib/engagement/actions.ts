@@ -37,6 +37,20 @@ export async function addEngagementPhoto(imageUrl: string, caption?: string) {
   return { error: null };
 }
 
+export async function updateEngagementPhoto(photoId: string, imageUrl: string) {
+  const parsed = z.object({ photoId: z.string().uuid(), imageUrl: z.string().min(1) }).parse({ photoId, imageUrl });
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("engagement_photos")
+    .update({ image_url: parsed.imageUrl })
+    .eq("id", parsed.photoId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/engagement");
+  return { error: null };
+}
+
 export async function removeEngagementPhoto(photoId: string) {
   const parsed = z.string().uuid().parse(photoId);
   const supabase = await createClient();
