@@ -1,7 +1,8 @@
-import { AnimatedHeading } from "@/components/AnimatedHeading";
 import { createClient } from "@/lib/supabase/server";
 import { AnimatedNumber } from "@/components/motion-primitives/animated-number";
 import { InView } from "@/components/motion-primitives/in-view";
+import { PageHeader } from "@/components/PageHeader";
+import { EmptyState } from "@/components/EmptyState";
 import { ExpenseForm } from "./ExpenseForm";
 import { SettleButton } from "./SettleButton";
 import { ProjectTabs } from "../ProjectTabs";
@@ -47,11 +48,11 @@ export default async function ExpensesPage() {
 
   return (
     <div>
-      <AnimatedHeading className="font-display text-[34px] tracking-tight">Expense Splitting</AnimatedHeading>
-      <p className="mt-2 font-reading text-[15px] text-ink-soft">
-        Log a cost, split it evenly among whoever&rsquo;s in on it, settle up
-        when it&rsquo;s paid back.
-      </p>
+      <PageHeader
+        eyebrow="Planning"
+        title="Expense Splitting"
+        description="Log a cost, split it evenly among whoever's in on it, settle up when it's paid back."
+      />
 
       <ProjectTabs active="expenses" />
 
@@ -67,7 +68,7 @@ export default async function ExpensesPage() {
               key={b.name}
               as="li"
               once
-              className="flex items-center justify-between rounded-[10px] border border-ink/10 bg-white px-4.5 py-3.5 font-serif text-[13px]"
+              className="flex items-center justify-between rounded-[10px] border border-ink/10 bg-white px-4.5 py-3.5 font-serif text-[13px] transition-colors duration-150 hover:border-accent/40"
               variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }}
               transition={{ duration: 0.3, delay: i * 0.05 }}
             >
@@ -86,10 +87,10 @@ export default async function ExpensesPage() {
               </span>
             </InView>
           ))}
-          {balances.length === 0 && (
-            <p className="font-reading text-sm text-ink-soft">No one to split with yet.</p>
-          )}
         </ul>
+        {balances.length === 0 && (
+          <EmptyState className="mt-3 max-w-[520px]" title="No one to split with yet" />
+        )}
       </section>
 
       <section className="mt-10">
@@ -101,7 +102,7 @@ export default async function ExpensesPage() {
             return (
               <li
                 key={e.id}
-                className="rounded-[10px] border border-ink/10 bg-white p-4"
+                className="rounded-[10px] border border-ink/10 bg-white p-4 transition-colors duration-150 hover:border-accent/40"
               >
                 <div className="flex items-center justify-between">
                   <span className="font-serif text-sm font-semibold">{e.description}</span>
@@ -110,7 +111,7 @@ export default async function ExpensesPage() {
                 <p className="mt-1.5 font-reading text-[13px] text-ink-soft">
                   Paid by {payer?.full_name ?? "—"}
                 </p>
-                <ul className="mt-2 flex flex-col gap-1">
+                <ul className="mt-3 flex flex-col gap-1.5 border-t border-ink/8 pt-2.5">
                   {mySplits.map((s) => {
                     const splitContact = (Array.isArray(s.contacts) ? s.contacts[0] : s.contacts) as
                       | { full_name: string }
@@ -133,10 +134,10 @@ export default async function ExpensesPage() {
               </li>
             );
           })}
-          {(!expenses || expenses.length === 0) && (
-            <p className="font-reading text-sm text-ink-soft">No expenses logged yet.</p>
-          )}
         </ul>
+        {(!expenses || expenses.length === 0) && (
+          <EmptyState className="mt-3 max-w-[640px]" title="No expenses logged yet" />
+        )}
       </section>
     </div>
   );

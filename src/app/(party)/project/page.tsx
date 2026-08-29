@@ -1,6 +1,7 @@
-import { AnimatedHeading } from "@/components/AnimatedHeading";
 import { createClient } from "@/lib/supabase/server";
 import { OptionGroupPanel } from "@/components/options/OptionGroupPanel";
+import { PageHeader } from "@/components/PageHeader";
+import { EmptyState } from "@/components/EmptyState";
 import { IdeaForm } from "./IdeaForm";
 import { TaskForm } from "./TaskForm";
 import { TaskRow } from "./TaskRow";
@@ -35,10 +36,11 @@ export default async function ProjectPage() {
 
   return (
     <div>
-      <AnimatedHeading className="font-display text-[34px] tracking-tight">Project Management</AnimatedHeading>
-      <p className="mt-2 font-reading text-[15px] text-ink-soft">
-        Ideas, plans, and who&rsquo;s doing what — plus expense splitting.
-      </p>
+      <PageHeader
+        eyebrow="Planning"
+        title="Project Management"
+        description="Ideas, plans, and who's doing what — plus expense splitting."
+      />
 
       <ProjectTabs active="project" />
 
@@ -50,7 +52,7 @@ export default async function ProjectPage() {
             {(ideas ?? []).map((idea) => (
               <li
                 key={idea.id}
-                className="rounded-[10px] border border-ink/10 bg-white p-4"
+                className="rounded-[10px] border border-ink/10 bg-white p-4 transition-colors duration-150 hover:border-accent/40"
               >
                 <p className="font-serif text-sm font-semibold">{idea.title}</p>
                 {idea.body && (
@@ -58,12 +60,14 @@ export default async function ProjectPage() {
                 )}
               </li>
             ))}
-            {(!ideas || ideas.length === 0) && (
-              <p className="font-reading text-sm text-ink-soft">
-                No ideas yet — add the first one.
-              </p>
-            )}
           </ul>
+          {(!ideas || ideas.length === 0) && (
+            <EmptyState
+              className="mt-4"
+              title="No ideas yet"
+              hint="Add the first one above."
+            />
+          )}
         </section>
 
         <section>
@@ -83,10 +87,10 @@ export default async function ProjectPage() {
                 />
               );
             })}
-            {(!tasks || tasks.length === 0) && (
-              <p className="font-reading text-sm text-ink-soft">No tasks yet.</p>
-            )}
           </ul>
+          {(!tasks || tasks.length === 0) && (
+            <EmptyState className="mt-4" title="No tasks yet" />
+          )}
         </section>
       </div>
 
@@ -106,9 +110,11 @@ export default async function ProjectPage() {
             </div>
           ))}
           {(!optionGroups || optionGroups.length === 0) && (
-            <p className="font-reading text-sm text-ink-soft">
-              Nothing being compared yet — start a comparison above.
-            </p>
+            <EmptyState
+              className="mt-2"
+              title="Nothing being compared yet"
+              hint="Start a comparison above."
+            />
           )}
         </div>
       </section>

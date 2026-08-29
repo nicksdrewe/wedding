@@ -22,56 +22,69 @@ export function AddContactForm() {
           formRef.current?.reset();
         })
       }
-      className="mt-8 flex flex-wrap items-end gap-3 rounded-2xl border border-ink/10 bg-cream-deep/60 p-5"
+      className="mt-8 rounded-[10px] border border-ink/10 bg-white/50 p-5"
     >
-      <div className="flex flex-col">
-        <label className="text-xs text-ink-soft">Name</label>
-        <input
-          name="fullName"
-          required
-          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
-        />
-      </div>
-      <div className="flex flex-col">
-        <label className="text-xs text-ink-soft">Email</label>
-        <input
-          name="email"
-          type="email"
-          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
-        />
-      </div>
-      <div className="flex flex-col">
-        <label className="text-xs text-ink-soft">Phone</label>
-        <input
-          name="phone"
-          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
-        />
-      </div>
-      <div className="flex flex-col">
-        <label className="text-xs text-ink-soft">Role</label>
-        <select
-          name="role"
-          defaultValue="guest"
-          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+      <p className="mb-4 font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
+        Add a guest
+      </p>
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="flex flex-col gap-1">
+          <label className="font-serif text-[11px] font-medium tracking-[0.04em] text-ink-soft uppercase">
+            Name
+          </label>
+          <input
+            name="fullName"
+            required
+            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="font-serif text-[11px] font-medium tracking-[0.04em] text-ink-soft uppercase">
+            Email
+          </label>
+          <input
+            name="email"
+            type="email"
+            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="font-serif text-[11px] font-medium tracking-[0.04em] text-ink-soft uppercase">
+            Phone
+          </label>
+          <input
+            name="phone"
+            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="font-serif text-[11px] font-medium tracking-[0.04em] text-ink-soft uppercase">
+            Role
+          </label>
+          <select
+            name="role"
+            defaultValue="guest"
+            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+          >
+            <option value="guest">Guest</option>
+            <option value="family">Family</option>
+            <option value="wedding_party">Wedding Party</option>
+            <option value="couple">Couple</option>
+          </select>
+        </div>
+        <label className="flex items-center gap-2 pb-2 text-sm text-ink-soft">
+          <input type="checkbox" name="plusOneEligible" className="accent-accent" />
+          Plus-one eligible
+        </label>
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded-full bg-ink px-5 py-2 text-sm text-cream transition-colors duration-150 hover:bg-ink-soft disabled:opacity-60"
         >
-          <option value="guest">Guest</option>
-          <option value="family">Family</option>
-          <option value="wedding_party">Wedding Party</option>
-          <option value="couple">Couple</option>
-        </select>
+          {pending ? "Adding…" : "Add guest"}
+        </button>
       </div>
-      <label className="flex items-center gap-2 pb-2 text-sm">
-        <input type="checkbox" name="plusOneEligible" />
-        Plus-one eligible
-      </label>
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-full bg-ink px-5 py-2 text-sm text-cream transition hover:bg-ink-soft disabled:opacity-60"
-      >
-        {pending ? "Adding…" : "Add guest"}
-      </button>
-      {error && <p className="pb-2 font-reading text-xs text-alert">{error}</p>}
+      {error && <p className="mt-3 font-reading text-xs text-alert">{error}</p>}
     </form>
   );
 }

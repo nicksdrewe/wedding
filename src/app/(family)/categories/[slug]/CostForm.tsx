@@ -24,33 +24,37 @@ export function CostForm({
           if (result?.error) setError(result.error);
         })
       }
-      className="mt-2 flex flex-wrap items-end gap-3"
+      className="flex flex-wrap items-end gap-3"
     >
       <input type="hidden" name="categoryPageId" value={categoryPageId} />
-      <div className="flex flex-col">
-        <label className="text-xs text-ink-soft">Predicted (£)</label>
+      <div className="flex flex-col gap-1">
+        <label className="font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
+          Predicted (£)
+        </label>
         <input
           name="predictedCost"
           type="number"
           step="0.01"
           defaultValue={predictedCost}
-          className="w-32 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+          className="w-32 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors focus:border-accent"
         />
       </div>
-      <div className="flex flex-col">
-        <label className="text-xs text-ink-soft">Actual (£)</label>
+      <div className="flex flex-col gap-1">
+        <label className="font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
+          Actual (£)
+        </label>
         <input
           name="actualCost"
           type="number"
           step="0.01"
           defaultValue={actualCost}
-          className="w-32 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+          className="w-32 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors focus:border-accent"
         />
       </div>
       <button
         type="submit"
         disabled={pending}
-        className="rounded-full bg-ink px-5 py-2 text-sm text-cream transition hover:bg-ink-soft disabled:opacity-60"
+        className="rounded-full bg-ink px-5 py-2 text-sm text-cream transition-colors hover:bg-ink-soft disabled:opacity-60"
       >
         {pending ? "Saving…" : "Save"}
       </button>

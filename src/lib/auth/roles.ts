@@ -1,13 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
+import type { Profile } from "@/lib/auth/role-types";
 
-export type RoleTier = "couple" | "family" | "wedding_party" | "guest";
-
-export type Profile = {
-  id: string;
-  role: RoleTier;
-  full_name: string | null;
-  contact_id: string | null;
-};
+// Re-exported for existing server-side callers of this module — see
+// role-types.ts for why these live in their own client-safe file.
+export type { RoleTier, Profile } from "@/lib/auth/role-types";
+export { HOME_FOR_ROLE, canAccess } from "@/lib/auth/role-types";
 
 // Deliberately three-way. Collapsing "no session" and "session but no profile"
 // into a single null is what caused the sign-in loop: an authenticated user
@@ -41,16 +38,4 @@ export async function getAuthState(): Promise<AuthState> {
 export async function getCurrentProfile(): Promise<Profile | null> {
   const state = await getAuthState();
   return state.status === "ok" ? state.profile : null;
-}
-
-/** Single source of truth for where each tier belongs after signing in. */
-export const HOME_FOR_ROLE: Record<RoleTier, string> = {
-  couple: "/guests",
-  family: "/categories",
-  wedding_party: "/categories",
-  guest: "/rsvp",
-};
-
-export function canAccess(role: RoleTier, required: RoleTier[]) {
-  return required.includes(role);
 }

@@ -697,7 +697,7 @@ function RsvpMorphingButton() {
               className="bg-[radial-gradient(circle,#7c9482,#f4f1ec_45%,transparent_78%)] blur-3xl"
               size={260}
             />
-            <div className="relative h-full w-full rounded-[26px] bg-gradient-to-b from-ink/55 via-ink/72 to-ink/85 p-8 text-center text-cream shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-2xl">
+            <div className="relative h-full w-full rounded-[26px] bg-gradient-to-b from-[#232520]/55 via-[#232520]/72 to-[#232520]/85 p-8 text-center text-cream shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-2xl">
               <button
                 type="button"
                 onClick={() => setOpen(false)}
@@ -793,7 +793,7 @@ function SignInMorphingButton() {
                 keeps the FLIP-tracked box's own geometry simple and
                 stable, while the sign-in form (taller than RSVP's message)
                 still gets to scroll internally on short viewports. */}
-            <div className="relative max-h-[85vh] w-full overflow-y-auto overflow-x-hidden rounded-[26px] bg-gradient-to-b from-white/45 via-cream/55 to-cream-deep/60 p-8 text-center text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] backdrop-blur-2xl">
+            <div className="relative max-h-[85vh] w-full overflow-y-auto overflow-x-hidden rounded-[26px] bg-gradient-to-b from-white/45 via-[#f4f1ec]/55 to-[#ece7dc]/60 p-8 text-center text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] backdrop-blur-2xl">
               <button
                 type="button"
                 onClick={() => setOpen(false)}

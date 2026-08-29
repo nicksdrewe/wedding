@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
 import { OptionGroupPanel } from "@/components/options/OptionGroupPanel";
+import { PageHeader } from "@/components/PageHeader";
+import { EmptyState } from "@/components/EmptyState";
 import { CostForm } from "./CostForm";
 import { ContactForm } from "./ContactForm";
 import { DateForm } from "./DateForm";
@@ -52,11 +54,11 @@ export default async function CategoryDetailPage({
 
   return (
     <div className="max-w-3xl">
-      <h1 className="font-display text-4xl">{page.title}</h1>
+      <PageHeader eyebrow="Planning" title={page.title} />
 
-      <section className="mt-8">
-        <div className="flex items-center justify-between">
-          <h2 className="font-serif text-lg font-semibold">Options</h2>
+      <section className="rounded-[10px] border border-ink/10 bg-white p-6">
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="font-serif text-[15px] font-semibold">Options</h2>
           {isCouple && !optionGroup && (
             <StartOptionsModeButton
               categoryPageId={page.id}
@@ -67,70 +69,82 @@ export default async function CategoryDetailPage({
         </div>
         {optionGroup ? (
           <>
-            <p className="mt-1 font-serif text-sm text-ink-soft">
+            <p className="mt-1.5 font-reading text-[13px] text-ink-soft">
               Compare alternatives below — selecting one updates the cost,
               key dates, and contacts for this category.
             </p>
-            <OptionGroupPanel
-              groupId={optionGroup.id}
-              categoryPageId={page.id}
-              revalidate={`/categories/${page.slug}`}
-            />
+            <div className="mt-4">
+              <OptionGroupPanel
+                groupId={optionGroup.id}
+                categoryPageId={page.id}
+                revalidate={`/categories/${page.slug}`}
+              />
+            </div>
           </>
         ) : (
-          <p className="mt-1 font-serif text-sm text-ink-soft">
+          <p className="mt-1.5 font-reading text-[13px] text-ink-soft">
             Not comparing options right now — the fields below are the live
             values for this category.
           </p>
         )}
       </section>
 
-      <section className="mt-8">
-        <h2 className="font-serif text-lg font-semibold">Costs</h2>
+      <section className="mt-6 rounded-[10px] border border-ink/10 bg-white p-6">
+        <h2 className="font-serif text-[15px] font-semibold">Costs</h2>
         {isCouple ? (
-          <CostForm
-            categoryPageId={page.id}
-            predictedCost={cost?.predicted_cost ?? ""}
-            actualCost={cost?.actual_cost ?? ""}
-          />
+          <div className="mt-2">
+            <CostForm
+              categoryPageId={page.id}
+              predictedCost={cost?.predicted_cost ?? ""}
+              actualCost={cost?.actual_cost ?? ""}
+            />
+          </div>
         ) : (
-          <p className="mt-2 font-serif text-ink-soft">
-            Predicted: £{cost?.predicted_cost ?? "—"} · Actual: £
+          <p className="mt-2 font-reading text-[15px] text-ink-soft">
+            Predicted £{cost?.predicted_cost ?? "—"} · Actual £
             {cost?.actual_cost ?? "—"}
           </p>
         )}
       </section>
 
-      <section className="mt-8">
-        <h2 className="font-serif text-lg font-semibold">Key contacts</h2>
-        <ul className="mt-2 flex flex-col gap-2">
-          {(contacts ?? []).map((c) => (
-            <li key={c.id} className="font-serif text-sm">
-              <span className="font-semibold">{c.name}</span>
-              {c.role ? ` — ${c.role}` : ""}
-              {c.phone ? ` · ${c.phone}` : ""}
-              {c.email ? ` · ${c.email}` : ""}
-            </li>
-          ))}
-          {(!contacts || contacts.length === 0) && (
-            <p className="font-serif text-sm text-ink-soft">No contacts yet.</p>
-          )}
-        </ul>
+      <section className="mt-6 rounded-[10px] border border-ink/10 bg-white p-6">
+        <h2 className="font-serif text-[15px] font-semibold">Key contacts</h2>
+        {contacts && contacts.length > 0 ? (
+          <ul className="mt-3 flex flex-col gap-2">
+            {contacts.map((c) => (
+              <li
+                key={c.id}
+                className="rounded-[8px] border border-ink/8 bg-cream/50 px-3 py-2 font-reading text-[13px] text-ink"
+              >
+                <span className="font-serif font-semibold">{c.name}</span>
+                {c.role ? ` — ${c.role}` : ""}
+                {c.phone ? ` · ${c.phone}` : ""}
+                {c.email ? ` · ${c.email}` : ""}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <EmptyState className="mt-3" title="No contacts yet" />
+        )}
         {isCouple && <ContactForm categoryPageId={page.id} />}
       </section>
 
-      <section className="mt-8">
-        <h2 className="font-serif text-lg font-semibold">Key dates</h2>
-        <ul className="mt-2 flex flex-col gap-2">
-          {(dates ?? []).map((d) => (
-            <li key={d.id} className="font-serif text-sm">
-              {d.entry_date} — {d.title}
-            </li>
-          ))}
-          {(!dates || dates.length === 0) && (
-            <p className="font-serif text-sm text-ink-soft">No dates logged yet.</p>
-          )}
-        </ul>
+      <section className="mt-6 rounded-[10px] border border-ink/10 bg-white p-6">
+        <h2 className="font-serif text-[15px] font-semibold">Key dates</h2>
+        {dates && dates.length > 0 ? (
+          <ul className="mt-3 flex flex-col gap-2">
+            {dates.map((d) => (
+              <li
+                key={d.id}
+                className="rounded-[8px] border border-ink/8 bg-cream/50 px-3 py-2 font-reading text-[13px] text-ink"
+              >
+                {d.entry_date} — {d.title}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <EmptyState className="mt-3" title="No dates logged yet" />
+        )}
         {isCouple && <DateForm categoryPageId={page.id} />}
       </section>
     </div>
