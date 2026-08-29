@@ -148,3 +148,147 @@ export async function selectWinner(
   revalidatePath("/budget");
   revalidatePath("/diary");
 }
+
+// ---------------------------------------------------------------------------
+// markOptionWinner: the error-checked counterpart to selectWinner above.
+// selectWinner drives the OptionsGrid comparison UI (it already knows
+// groupId/categoryPageId/revalidate from props and never surfaces errors —
+// it's a fire-and-forget client transition). This one takes just the option
+// id (page_options no longer carries category_page_id directly since
+// 0004_option_groups.sql — it hangs off option_groups instead, so we look it
+// up), checks every Supabase call, and is meant for the category board /
+// project skim view where a caller needs { error } back. It applies the same
+// exclusivity-within-group rule selectWinner does, rather than duplicating a
+// third implementation of it.
+export async function markOptionWinner(optionId: string) {
+  const supabase = await createClient();
+
+  const { data: option, error: fetchError } = await supabase
+    .from("page_options")
+    .select("id, name, actual_cost, option_date, option_group_id")
+    .eq("id", optionId)
+    .single();
+  if (fetchError) return { error: fetchError.message };
+  if (!option) return { error: "Option not found." };
+
+  const { data: group, error: groupError } = await supabase
+    .from("option_groups")
+    .select("category_page_id")
+    .eq("id", option.option_group_id)
+    .single();
+  if (groupError) return { error: groupError.message };
+
+  const categoryPageId = group?.category_page_id ?? null;
+
+  const { error: clearError } = await supabase
+    .from("page_options")
+    .update({ is_winner: false })
+    .eq("option_group_id", option.option_group_id);
+  if (clearError) return { error: clearError.message };
+
+  const { error: winError } = await supabase
+    .from("page_options")
+    .update({ is_winner: true })
+    .eq("id", optionId);
+  if (winError) return { error: winError.message };
+
+  // Standalone (Project Management) groups have no category to roll into —
+  // per the brief, their winner is informational only.
+  if (categoryPageId) {
+    if (option.option_date) {
+      // Keyed on category_page_id + source, not title: option_groups_one_
+      // per_category (0004) guarantees at most one options comparison per
+      // category, so at most one page_option-sourced diary entry ever
+      // applies here — this survives the option being renamed later.
+      const { data: existingEntry, error: entryLookupError } = await supabase
+        .from("diary_entries")
+        .select("id")
+        .eq("category_page_id", categoryPageId)
+        .eq("source", "page_option")
+        .maybeSingle();
+      if (entryLookupError) return { error: entryLookupError.message };
+
+      const { error: diaryError } = existingEntry
+        ? await supabase
+            .from("diary_entries")
+            .update({ title: option.name, entry_date: option.option_date })
+            .eq("id", existingEntry.id)
+        : await supabase.from("diary_entries").insert({
+            title: option.name,
+            entry_date: option.option_date,
+            source: "page_option",
+            category_page_id: categoryPageId,
+          });
+      if (diaryError) return { error: diaryError.message };
+    }
+
+    const { data: existingCost, error: costLookupError } = await supabase
+      .from("category_costs")
+      .select("id")
+      .eq("category_page_id", categoryPageId)
+      .maybeSingle();
+    if (costLookupError) return { error: costLookupError.message };
+
+    const { error: costError } = existingCost
+      ? await supabase
+          .from("category_costs")
+          .update({ actual_cost: option.actual_cost, updated_at: new Date().toISOString() })
+          .eq("id", existingCost.id)
+      : await supabase.from("category_costs").insert({
+          category_page_id: categoryPageId,
+          actual_cost: option.actual_cost,
+        });
+    if (costError) return { error: costError.message };
+  }
+
+  revalidatePath("/categories");
+  revalidatePath("/budget");
+  revalidatePath("/diary");
+  revalidatePath("/project");
+
+  return { error: null };
+}
+
+const addOptionImageSchema = z.object({
+  optionId: z.string().uuid(),
+  imageUrl: z.string().min(1),
+});
+
+export async function addOptionImage(optionId: string, imageUrl: string) {
+  const parsed = addOptionImageSchema.parse({ optionId, imageUrl });
+  const supabase = await createClient();
+
+  const { data: existing, error: countError } = await supabase
+    .from("page_option_images")
+    .select("sort_order")
+    .eq("page_option_id", parsed.optionId)
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (countError) return { error: countError.message };
+
+  const nextSortOrder = (existing?.sort_order ?? -1) + 1;
+
+  const { error } = await supabase.from("page_option_images").insert({
+    page_option_id: parsed.optionId,
+    image_url: parsed.imageUrl,
+    sort_order: nextSortOrder,
+  });
+  if (error) return { error: error.message };
+
+  revalidatePath("/categories");
+  revalidatePath("/project");
+  return { error: null };
+}
+
+export async function removeOptionImage(imageId: string) {
+  const parsed = z.string().uuid().parse(imageId);
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("page_option_images").delete().eq("id", parsed);
+  if (error) return { error: error.message };
+
+  revalidatePath("/categories");
+  revalidatePath("/project");
+  return { error: null };
+}

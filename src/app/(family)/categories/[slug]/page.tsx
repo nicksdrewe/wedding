@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
-import { OptionGroupPanel } from "@/components/options/OptionGroupPanel";
+import { OptionsBoard } from "@/components/options/OptionsBoard";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { CostForm } from "./CostForm";
@@ -70,14 +70,14 @@ export default async function CategoryDetailPage({
         {optionGroup ? (
           <>
             <p className="mt-1.5 font-reading text-[13px] text-ink-soft">
-              Compare alternatives below — selecting one updates the cost,
-              key dates, and contacts for this category.
+              Every option on one board — open a card to see its full
+              detail and mark it as the winner once you&rsquo;ve decided.
             </p>
             <div className="mt-4">
-              <OptionGroupPanel
+              <OptionsBoard
                 groupId={optionGroup.id}
-                categoryPageId={page.id}
                 revalidate={`/categories/${page.slug}`}
+                isCouple={isCouple}
               />
             </div>
           </>
