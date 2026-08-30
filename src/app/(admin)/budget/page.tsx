@@ -113,7 +113,9 @@ export default async function BudgetPage() {
                     >
                       <td className="px-5 py-4 align-top font-semibold">{i.title}</td>
                       <td className="px-5 py-4 align-top">
-                        <div>£{i.predicted.toFixed(2)}</div>
+                        <div>
+                          £<AnimatedNumber value={i.predicted} springOptions={{ bounce: 0 }} />
+                        </div>
                         <div className="mt-1.5 h-1 w-24 rounded-full bg-ink/8">
                           <div
                             className="h-full rounded-full bg-ink-soft/50"
@@ -122,7 +124,9 @@ export default async function BudgetPage() {
                         </div>
                       </td>
                       <td className="px-5 py-4 align-top">
-                        <div>£{i.actual.toFixed(2)}</div>
+                        <div>
+                          £<AnimatedNumber value={i.actual} springOptions={{ bounce: 0 }} />
+                        </div>
                         <div className="mt-1.5 h-1 w-24 rounded-full bg-ink/8">
                           <div
                             className={`h-full rounded-full ${overBudget ? "bg-alert" : "bg-accent"}`}
@@ -135,7 +139,14 @@ export default async function BudgetPage() {
                           overBudget ? "text-alert" : diff < 0 ? "text-accent" : "text-ink-soft"
                         }`}
                       >
-                        {diff === 0 ? "—" : `${overBudget ? "+" : "−"}£${Math.abs(diff).toFixed(2)}`}
+                        {diff === 0 ? (
+                          "—"
+                        ) : (
+                          <>
+                            {overBudget ? "+" : "−"}£
+                            <AnimatedNumber value={Math.abs(diff)} springOptions={{ bounce: 0 }} />
+                          </>
+                        )}
                       </td>
                     </tr>
                   );

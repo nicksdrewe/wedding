@@ -73,6 +73,24 @@ export function AddOptionForm({
         placeholder="Contact email"
         className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
       />
+      <input
+        name="latitude"
+        type="number"
+        step="any"
+        min={-90}
+        max={90}
+        placeholder="Latitude"
+        className="w-28 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+      />
+      <input
+        name="longitude"
+        type="number"
+        step="any"
+        min={-180}
+        max={180}
+        placeholder="Longitude"
+        className="w-28 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+      />
       <button
         type="submit"
         disabled={pending}

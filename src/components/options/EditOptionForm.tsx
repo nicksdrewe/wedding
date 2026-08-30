@@ -94,6 +94,29 @@ export function EditOptionForm({
         />
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        <input
+          name="latitude"
+          type="number"
+          step="any"
+          min={-90}
+          max={90}
+          defaultValue={option.latitude ?? ""}
+          placeholder="Latitude"
+          className="w-32 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+        />
+        <input
+          name="longitude"
+          type="number"
+          step="any"
+          min={-180}
+          max={180}
+          defaultValue={option.longitude ?? ""}
+          placeholder="Longitude"
+          className="w-32 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+        />
+      </div>
+
       <input
         name="webLink"
         defaultValue={option.web_link ?? ""}

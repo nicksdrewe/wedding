@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
 import { OptionsBoard } from "@/components/options/OptionsBoard";
+import { OptionsMapLoader } from "@/components/options/OptionsMapLoader";
+import type { MapOption } from "@/components/options/OptionsMap";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { CostForm } from "./CostForm";
@@ -33,6 +35,31 @@ export default async function CategoryDetailPage({
     .select("id")
     .eq("category_page_id", page.id)
     .maybeSingle();
+
+  // Pin-map data: only the fields OptionsMap needs, for whichever options on
+  // this board have coordinates set. Deliberately a lighter-weight query
+  // than OptionsBoard's own fetch (no description/web_link/contact fields)
+  // since this only ever feeds map markers, not the board itself.
+  const mapOptions: MapOption[] = optionGroup
+    ? ((
+        await supabase
+          .from("page_options")
+          .select(
+            "id, name, predicted_cost, latitude, longitude, page_option_images(image_url, sort_order)"
+          )
+          .eq("option_group_id", optionGroup.id)
+          .order("sort_order", { referencedTable: "page_option_images", ascending: true })
+      ).data ?? []
+      ).map((o) => ({
+        id: o.id,
+        name: o.name,
+        predicted_cost: o.predicted_cost,
+        latitude: o.latitude,
+        longitude: o.longitude,
+        coverImageUrl: o.page_option_images?.[0]?.image_url ?? null,
+      }))
+    : [];
+  const hasPinnedOptions = mapOptions.some((o) => o.latitude != null && o.longitude != null);
 
   const [{ data: cost }, { data: contacts }, { data: dates }] = await Promise.all([
     supabase
@@ -75,6 +102,14 @@ export default async function CategoryDetailPage({
               Every option on one board — open a card to see its full
               detail and mark it as the winner once you&rsquo;ve decided.
             </p>
+            {hasPinnedOptions && (
+              <div className="mt-4">
+                <p className="mb-2 font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft/70 uppercase">
+                  On the map
+                </p>
+                <OptionsMapLoader options={mapOptions} />
+              </div>
+            )}
             <div className="mt-4">
               <OptionsBoard
                 groupId={optionGroup.id}

@@ -24,7 +24,7 @@ export async function OptionsBoard({
   const { data } = await supabase
     .from("page_options")
     .select(
-      "id, name, description, web_link, predicted_cost, actual_cost, option_date, contact_name, contact_phone, contact_email, is_winner, page_option_images(id, image_url, sort_order)"
+      "id, name, description, web_link, predicted_cost, actual_cost, option_date, contact_name, contact_phone, contact_email, latitude, longitude, is_winner, page_option_images(id, image_url, sort_order)"
     )
     .eq("option_group_id", groupId)
     .order("created_at")
@@ -41,6 +41,8 @@ export async function OptionsBoard({
     contact_name: o.contact_name,
     contact_phone: o.contact_phone,
     contact_email: o.contact_email,
+    latitude: o.latitude,
+    longitude: o.longitude,
     is_winner: o.is_winner,
     images: (o.page_option_images ?? []).map(
       (img: { id: string; image_url: string; sort_order: number }) => ({

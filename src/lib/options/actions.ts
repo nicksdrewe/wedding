@@ -52,6 +52,8 @@ const optionSchema = z.object({
   contactName: z.string().optional().or(z.literal("")),
   contactPhone: z.string().optional().or(z.literal("")),
   contactEmail: z.string().email().optional().or(z.literal("")),
+  latitude: z.coerce.number().min(-90).max(90).optional().nullable(),
+  longitude: z.coerce.number().min(-180).max(180).optional().nullable(),
   revalidate: z.string(),
 });
 
@@ -65,6 +67,8 @@ export async function addOption(formData: FormData) {
     contactName: formData.get("contactName") || "",
     contactPhone: formData.get("contactPhone") || "",
     contactEmail: formData.get("contactEmail") || "",
+    latitude: formData.get("latitude") || null,
+    longitude: formData.get("longitude") || null,
     revalidate: formData.get("revalidate"),
   });
 
@@ -78,6 +82,8 @@ export async function addOption(formData: FormData) {
     contact_name: parsed.contactName || null,
     contact_phone: parsed.contactPhone || null,
     contact_email: parsed.contactEmail || null,
+    latitude: parsed.latitude,
+    longitude: parsed.longitude,
   });
 
   // Revalidate every surface that reads page_options, not just whichever
@@ -103,6 +109,8 @@ const updateOptionSchema = z.object({
   contactName: z.string().optional().or(z.literal("")),
   contactPhone: z.string().optional().or(z.literal("")),
   contactEmail: z.string().email().optional().or(z.literal("")),
+  latitude: z.coerce.number().min(-90).max(90).optional().nullable(),
+  longitude: z.coerce.number().min(-180).max(180).optional().nullable(),
   revalidate: z.string(),
 });
 
@@ -121,6 +129,8 @@ export async function updateOption(formData: FormData) {
     contactName: formData.get("contactName") || "",
     contactPhone: formData.get("contactPhone") || "",
     contactEmail: formData.get("contactEmail") || "",
+    latitude: formData.get("latitude") || null,
+    longitude: formData.get("longitude") || null,
     revalidate: formData.get("revalidate"),
   });
 
@@ -137,6 +147,8 @@ export async function updateOption(formData: FormData) {
       contact_name: parsed.contactName || null,
       contact_phone: parsed.contactPhone || null,
       contact_email: parsed.contactEmail || null,
+      latitude: parsed.latitude,
+      longitude: parsed.longitude,
     })
     .eq("id", parsed.id);
 

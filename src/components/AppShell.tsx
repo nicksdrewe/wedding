@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "motion/react";
 import {
   BookOpen,
   FolderKanban,
@@ -14,6 +13,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Botanical } from "@/components/Botanical";
+import { AnimatedBackground } from "@/components/motion-primitives/animated-background";
 import { canAccess, type Profile, type RoleTier } from "@/lib/auth/role-types";
 
 // App Shell Design Spec §1 — the shared top nav (+ mobile bottom tab bar)
@@ -76,8 +76,6 @@ const ROLE_LABEL: Record<RoleTier, string> = {
   guest: "Guest",
 };
 
-const ACTIVE_PILL_LAYOUT_ID = "app-shell-active-pill";
-
 function isActiveHref(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
@@ -123,32 +121,32 @@ export function AppShell({ profile, children }: AppShellProps) {
           {/* Center-left: role-filtered nav, hidden below md in favour of
               the bottom tab bar. */}
           <nav className="hidden items-center gap-1 md:flex">
-            {links.map((link) => {
-              const active = isActiveHref(pathname, link.href);
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`relative rounded-full px-3 py-2 font-serif text-[13px] font-medium tracking-[0.02em] transition-colors duration-150 ${
-                    active ? "text-accent" : "text-ink-soft hover:bg-ink/5 hover:text-ink"
-                  }`}
-                >
-                  {active && (
-                    <motion.span
-                      layoutId={ACTIVE_PILL_LAYOUT_ID}
-                      className="absolute inset-0 -z-10 rounded-full bg-accent/10"
-                      transition={{ duration: 0.15 }}
-                    />
-                  )}
-                  {link.label}
-                  {link.viewOnlyRoles?.includes(profile.role) && (
-                    <span className="ml-1.5 rounded-full bg-cream-deep px-1.5 py-0.5 text-[8px] font-medium tracking-[0.06em] text-ink-soft/70 uppercase">
-                      View
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
+            <AnimatedBackground
+              className="rounded-full bg-accent/10"
+              transition={{ duration: 0.15 }}
+              enableHover
+            >
+              {links.map((link) => {
+                const active = isActiveHref(pathname, link.href);
+                return (
+                  <Link
+                    key={link.href}
+                    data-id={link.href}
+                    href={link.href}
+                    className={`rounded-full px-3 py-2 font-serif text-[13px] font-medium tracking-[0.02em] transition-colors duration-150 ${
+                      active ? "text-accent" : "text-ink-soft hover:text-ink"
+                    }`}
+                  >
+                    {link.label}
+                    {link.viewOnlyRoles?.includes(profile.role) && (
+                      <span className="ml-1.5 rounded-full bg-cream-deep px-1.5 py-0.5 text-[8px] font-medium tracking-[0.06em] text-ink-soft/70 uppercase">
+                        View
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </AnimatedBackground>
           </nav>
 
           {/* Right: identity + sign out. */}

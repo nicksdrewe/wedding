@@ -42,6 +42,8 @@ export type OptionDetail = {
   contact_name: string | null;
   contact_phone: string | null;
   contact_email: string | null;
+  latitude: number | null;
+  longitude: number | null;
   is_winner: boolean;
   images: OptionImage[];
 };

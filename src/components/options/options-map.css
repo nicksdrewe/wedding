@@ -1,0 +1,56 @@
+/* Leaflet's own chrome (white rounded box, pointed tip, generic close
+   button) reads as an off-the-shelf map widget dropped into an otherwise
+   botanical/editorial site. These overrides restyle just the popup shell to
+   match the paper-and-ink language used everywhere else (OptionCard's
+   rounded-[10px] white card, ink/10 border) — plain hex values matching
+   globals.css's tokens, no Tailwind @theme gradients involved. */
+
+.option-popup .leaflet-popup-content-wrapper {
+  background: #ffffff;
+  border: 1px solid rgba(35, 37, 32, 0.1);
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(35, 37, 32, 0.16);
+  padding: 0;
+}
+
+.option-popup .leaflet-popup-content {
+  margin: 0;
+  width: auto !important;
+}
+
+.option-popup .leaflet-popup-tip-container {
+  width: 20px;
+  height: 10px;
+}
+
+.option-popup .leaflet-popup-tip {
+  background: #ffffff;
+  border: 1px solid rgba(35, 37, 32, 0.1);
+  box-shadow: none;
+}
+
+.option-popup .leaflet-popup-close-button {
+  color: #5b5a52 !important;
+  font-size: 16px;
+  padding: 6px 8px 0 0;
+}
+
+.option-popup .leaflet-popup-close-button:hover {
+  color: #232520 !important;
+}
+
+/* Nudge the default pin toward the site's sage-green accent instead of
+   Leaflet's stock blue, without needing custom marker art. */
+.option-pin-icon {
+  filter: hue-rotate(80deg) saturate(0.85) brightness(0.95);
+}
+
+.wedding-map-shell {
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.wedding-map-shell .leaflet-container {
+  font-family: var(--font-reading, serif);
+  background: #ece7dc;
+}

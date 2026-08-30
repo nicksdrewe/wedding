@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { deleteExpense, updateExpense } from "./actions";
 import { SettleButton } from "./SettleButton";
+import { AnimatedNumber } from "@/components/motion-primitives/animated-number";
 
 export function ExpenseCard({
   id,
@@ -116,7 +117,9 @@ export function ExpenseCard({
       <div className="flex items-center justify-between gap-3">
         <span className="font-serif text-sm font-semibold">{description}</span>
         <div className="flex shrink-0 items-center gap-3">
-          <span className="font-serif text-sm">£{amount.toFixed(2)}</span>
+          <span className="font-serif text-sm">
+            £<AnimatedNumber value={amount} springOptions={{ bounce: 0 }} />
+          </span>
           <div className="flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
             <button
               type="button"
@@ -143,7 +146,8 @@ export function ExpenseCard({
         {splits.map((s) => (
           <li key={s.id} className="flex items-center justify-between font-serif text-xs text-ink-soft">
             <span>
-              {s.name} — £{s.amount.toFixed(2)} {s.settled ? "(settled)" : ""}
+              {s.name} — £<AnimatedNumber value={s.amount} springOptions={{ bounce: 0 }} />{" "}
+              {s.settled ? "(settled)" : ""}
             </span>
             {!s.settled && <SettleButton splitId={s.id} />}
           </li>
