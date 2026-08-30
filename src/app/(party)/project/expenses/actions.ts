@@ -4,11 +4,32 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 
+// Split amounts are computed client-side (ExpenseForm) for all three modes
+// — even, by percentage, and by exact amount — and always submitted as the
+// same {contactId, amount}[] shape, so this action has exactly one code
+// path regardless of which mode the couple used. It re-validates the
+// arithmetic server-side rather than trusting the client's math outright,
+// since this is money and a rounding bug or stale state in the form
+// shouldn't be able to silently log a split that doesn't add up.
+const splitEntrySchema = z.object({
+  contactId: z.string().uuid(),
+  amount: z.coerce.number().positive(),
+});
+
 const expenseSchema = z.object({
   description: z.string().min(1),
   amount: z.coerce.number().positive(),
   paidByContactId: z.string().uuid(),
-  splitAmong: z.array(z.string().uuid()).min(1),
+  splits: z
+    .string()
+    .transform((raw, ctx) => {
+      try {
+        return z.array(splitEntrySchema).min(1).parse(JSON.parse(raw));
+      } catch {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Split data was malformed." });
+        return z.NEVER;
+      }
+    }),
 });
 
 export async function logExpense(formData: FormData) {
@@ -16,8 +37,20 @@ export async function logExpense(formData: FormData) {
     description: formData.get("description"),
     amount: formData.get("amount"),
     paidByContactId: formData.get("paidByContactId"),
-    splitAmong: formData.getAll("splitAmong"),
+    splits: formData.get("splits"),
   });
+
+  // Rounding a two-decimal split across several people rarely lands on the
+  // total to the last penny (e.g. £10 / 3 = £3.33 × 3 = £9.99) — a few
+  // pence of slack per split avoids rejecting exactly the kind of split
+  // this form is meant to make easy.
+  const tolerance = Math.max(0.02, parsed.splits.length * 0.01);
+  const splitTotal = parsed.splits.reduce((sum, s) => sum + s.amount, 0);
+  if (Math.abs(splitTotal - parsed.amount) > tolerance) {
+    return {
+      error: `Split amounts add up to £${splitTotal.toFixed(2)}, not the £${parsed.amount.toFixed(2)} total — adjust them so they match.`,
+    };
+  }
 
   const supabase = await createClient();
 
@@ -31,18 +64,20 @@ export async function logExpense(formData: FormData) {
     .select("id")
     .single();
 
-  if (error || !expense) return;
+  if (error) return { error: error.message };
+  if (!expense) return { error: "Couldn't create the expense — try again." };
 
-  const share = Math.round((parsed.amount / parsed.splitAmong.length) * 100) / 100;
-  await supabase.from("expense_splits").insert(
-    parsed.splitAmong.map((contactId) => ({
+  const { error: splitsError } = await supabase.from("expense_splits").insert(
+    parsed.splits.map((s) => ({
       expense_id: expense.id,
-      contact_id: contactId,
-      amount: share,
+      contact_id: s.contactId,
+      amount: Math.round(s.amount * 100) / 100,
     }))
   );
+  if (splitsError) return { error: splitsError.message };
 
   revalidatePath("/project/expenses");
+  return { error: null };
 }
 
 export async function markSplitSettled(splitId: string) {

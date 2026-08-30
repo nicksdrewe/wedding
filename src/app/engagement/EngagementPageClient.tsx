@@ -10,7 +10,12 @@ import {
   DisclosureContent,
 } from "@/components/motion-primitives/disclosure";
 import { ImageUpload } from "@/components/ImageUpload";
-import { addEngagementPhoto, removeEngagementPhoto, updateEngagementPhoto } from "@/lib/engagement/actions";
+import {
+  addEngagementPhoto,
+  removeEngagementPhoto,
+  updateEngagementPhoto,
+  updateEngagementPhotoCaption,
+} from "@/lib/engagement/actions";
 
 const EASE = [0.22, 1, 0.36, 1] as [number, number, number, number];
 const FADE_UP = { hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } };
@@ -91,6 +96,18 @@ function RealPolaroidCard({
     });
   }
 
+  const [editingCaption, setEditingCaption] = useState(false);
+  const [captionDraft, setCaptionDraft] = useState(photo.caption ?? "");
+  const [captionPending, startCaptionTransition] = useTransition();
+
+  function saveCaption() {
+    setEditingCaption(false);
+    if (captionDraft === (photo.caption ?? "")) return;
+    startCaptionTransition(async () => {
+      await updateEngagementPhotoCaption(photo.id, captionDraft);
+    });
+  }
+
   const image = (
     // eslint-disable-next-line @next/next/no-img-element -- Drive-hosted, arbitrary host
     <img src={photo.image_url} alt={photo.caption ?? "Engagement photo"} className="h-full w-full object-cover" />
@@ -131,8 +148,41 @@ function RealPolaroidCard({
           </button>
         )}
       </div>
-      {photo.caption && (
-        <p className="mt-3 text-center font-reading text-xs text-ink-soft italic">{photo.caption}</p>
+      {isCouple ? (
+        editingCaption ? (
+          <input
+            type="text"
+            autoFocus
+            value={captionDraft}
+            onChange={(e) => setCaptionDraft(e.target.value)}
+            onBlur={saveCaption}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                saveCaption();
+              }
+              if (e.key === "Escape") {
+                setCaptionDraft(photo.caption ?? "");
+                setEditingCaption(false);
+              }
+            }}
+            placeholder="Add a caption…"
+            maxLength={200}
+            className="mt-3 w-full rounded-full border border-ink/15 bg-cream px-3 py-1 text-center font-reading text-xs text-ink outline-none focus:border-accent"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setEditingCaption(true)}
+            className="mt-3 block w-full text-center font-reading text-xs text-ink-soft italic underline decoration-ink-soft/30 decoration-dotted underline-offset-4 hover:decoration-accent"
+          >
+            {captionPending ? "Saving…" : photo.caption || "Add a caption…"}
+          </button>
+        )
+      ) : (
+        photo.caption && (
+          <p className="mt-3 text-center font-reading text-xs text-ink-soft italic">{photo.caption}</p>
+        )
       )}
     </div>
   );

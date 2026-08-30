@@ -8,6 +8,7 @@ import {
   FolderKanban,
   LayoutGrid,
   LogOut,
+  PartyPopper,
   Users,
   Wallet,
   type LucideIcon,
@@ -54,6 +55,18 @@ const NAV_LINKS: NavLink[] = [
   { href: "/project", label: "Project", icon: FolderKanban, roles: ["couple"] },
   { href: "/budget", label: "Budget", icon: Wallet, roles: ["couple"] },
   { href: "/diary", label: "Diary", icon: BookOpen, roles: ["couple", "family", "wedding_party"] },
+  // Leaves the app shell for the public /engagement page (it isn't part of
+  // this route-group system) — same idea as the wordmark's "back to
+  // landing" link. Needed because there was previously no path back to it
+  // at all once signed in: the couple's only way to manage its photos was
+  // manually typing the URL, since edit controls there are gated on being
+  // signed in as the couple but the page itself has no link pointing to it.
+  {
+    href: "/engagement",
+    label: "Engagement Party",
+    icon: PartyPopper,
+    roles: ["couple", "family", "wedding_party"],
+  },
 ];
 
 const ROLE_LABEL: Record<RoleTier, string> = {
