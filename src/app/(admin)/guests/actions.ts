@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 
+const RSVP_STATUS = z.enum(["pending", "attending", "declined"]);
+
 const contactSchema = z.object({
   fullName: z.string().min(1),
   email: z.string().email().optional().or(z.literal("")),
@@ -15,6 +17,8 @@ const contactSchema = z.object({
 const updateContactSchema = contactSchema.extend({
   id: z.string().uuid(),
   tags: z.string().optional(),
+  rsvpStatus: RSVP_STATUS,
+  engagementRsvpStatus: RSVP_STATUS,
 });
 
 function tagsToArray(tags: string | undefined) {
@@ -22,6 +26,36 @@ function tagsToArray(tags: string | undefined) {
     .split(",")
     .map((tag) => tag.trim())
     .filter(Boolean);
+}
+
+// Shared by updateContact (manually correcting a response) and
+// addChildContact (marking a manually-added plus one as attending) — the
+// engagement party RSVP has no dedicated column on contacts the way the
+// wedding one does (contacts.rsvp_status); it lives in the shared rsvps
+// table keyed by event_id (see api/engagement-rsvp/route.ts), so setting
+// it always means resolving the Engagement Party event id first.
+async function upsertEngagementRsvp(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  contactId: string,
+  status: z.infer<typeof RSVP_STATUS>
+) {
+  const { data: event } = await supabase
+    .from("events")
+    .select("id")
+    .eq("name", "Engagement Party")
+    .maybeSingle();
+  if (!event) return null;
+
+  const { error } = await supabase.from("rsvps").upsert(
+    {
+      contact_id: contactId,
+      event_id: event.id,
+      attending: status === "pending" ? null : status === "attending",
+      responded_at: status === "pending" ? null : new Date().toISOString(),
+    },
+    { onConflict: "contact_id,event_id" }
+  );
+  return error;
 }
 
 export async function addContact(formData: FormData) {
@@ -55,6 +89,8 @@ export async function updateContact(formData: FormData) {
     role: formData.get("role"),
     plusOneEligible: formData.get("plusOneEligible") === "on",
     tags: formData.get("tags") || "",
+    rsvpStatus: formData.get("rsvpStatus"),
+    engagementRsvpStatus: formData.get("engagementRsvpStatus"),
   });
 
   const supabase = await createClient();
@@ -67,11 +103,16 @@ export async function updateContact(formData: FormData) {
       role: parsed.role,
       plus_one_eligible: parsed.plusOneEligible,
       tags: tagsToArray(parsed.tags),
+      rsvp_status: parsed.rsvpStatus,
     })
     .eq("id", parsed.id);
+  if (error) return { error: error.message };
+
+  const rsvpError = await upsertEngagementRsvp(supabase, parsed.id, parsed.engagementRsvpStatus);
+  if (rsvpError) return { error: rsvpError.message };
 
   revalidatePath("/guests");
-  return { error: error?.message ?? null };
+  return { error: null };
 }
 
 const addChildSchema = z.object({
@@ -115,21 +156,12 @@ export async function addChildContact(formData: FormData) {
     .single();
   if (insertError || !child) return { error: insertError?.message ?? "Couldn't add guest." };
 
-  if (parsed.attendingEngagement) {
-    const { data: event } = await supabase
-      .from("events")
-      .select("id")
-      .eq("name", "Engagement Party")
-      .maybeSingle();
-
-    if (event) {
-      const { error: rsvpError } = await supabase.from("rsvps").upsert(
-        { contact_id: child.id, event_id: event.id, attending: true, responded_at: new Date().toISOString() },
-        { onConflict: "contact_id,event_id" }
-      );
-      if (rsvpError) return { error: rsvpError.message };
-    }
-  }
+  const rsvpError = await upsertEngagementRsvp(
+    supabase,
+    child.id,
+    parsed.attendingEngagement ? "attending" : "pending"
+  );
+  if (rsvpError) return { error: rsvpError.message };
 
   revalidatePath("/guests");
   return { error: null };

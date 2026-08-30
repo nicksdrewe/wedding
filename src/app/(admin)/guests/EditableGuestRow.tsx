@@ -57,6 +57,7 @@ export function EditableGuestRow({
       <td colSpan={8} className="px-5 py-4">
         <GuestEditForm
           contact={contact}
+          engagementRsvpStatus={engagementRsvpStatus}
           onCancel={() => setEditing(false)}
           onSaved={() => setEditing(false)}
         />
@@ -196,10 +197,12 @@ export function EditableGuestRow({
 
 function GuestEditForm({
   contact,
+  engagementRsvpStatus,
   onCancel,
   onSaved,
 }: {
   contact: Contact;
+  engagementRsvpStatus: "pending" | "attending" | "declined";
   onCancel: () => void;
   onSaved: () => void;
 }) {
@@ -279,6 +282,34 @@ function GuestEditForm({
             placeholder="comma, separated"
             className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
           />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="font-serif text-[11px] font-medium tracking-[0.04em] text-ink-soft uppercase">
+            Wedding RSVP
+          </label>
+          <select
+            name="rsvpStatus"
+            defaultValue={contact.rsvp_status}
+            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+          >
+            <option value="pending">Pending</option>
+            <option value="attending">Attending</option>
+            <option value="declined">Declined</option>
+          </select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="font-serif text-[11px] font-medium tracking-[0.04em] text-ink-soft uppercase">
+            Engagement RSVP
+          </label>
+          <select
+            name="engagementRsvpStatus"
+            defaultValue={engagementRsvpStatus}
+            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+          >
+            <option value="pending">Pending</option>
+            <option value="attending">Attending</option>
+            <option value="declined">Declined</option>
+          </select>
         </div>
         <label className="flex items-center gap-2 pb-2 text-sm text-ink-soft">
           <input
