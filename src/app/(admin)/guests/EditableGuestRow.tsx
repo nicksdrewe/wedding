@@ -1,0 +1,249 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { Mail, Phone, UserPlus } from "lucide-react";
+import { deleteContact, updateContact } from "./actions";
+import { ROLE_BADGE, ROLE_LABEL, RSVP_STYLE } from "./badges";
+
+export type Contact = {
+  id: string;
+  full_name: string;
+  email: string | null;
+  phone: string | null;
+  role: string;
+  tags: string[] | null;
+  plus_one_eligible: boolean;
+  rsvp_status: string;
+};
+
+const DELETE_WARNING =
+  "Delete this guest? Their RSVP, gift claims, and expense-split history will be permanently deleted too. A guest linked as the payer on an expense can't be removed until that expense is reassigned.";
+
+export function EditableGuestRow({ contact, isCouple }: { contact: Contact; isCouple: boolean }) {
+  const [editing, setEditing] = useState(false);
+  const [deletePending, startDeleteTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  function handleDelete() {
+    if (!window.confirm(DELETE_WARNING)) return;
+    setError(null);
+    startDeleteTransition(async () => {
+      const result = await deleteContact(contact.id);
+      if (result?.error) setError(result.error);
+    });
+  }
+
+  if (editing) {
+    return (
+      <td colSpan={7} className="px-5 py-4">
+        <GuestEditForm
+          contact={contact}
+          onCancel={() => setEditing(false)}
+          onSaved={() => setEditing(false)}
+        />
+      </td>
+    );
+  }
+
+  const rsvp = RSVP_STYLE[contact.rsvp_status] ?? RSVP_STYLE.pending;
+  const RsvpIcon = rsvp.icon;
+
+  return (
+    <>
+      <td className="px-5 py-3.5 font-medium text-ink">{contact.full_name}</td>
+      <td className="px-5 py-3.5 text-ink-soft">
+        <div className="flex flex-col gap-1">
+          {contact.email && (
+            <span className="inline-flex items-center gap-1.5">
+              <Mail className="h-3.5 w-3.5 shrink-0 text-ink-soft/60" strokeWidth={2} />
+              {contact.email}
+            </span>
+          )}
+          {contact.phone && (
+            <span className="inline-flex items-center gap-1.5">
+              <Phone className="h-3.5 w-3.5 shrink-0 text-ink-soft/60" strokeWidth={2} />
+              {contact.phone}
+            </span>
+          )}
+          {!contact.email && !contact.phone && <span className="text-ink-soft/40">—</span>}
+        </div>
+      </td>
+      <td className="px-5 py-3.5">
+        <span
+          className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium tracking-[0.02em] ${
+            ROLE_BADGE[contact.role] ?? ROLE_BADGE.guest
+          }`}
+        >
+          {ROLE_LABEL[contact.role] ?? contact.role}
+        </span>
+      </td>
+      <td className="px-5 py-3.5">
+        {contact.tags && contact.tags.length > 0 ? (
+          <div className="flex flex-wrap gap-1">
+            {contact.tags.map((tag) => (
+              <span key={tag} className="rounded-full bg-ink/5 px-2 py-0.5 text-[11px] text-ink-soft">
+                {tag}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <span className="text-ink-soft/30">—</span>
+        )}
+      </td>
+      <td className="px-5 py-3.5 text-center">
+        {contact.plus_one_eligible ? (
+          <UserPlus className="mx-auto h-4 w-4 text-accent" strokeWidth={2} />
+        ) : (
+          <span className="text-ink-soft/30">—</span>
+        )}
+      </td>
+      <td className="px-5 py-3.5">
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium tracking-[0.02em] ${rsvp.className}`}
+        >
+          <RsvpIcon className="h-3.5 w-3.5" strokeWidth={2} />
+          {rsvp.label}
+        </span>
+      </td>
+      <td className="px-5 py-3.5 text-right">
+        {isCouple && (
+          <div className="flex shrink-0 justify-end gap-3 opacity-0 transition-opacity group-hover:opacity-100">
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-accent"
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deletePending}
+              className="font-serif text-[11px] tracking-[0.06em] text-alert/80 uppercase hover:text-alert disabled:opacity-60"
+            >
+              {deletePending ? "Deleting…" : "Delete"}
+            </button>
+          </div>
+        )}
+        {error && <p className="mt-1 font-reading text-[11px] whitespace-normal text-alert">{error}</p>}
+      </td>
+    </>
+  );
+}
+
+function GuestEditForm({
+  contact,
+  onCancel,
+  onSaved,
+}: {
+  contact: Contact;
+  onCancel: () => void;
+  onSaved: () => void;
+}) {
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  function handleSubmit(formData: FormData) {
+    setError(null);
+    startTransition(async () => {
+      const result = await updateContact(formData);
+      if (result?.error) {
+        setError(result.error);
+        return;
+      }
+      onSaved();
+    });
+  }
+
+  return (
+    <form action={handleSubmit} className="rounded-[10px] border border-ink/10 bg-white/50 p-4">
+      <input type="hidden" name="id" value={contact.id} />
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="flex flex-col gap-1">
+          <label className="font-serif text-[11px] font-medium tracking-[0.04em] text-ink-soft uppercase">
+            Name
+          </label>
+          <input
+            name="fullName"
+            required
+            defaultValue={contact.full_name}
+            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="font-serif text-[11px] font-medium tracking-[0.04em] text-ink-soft uppercase">
+            Email
+          </label>
+          <input
+            name="email"
+            type="email"
+            defaultValue={contact.email ?? ""}
+            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="font-serif text-[11px] font-medium tracking-[0.04em] text-ink-soft uppercase">
+            Phone
+          </label>
+          <input
+            name="phone"
+            defaultValue={contact.phone ?? ""}
+            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="font-serif text-[11px] font-medium tracking-[0.04em] text-ink-soft uppercase">
+            Role
+          </label>
+          <select
+            name="role"
+            defaultValue={contact.role}
+            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+          >
+            <option value="guest">Guest</option>
+            <option value="family">Family</option>
+            <option value="wedding_party">Wedding Party</option>
+            <option value="couple">Couple</option>
+          </select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="font-serif text-[11px] font-medium tracking-[0.04em] text-ink-soft uppercase">
+            Tags
+          </label>
+          <input
+            name="tags"
+            defaultValue={(contact.tags ?? []).join(", ")}
+            placeholder="comma, separated"
+            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+          />
+        </div>
+        <label className="flex items-center gap-2 pb-2 text-sm text-ink-soft">
+          <input
+            type="checkbox"
+            name="plusOneEligible"
+            defaultChecked={contact.plus_one_eligible}
+            className="accent-accent"
+          />
+          Plus-one eligible
+        </label>
+        <div className="flex gap-2">
+          <button
+            type="submit"
+            disabled={pending}
+            className="rounded-full bg-ink px-5 py-2 text-sm text-cream transition-colors duration-150 hover:bg-ink-soft disabled:opacity-60"
+          >
+            {pending ? "Saving…" : "Save"}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-full border border-ink/20 px-5 py-2 text-sm text-ink-soft transition-colors duration-150 hover:border-ink/40"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+      {error && <p className="mt-3 font-reading text-xs text-alert">{error}</p>}
+    </form>
+  );
+}

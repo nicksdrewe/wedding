@@ -63,6 +63,45 @@ export async function createCategoryPage(formData: FormData) {
   return { error: null };
 }
 
+const updateCategoryPageSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string().min(1),
+});
+
+export async function updateCategoryPage(formData: FormData) {
+  const parsed = updateCategoryPageSchema.parse({
+    id: formData.get("id"),
+    title: formData.get("title"),
+  });
+
+  const supabase = await createClient();
+  // Slug is left untouched on edit (unlike create's dedupe dance) so the
+  // category's URL — and anything already linking to it — keeps working.
+  const { error } = await supabase
+    .from("category_pages")
+    .update({ title: parsed.title })
+    .eq("id", parsed.id);
+
+  revalidatePath("/categories");
+  return { error: error?.message ?? null };
+}
+
+export async function deleteCategoryPage(id: string) {
+  const parsed = z.string().uuid().parse(id);
+  const supabase = await createClient();
+
+  // Cascades (0001/0004): page_options (via option_groups), category_costs,
+  // category_contacts, diary_entries, and the option_groups row itself all
+  // go with it — the caller's confirm copy must say so explicitly.
+  const { error } = await supabase.from("category_pages").delete().eq("id", parsed);
+
+  revalidatePath("/categories");
+  revalidatePath("/budget");
+  revalidatePath("/diary");
+  revalidatePath("/project");
+  return { error: error?.message ?? null };
+}
+
 const costSchema = z.object({
   categoryPageId: z.string().uuid(),
   predictedCost: z.coerce.number().nonnegative().optional().nullable(),
@@ -134,6 +173,48 @@ export async function addCategoryContact(formData: FormData) {
   return { error: error?.message ?? null };
 }
 
+const updateContactSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().min(1),
+  role: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().email().optional().or(z.literal("")),
+});
+
+export async function updateCategoryContact(formData: FormData) {
+  const parsed = updateContactSchema.parse({
+    id: formData.get("id"),
+    name: formData.get("name"),
+    role: formData.get("role") || undefined,
+    phone: formData.get("phone") || undefined,
+    email: formData.get("email") || "",
+  });
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("category_contacts")
+    .update({
+      name: parsed.name,
+      role: parsed.role ?? null,
+      phone: parsed.phone ?? null,
+      email: parsed.email || null,
+    })
+    .eq("id", parsed.id);
+
+  revalidatePath("/categories");
+  return { error: error?.message ?? null };
+}
+
+export async function deleteCategoryContact(id: string) {
+  const parsed = z.string().uuid().parse(id);
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("category_contacts").delete().eq("id", parsed);
+
+  revalidatePath("/categories");
+  return { error: error?.message ?? null };
+}
+
 const dateSchema = z.object({
   categoryPageId: z.string().uuid(),
   title: z.string().min(1),
@@ -154,6 +235,41 @@ export async function addCategoryDate(formData: FormData) {
     source: "category_page",
     category_page_id: parsed.categoryPageId,
   });
+
+  revalidatePath("/categories");
+  revalidatePath("/diary");
+  return { error: error?.message ?? null };
+}
+
+const updateDateSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string().min(1),
+  entryDate: z.string().min(1),
+});
+
+export async function updateCategoryDate(formData: FormData) {
+  const parsed = updateDateSchema.parse({
+    id: formData.get("id"),
+    title: formData.get("title"),
+    entryDate: formData.get("entryDate"),
+  });
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("diary_entries")
+    .update({ title: parsed.title, entry_date: parsed.entryDate })
+    .eq("id", parsed.id);
+
+  revalidatePath("/categories");
+  revalidatePath("/diary");
+  return { error: error?.message ?? null };
+}
+
+export async function deleteCategoryDate(id: string) {
+  const parsed = z.string().uuid().parse(id);
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("diary_entries").delete().eq("id", parsed);
 
   revalidatePath("/categories");
   revalidatePath("/diary");

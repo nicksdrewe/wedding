@@ -16,8 +16,14 @@ import {
   DisclosureContent,
   DisclosureTrigger,
 } from "@/components/motion-primitives/disclosure";
-import { addOptionImage, markOptionWinner, removeOptionImage } from "@/lib/options/actions";
+import {
+  addOptionImage,
+  deleteOption,
+  markOptionWinner,
+  removeOptionImage,
+} from "@/lib/options/actions";
 import { ImageUpload } from "@/components/ImageUpload";
+import { EditOptionForm } from "./EditOptionForm";
 
 export type OptionImage = {
   id: string;
@@ -43,9 +49,11 @@ export type OptionDetail = {
 export function OptionCard({
   option,
   isCouple,
+  revalidate,
 }: {
   option: OptionDetail;
   isCouple: boolean;
+  revalidate: string;
 }) {
   const [open, setOpen] = useState(false);
   const cover = option.images[0];
@@ -96,7 +104,7 @@ export function OptionCard({
         </div>
       </DisclosureTrigger>
       <DisclosureContent>
-        <OptionDetailPanel option={option} isCouple={isCouple} />
+        <OptionDetailPanel option={option} isCouple={isCouple} revalidate={revalidate} />
       </DisclosureContent>
     </Disclosure>
   );
@@ -105,17 +113,21 @@ export function OptionCard({
 function OptionDetailPanel({
   option,
   isCouple,
+  revalidate,
 }: {
   option: OptionDetail;
   isCouple: boolean;
+  revalidate: string;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const [editing, setEditing] = useState(false);
   const [winnerPending, startWinnerTransition] = useTransition();
   const [imagePending, startImageTransition] = useTransition();
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [, startRemoveTransition] = useTransition();
+  const [deletePending, startDeleteTransition] = useTransition();
 
   function handleMarkWinner() {
     setError(null);
@@ -145,6 +157,20 @@ function OptionDetailPanel({
       }
       setImageUrl("");
       inputRef.current?.focus();
+    });
+  }
+
+  function handleDeleteOption() {
+    if (
+      !window.confirm(
+        "Delete this option? It may have images and history — this permanently removes all of it and can not be undone."
+      )
+    )
+      return;
+    setError(null);
+    startDeleteTransition(async () => {
+      const result = await deleteOption(option.id, revalidate);
+      if (result.error) setError(result.error);
     });
   }
 
@@ -227,6 +253,17 @@ function OptionDetailPanel({
         </div>
       )}
 
+      {editing ? (
+        <div className="mt-4">
+          <EditOptionForm
+            option={option}
+            revalidate={revalidate}
+            onCancel={() => setEditing(false)}
+            onSaved={() => setEditing(false)}
+          />
+        </div>
+      ) : (
+        <>
       <div className="mt-4 flex flex-col gap-3 font-reading text-[13px] text-ink-soft">
         <div>
           <p className="font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft/70 uppercase">
@@ -288,26 +325,45 @@ function OptionDetailPanel({
       </div>
 
       {isCouple && (
-        <button
-          type="button"
-          onClick={handleMarkWinner}
-          disabled={winnerPending || option.is_winner}
-          className={`mt-4 flex items-center gap-1.5 rounded-full px-4.5 py-2 font-serif text-xs transition disabled:opacity-70 ${
-            option.is_winner
-              ? "bg-accent text-cream"
-              : "border border-ink/20 text-ink-soft hover:border-ink/40"
-          }`}
-        >
-          {option.is_winner ? (
-            <>
-              <Check className="h-3.5 w-3.5" strokeWidth={2.5} /> Winner
-            </>
-          ) : winnerPending ? (
-            "Marking…"
-          ) : (
-            "Mark as winner"
-          )}
-        </button>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={handleMarkWinner}
+            disabled={winnerPending || option.is_winner}
+            className={`flex items-center gap-1.5 rounded-full px-4.5 py-2 font-serif text-xs transition disabled:opacity-70 ${
+              option.is_winner
+                ? "bg-accent text-cream"
+                : "border border-ink/20 text-ink-soft hover:border-ink/40"
+            }`}
+          >
+            {option.is_winner ? (
+              <>
+                <Check className="h-3.5 w-3.5" strokeWidth={2.5} /> Winner
+              </>
+            ) : winnerPending ? (
+              "Marking…"
+            ) : (
+              "Mark as winner"
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-accent"
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            onClick={handleDeleteOption}
+            disabled={deletePending}
+            className="font-serif text-[11px] tracking-[0.06em] text-alert/80 uppercase hover:text-alert disabled:opacity-60"
+          >
+            {deletePending ? "Deleting…" : "Delete"}
+          </button>
+        </div>
+      )}
+        </>
       )}
 
       {error && <p className="mt-3 font-reading text-xs text-alert">{error}</p>}

@@ -92,6 +92,76 @@ export async function addOption(formData: FormData) {
   return { error: error?.message ?? null };
 }
 
+const updateOptionSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().min(1),
+  description: z.string().optional().or(z.literal("")),
+  webLink: z.string().optional().or(z.literal("")),
+  predictedCost: z.coerce.number().nonnegative().optional().nullable(),
+  actualCost: z.coerce.number().nonnegative().optional().nullable(),
+  optionDate: z.string().optional().or(z.literal("")),
+  contactName: z.string().optional().or(z.literal("")),
+  contactPhone: z.string().optional().or(z.literal("")),
+  contactEmail: z.string().email().optional().or(z.literal("")),
+  revalidate: z.string(),
+});
+
+// Full edit of every page_options field, including description and
+// web_link — addOption never exposed those (they were only ever set
+// elsewhere, if at all), so this is the first form that can write them.
+export async function updateOption(formData: FormData) {
+  const parsed = updateOptionSchema.parse({
+    id: formData.get("id"),
+    name: formData.get("name"),
+    description: formData.get("description") || "",
+    webLink: formData.get("webLink") || "",
+    predictedCost: formData.get("predictedCost") || null,
+    actualCost: formData.get("actualCost") || null,
+    optionDate: formData.get("optionDate") || "",
+    contactName: formData.get("contactName") || "",
+    contactPhone: formData.get("contactPhone") || "",
+    contactEmail: formData.get("contactEmail") || "",
+    revalidate: formData.get("revalidate"),
+  });
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("page_options")
+    .update({
+      name: parsed.name,
+      description: parsed.description || null,
+      web_link: parsed.webLink || null,
+      predicted_cost: parsed.predictedCost,
+      actual_cost: parsed.actualCost,
+      option_date: parsed.optionDate || null,
+      contact_name: parsed.contactName || null,
+      contact_phone: parsed.contactPhone || null,
+      contact_email: parsed.contactEmail || null,
+    })
+    .eq("id", parsed.id);
+
+  revalidatePath(parsed.revalidate);
+  revalidatePath("/categories");
+  revalidatePath("/project");
+
+  return { error: error?.message ?? null };
+}
+
+// Deletes the whole option (page_option_images cascade with it per 0006 —
+// same removal precedent as removeOptionImage, just at the row level).
+export async function deleteOption(id: string, revalidate: string) {
+  const parsed = z.string().uuid().parse(id);
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("page_options").delete().eq("id", parsed);
+
+  revalidatePath(revalidate);
+  revalidatePath("/categories");
+  revalidatePath("/project");
+
+  return { error: error?.message ?? null };
+}
+
 export async function selectWinner(
   groupId: string,
   optionId: string,

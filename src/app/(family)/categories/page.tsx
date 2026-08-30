@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
 import { InView } from "@/components/motion-primitives/in-view";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { NewCategoryForm } from "./NewCategoryForm";
+import { CategoryCard } from "./CategoryCard";
 
 export default async function CategoriesPage() {
   const profile = await getCurrentProfile();
@@ -41,18 +41,16 @@ export default async function CategoriesPage() {
                 variants={{ hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }}
                 transition={{ duration: 0.4, delay: i * 0.05, ease: [0.22, 1, 0.36, 1] }}
               >
-                <Link
-                  href={`/categories/${p.slug}`}
-                  className="group block rounded-[10px] border border-ink/10 bg-white p-5 transition-colors duration-150 hover:border-accent/40 hover:bg-accent/[0.03]"
-                >
-                  <h2 className="font-serif text-[15px] font-semibold text-ink transition-colors duration-150 group-hover:text-accent">
-                    {p.title}
-                  </h2>
-                  <p className="mt-1.5 font-reading text-[13px] text-ink-soft">
-                    Predicted £{cost?.predicted_cost ?? "—"} · Actual £
-                    {cost?.actual_cost ?? "—"}
-                  </p>
-                </Link>
+                <CategoryCard
+                  category={{
+                    id: p.id,
+                    slug: p.slug,
+                    title: p.title,
+                    predictedCost: cost?.predicted_cost ?? "—",
+                    actualCost: cost?.actual_cost ?? "—",
+                  }}
+                  isCouple={profile?.role === "couple"}
+                />
               </InView>
             );
           })}

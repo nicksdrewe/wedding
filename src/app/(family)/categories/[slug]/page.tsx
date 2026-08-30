@@ -6,7 +6,9 @@ import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { CostForm } from "./CostForm";
 import { ContactForm } from "./ContactForm";
+import { ContactRow } from "./ContactRow";
 import { DateForm } from "./DateForm";
+import { DateRow } from "./DateRow";
 import { StartOptionsModeButton } from "./StartOptionsModeButton";
 
 export default async function CategoryDetailPage({
@@ -112,15 +114,7 @@ export default async function CategoryDetailPage({
         {contacts && contacts.length > 0 ? (
           <ul className="mt-3 flex flex-col gap-2">
             {contacts.map((c) => (
-              <li
-                key={c.id}
-                className="rounded-[8px] border border-ink/8 bg-cream/50 px-3 py-2 font-reading text-[13px] text-ink"
-              >
-                <span className="font-serif font-semibold">{c.name}</span>
-                {c.role ? ` — ${c.role}` : ""}
-                {c.phone ? ` · ${c.phone}` : ""}
-                {c.email ? ` · ${c.email}` : ""}
-              </li>
+              <ContactRow key={c.id} contact={c} categoryPageId={page.id} isCouple={isCouple} />
             ))}
           </ul>
         ) : (
@@ -134,12 +128,7 @@ export default async function CategoryDetailPage({
         {dates && dates.length > 0 ? (
           <ul className="mt-3 flex flex-col gap-2">
             {dates.map((d) => (
-              <li
-                key={d.id}
-                className="rounded-[8px] border border-ink/8 bg-cream/50 px-3 py-2 font-reading text-[13px] text-ink"
-              >
-                {d.entry_date} — {d.title}
-              </li>
+              <DateRow key={d.id} entry={d} categoryPageId={page.id} isCouple={isCouple} />
             ))}
           </ul>
         ) : (

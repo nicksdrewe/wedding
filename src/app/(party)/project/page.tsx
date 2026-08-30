@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentProfile } from "@/lib/auth/roles";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { IdeaForm } from "./IdeaForm";
+import { IdeaCard } from "./IdeaCard";
 import { TaskForm } from "./TaskForm";
 import { TaskRow } from "./TaskRow";
 import { NewOptionGroupForm } from "./NewOptionGroupForm";
@@ -10,16 +12,18 @@ import { OptionsCompareGroup, type CompareGroup } from "./OptionsCompareGroup";
 
 export default async function ProjectPage() {
   const supabase = await createClient();
+  const profile = await getCurrentProfile();
+  const isCouple = profile?.role === "couple";
 
   const [{ data: ideas }, { data: tasks }, { data: contacts }, { data: optionGroups }] = await Promise.all([
     supabase
       .from("idea_boards")
-      .select("id, title, body, created_at")
+      .select("id, title, body, created_at, created_by")
       .eq("tier", "wedding_party")
       .order("created_at", { ascending: false }),
     supabase
       .from("tasks")
-      .select("id, title, notes, status, due_date, contacts(full_name)")
+      .select("id, title, notes, status, due_date, owner_contact_id, contacts(full_name)")
       .order("status")
       .order("due_date", { ascending: true, nullsFirst: false }),
     supabase
@@ -68,15 +72,13 @@ export default async function ProjectPage() {
           <IdeaForm />
           <ul className="mt-4 flex flex-col gap-2.5">
             {(ideas ?? []).map((idea) => (
-              <li
+              <IdeaCard
                 key={idea.id}
-                className="rounded-[10px] border border-ink/10 bg-white p-4 transition-colors duration-150 hover:border-accent/40"
-              >
-                <p className="font-serif text-sm font-semibold">{idea.title}</p>
-                {idea.body && (
-                  <p className="mt-1.5 font-reading text-[13px] text-ink-soft">{idea.body}</p>
-                )}
-              </li>
+                id={idea.id}
+                title={idea.title}
+                body={idea.body}
+                canEdit={isCouple || idea.created_by === profile?.id}
+              />
             ))}
           </ul>
           {(!ideas || ideas.length === 0) && (
@@ -101,7 +103,9 @@ export default async function ProjectPage() {
                   title={t.title}
                   done={t.status === "done"}
                   dueDate={t.due_date}
+                  ownerContactId={t.owner_contact_id}
                   ownerName={owner?.full_name ?? null}
+                  contacts={contacts ?? []}
                 />
               );
             })}

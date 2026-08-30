@@ -4,7 +4,7 @@ import { InView } from "@/components/motion-primitives/in-view";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { ExpenseForm } from "./ExpenseForm";
-import { SettleButton } from "./SettleButton";
+import { ExpenseCard } from "./ExpenseCard";
 import { ProjectTabs } from "../ProjectTabs";
 
 export default async function ExpensesPage() {
@@ -98,40 +98,29 @@ export default async function ExpensesPage() {
         <ul className="mt-3 flex max-w-[640px] flex-col gap-2.5">
           {(expenses ?? []).map((e) => {
             const payer = Array.isArray(e.contacts) ? e.contacts[0] : e.contacts;
-            const mySplits = (splits ?? []).filter((s) => s.expense_id === e.id);
+            const mySplits = (splits ?? []).map((s) => {
+              const splitContact = (Array.isArray(s.contacts) ? s.contacts[0] : s.contacts) as
+                | { full_name: string }
+                | undefined;
+              return {
+                id: s.id,
+                amount: Number(s.amount),
+                settled: s.settled,
+                name: splitContact?.full_name,
+                expense_id: s.expense_id,
+              };
+            }).filter((s) => s.expense_id === e.id);
             return (
-              <li
+              <ExpenseCard
                 key={e.id}
-                className="rounded-[10px] border border-ink/10 bg-white p-4 transition-colors duration-150 hover:border-accent/40"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-serif text-sm font-semibold">{e.description}</span>
-                  <span className="font-serif text-sm">£{Number(e.amount).toFixed(2)}</span>
-                </div>
-                <p className="mt-1.5 font-reading text-[13px] text-ink-soft">
-                  Paid by {payer?.full_name ?? "—"}
-                </p>
-                <ul className="mt-3 flex flex-col gap-1.5 border-t border-ink/8 pt-2.5">
-                  {mySplits.map((s) => {
-                    const splitContact = (Array.isArray(s.contacts) ? s.contacts[0] : s.contacts) as
-                      | { full_name: string }
-                      | undefined;
-                    const name = splitContact?.full_name;
-                    return (
-                      <li
-                        key={s.id}
-                        className="flex items-center justify-between font-serif text-xs text-ink-soft"
-                      >
-                        <span>
-                          {name} — £{Number(s.amount).toFixed(2)}{" "}
-                          {s.settled ? "(settled)" : ""}
-                        </span>
-                        {!s.settled && <SettleButton splitId={s.id} />}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </li>
+                id={e.id}
+                description={e.description}
+                amount={Number(e.amount)}
+                paidByContactId={e.paid_by_contact_id}
+                payerName={payer?.full_name ?? null}
+                contacts={contacts ?? []}
+                splits={mySplits}
+              />
             );
           })}
         </ul>
