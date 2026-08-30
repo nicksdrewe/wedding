@@ -180,6 +180,20 @@ function HoverCaption({ caption }: { caption: string | null }) {
   );
 }
 
+// The cursor-follow caption pill only makes sense on a real mouse — on
+// touch, "hover" is simulated from a tap with no continuous movement to
+// follow, which is exactly the "glitches a tiny bit" report (the pill
+// jumping to the tap point and sticking, or briefly appearing on scroll).
+// Gating the hover handlers on this rather than a screen-width check,
+// since a touch device isn't reliably identified by viewport size (a
+// large tablet, a touch laptop) and this is evaluated per-event rather
+// than at render time, so there's no server/client markup to keep in sync
+// (see the CSS-only `[@media(hover:none)]` static caption below, which
+// takes the opposite, no-JS approach for the same reason).
+function isHoverCapable() {
+  return typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+}
+
 function RealPolaroidCard({
   photo,
   rotate,
@@ -234,7 +248,7 @@ function RealPolaroidCard({
     >
       <div
         className={`relative w-full transform-gpu overflow-hidden rounded-[2px] ${aspect}`}
-        onMouseEnter={() => !isCouple && photo.caption && onHoverCaption(photo.caption)}
+        onMouseEnter={() => !isCouple && photo.caption && isHoverCapable() && onHoverCaption(photo.caption)}
         onMouseLeave={() => !isCouple && onHoverCaption(null)}
       >
         {isCouple ? (
@@ -298,9 +312,15 @@ function RealPolaroidCard({
           </button>
         )
       ) : (
-        // No static caption line here any more for guests — it's now the
-        // hover-following pill rendered inside the image container above.
-        null
+        photo.caption && (
+          // Hidden by default (the cursor-follow pill handles it on a real
+          // mouse) and shown only on devices with no hover capability — see
+          // isHoverCapable above for why this is a pure CSS media query
+          // rather than a JS touch check.
+          <p className="mt-3 hidden text-center font-reading text-xs text-ink-soft italic [@media(hover:none)]:block">
+            {photo.caption}
+          </p>
+        )
       )}
     </div>
   );
@@ -335,7 +355,7 @@ function PlaceholderPolaroidCard({
     <div className="rounded-[4px] border border-ink/5 bg-white p-3 pb-7 shadow-[0_14px_30px_rgba(35,37,32,0.14)]">
       <div
         className={`relative w-full transform-gpu overflow-hidden rounded-[2px] ${photo.aspect}`}
-        onMouseEnter={() => onHoverCaption(photo.caption)}
+        onMouseEnter={() => isHoverCapable() && onHoverCaption(photo.caption)}
         onMouseLeave={() => onHoverCaption(null)}
       >
         {isCouple ? (
@@ -346,6 +366,11 @@ function PlaceholderPolaroidCard({
           wash
         )}
       </div>
+      {!isCouple && (
+        <p className="mt-3 hidden text-center font-reading text-xs text-ink-soft italic [@media(hover:none)]:block">
+          {photo.caption}
+        </p>
+      )}
     </div>
   );
 }
@@ -709,8 +734,9 @@ export function EngagementPageClient({
             </h2>
             <p className="mt-3 font-reading text-ink-soft">
               {attending
-                ? "We've got you down. Details on exact timing will follow closer to the date."
-                : "We'll miss you, but thanks for the reply."}
+                ? "Thank you for letting us know — we can't wait to celebrate with you."
+                : "Thank you for letting us know, and we'll miss you."}
+              {" "}If you need any further details in the meantime, please get in touch with us.
             </p>
           </div>
         ) : (
