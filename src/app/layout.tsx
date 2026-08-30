@@ -31,7 +31,7 @@ const hero = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Nick & Ellie — 28.11.26",
+  title: "Nick & Ellie — Summer 2028",
   description: "Nick & Ellie's wedding hub",
   manifest: "/manifest.json",
 };

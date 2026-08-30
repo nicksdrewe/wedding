@@ -14,6 +14,11 @@ import {
 import { Spotlight } from "@/components/motion-primitives/spotlight";
 import { SignInFields } from "@/components/SignInFields";
 
+// Off for the engagement-only launch — the wedding date isn't set yet (see
+// the "Summer 2028" placeholder below), so wedding RSVP has nothing real
+// to collect against. Flip back to true once a real date is set.
+const WEDDING_RSVP_ENABLED = false;
+
 const FRAME_COUNT = 129;
 const FRAME_SRC = (i: number) => `/hero-frames/frame-${String(i + 1).padStart(4, "0")}.jpg`;
 // How much scroll distance the sequence gets to play out over, in viewport
@@ -74,8 +79,10 @@ function ctaCopy(cta: HeroCta) {
     case "guest":
       return {
         eyebrow: "You're invited",
-        heading: "Let us know you're coming",
-        body: "RSVP to celebrate with us, or sign in to the hub to see the full details.",
+        heading: WEDDING_RSVP_ENABLED ? "Let us know you're coming" : "Join us for the engagement party",
+        body: WEDDING_RSVP_ENABLED
+          ? "RSVP to celebrate with us, or sign in to the hub to see the full details."
+          : "The wedding date is still to come — for now, come celebrate the engagement with us, or sign in to the hub.",
         primary: { href: "/rsvp", label: "RSVP" },
         secondary: { href: "/login", label: "Sign in" },
       };
@@ -460,7 +467,7 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
               className="mt-5 font-reading text-2xl text-cream italic md:text-[28px]"
               style={{ textShadow: "0 1px 14px rgba(0,0,0,0.6)" }}
             >
-              28 November 2026
+              Summer 2028
             </p>
           </div>
 
@@ -490,18 +497,17 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
             <div className="mt-8 flex flex-wrap justify-center gap-4">
               {cta.kind === "guest" ? (
                 <>
-                  {/* Deliberately NOT wrapped in their own "relative z-10"
-                      divs: each MorphingPopoverContent is already
-                      position:fixed with its own z-40, meant to compare
-                      against the page's real top-level stacking context.
-                      Wrapping each trigger in its own positioned+z-indexed
-                      div traps its whole popover (including that z-40)
-                      inside a small sibling stacking context instead —
-                      whichever trigger is later in the DOM (Sign in) then
-                      paints its entire popover over the other's, in full,
-                      regardless of the z-40. That was the "sign in sits in
-                      front of RSVP" bug. */}
-                  <RsvpMorphingButton />
+                  {/* Deliberately NOT wrapped in a "relative z-10" div:
+                      each MorphingPopoverContent is already position:fixed
+                      with its own z-40, meant to compare against the
+                      page's real top-level stacking context. Wrapping a
+                      trigger in its own positioned+z-indexed div traps its
+                      whole popover (including that z-40) inside a small
+                      sibling stacking context instead — whichever trigger
+                      is later in the DOM then paints its entire popover
+                      over the other's, in full, regardless of the z-40.
+                      That was the "sign in sits in front of RSVP" bug. */}
+                  {WEDDING_RSVP_ENABLED && <RsvpMorphingButton />}
                   <SignInMorphingButton />
                 </>
               ) : (

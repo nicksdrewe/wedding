@@ -117,7 +117,7 @@ export default function RsvpTokenPage({
       />
 
       <p className="relative z-10 font-serif text-xs tracking-[0.25em] text-ink-soft uppercase">
-        28 November 2026
+        Summer 2028
       </p>
       <h1 className="relative z-10 mt-3 font-display text-[44px] tracking-tight">
         Hello, {contact.full_name}
