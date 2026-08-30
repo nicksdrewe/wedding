@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Calendar, Camera, Check, Loader2, MapPin, X } from "lucide-react";
 import { Botanical } from "@/components/Botanical";
 import { InView } from "@/components/motion-primitives/in-view";
@@ -9,7 +9,11 @@ import {
   Disclosure,
   DisclosureContent,
 } from "@/components/motion-primitives/disclosure";
+import { Spotlight } from "@/components/motion-primitives/spotlight";
+import { GlowEffect } from "@/components/motion-primitives/glow-effect";
+import { Cursor } from "@/components/motion-primitives/cursor";
 import { ImageUpload } from "@/components/ImageUpload";
+import { cn } from "@/lib/utils";
 import {
   addEngagementPhoto,
   removeEngagementPhoto,
@@ -44,6 +48,36 @@ function SectionDivider({ seed }: { seed: number }) {
   );
 }
 
+// Spotlight-border wrapper for this page's light, cream-backed cards —
+// same "p-[2px] gap with a mouse-tracking Spotlight glow inside it"
+// structure as ScrollFlowerHero's RSVP/sign-in popovers, just tuned down
+// for a light card sitting on a light (cream) page rather than a glass
+// panel over a dark photo: a quieter ink-tinted gap and semi-transparent
+// botanical-green gradient stops (rather than those popovers' fully
+// opaque ones) so the rim reads as a soft glow, not a bright halo.
+// The self-contained radial-gradient with hex baked directly in is
+// required here, not the from-*/via-*/to-* utilities — this project's
+// Tailwind build never wires up --tw-gradient-stops from those bare
+// colour-stop utilities alone (confirmed multiple times elsewhere in
+// this codebase), which is what Spotlight's own base classes rely on.
+function SpotlightCard({
+  wrapperClassName,
+  children,
+}: {
+  wrapperClassName?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={cn("relative overflow-hidden rounded-[28px] bg-ink/8 p-[2px]", wrapperClassName)}>
+      <Spotlight
+        className="bg-[radial-gradient(circle,#4c6b524d,#7c94824d_45%,transparent_78%)] blur-2xl"
+        size={220}
+      />
+      {children}
+    </div>
+  );
+}
+
 // Placeholder colour washes shown only when there are no real photos yet
 // and the visitor isn't the couple (who get an "add the first one"
 // prompt instead) — keeps the section from looking broken/empty before
@@ -67,6 +101,32 @@ const LAYOUT_CYCLE = [
   { rotate: -1, aspect: "aspect-square" },
   { rotate: 2, aspect: "aspect-[4/5]" },
 ];
+
+// A caption that stays hidden until the photo is hovered, then follows the
+// cursor within it — via the vendored Cursor component in attachToParent
+// mode, which hides the real OS cursor over its attached parent and shows
+// this pill in its place. The pill's own translate offset keeps it just
+// below-right of the pointer rather than dead-centred on it. Styled in this
+// site's palette (ink pill, cream text) rather than the reference demo's
+// neon green. On touch devices no hover ever fires, so the pill simply
+// never appears — nothing else needs to change for that to degrade safely.
+function HoverCaption({ caption }: { caption: string }) {
+  return (
+    <Cursor
+      attachToParent
+      variants={{
+        initial: { opacity: 0, scale: 0.85 },
+        animate: { opacity: 1, scale: 1 },
+        exit: { opacity: 0, scale: 0.85 },
+      }}
+      transition={{ type: "spring", stiffness: 420, damping: 32 }}
+    >
+      <div className="translate-x-4 translate-y-4 rounded-full bg-ink/90 px-3.5 py-1.5 font-reading text-[11px] whitespace-nowrap text-cream shadow-[0_6px_16px_rgba(35,37,32,0.35)]">
+        {caption}
+      </div>
+    </Cursor>
+  );
+}
 
 function RealPolaroidCard({
   photo,
@@ -118,7 +178,7 @@ function RealPolaroidCard({
       className="group relative rounded-[4px] border border-ink/5 bg-white p-3 pb-7 shadow-[0_14px_30px_rgba(35,37,32,0.14)]"
       style={{ transform: `rotate(${rotate}deg)` }}
     >
-      <div className={`relative w-full overflow-hidden rounded-[2px] ${aspect}`}>
+      <div className={`relative w-full transform-gpu overflow-hidden rounded-[2px] ${aspect}`}>
         {isCouple ? (
           // The X button below is a sibling of this label, not nested
           // inside it — clicking it removes the photo without also
@@ -136,6 +196,12 @@ function RealPolaroidCard({
         ) : (
           image
         )}
+        {/* Guests (not the couple, who get the always-visible click-to-edit
+            affordance below instead) only see the caption on hover, tracking
+            the cursor within the photo — the transform-gpu above gives this
+            container its own containing block so the Cursor pill's `fixed`
+            positioning is clipped/scoped to just this photo. */}
+        {!isCouple && photo.caption && <HoverCaption caption={photo.caption} />}
         {isCouple && (
           <button
             type="button"
@@ -180,9 +246,9 @@ function RealPolaroidCard({
           </button>
         )
       ) : (
-        photo.caption && (
-          <p className="mt-3 text-center font-reading text-xs text-ink-soft italic">{photo.caption}</p>
-        )
+        // No static caption line here any more for guests — it's now the
+        // hover-following pill rendered inside the image container above.
+        null
       )}
     </div>
   );
@@ -213,7 +279,7 @@ function PlaceholderPolaroidCard({
 
   return (
     <div className="rounded-[4px] border border-ink/5 bg-white p-3 pb-7 shadow-[0_14px_30px_rgba(35,37,32,0.14)]">
-      <div className={`relative w-full overflow-hidden rounded-[2px] ${photo.aspect}`}>
+      <div className={`relative w-full transform-gpu overflow-hidden rounded-[2px] ${photo.aspect}`}>
         {isCouple ? (
           <ImageUpload onUploaded={onUploaded} className="h-full w-full">
             {wash}
@@ -221,8 +287,8 @@ function PlaceholderPolaroidCard({
         ) : (
           wash
         )}
+        <HoverCaption caption={photo.caption} />
       </div>
-      <p className="mt-3 text-center font-reading text-xs text-ink-soft italic">{photo.caption}</p>
     </div>
   );
 }
@@ -394,25 +460,29 @@ function DetailsSection() {
           once
           variants={{ hidden: { opacity: 0, x: -16 }, visible: { opacity: 1, x: 0 } }}
           transition={{ duration: 0.6, ease: EASE }}
-          className="flex flex-col justify-center gap-5 rounded-[28px] border border-ink/10 bg-white p-8"
+          className="h-full"
         >
-          <div>
-            <p className="flex items-center gap-2 font-serif text-xs tracking-[0.2em] text-ink-soft/70 uppercase">
-              <Calendar className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" /> Date &amp; time
-            </p>
-            <p className="mt-1.5 font-display text-xl text-ink">{PARTY_DATE}, {PARTY_TIME}</p>
-          </div>
-          <div className="h-px w-full bg-ink/10" />
-          <div>
-            <p className="flex items-center gap-2 font-serif text-xs tracking-[0.2em] text-ink-soft/70 uppercase">
-              <MapPin className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" /> Venue
-            </p>
-            <p className="mt-1.5 font-display text-xl text-ink">{VENUE_NAME}, Hammersmith</p>
-          </div>
-          <p className="font-reading text-sm text-ink-soft">
-            This one&rsquo;s drinks and catching up rather than a sit-down
-            meal — come fed! RSVP below and we&rsquo;ll see you there.
-          </p>
+          <SpotlightCard wrapperClassName="h-full">
+            <div className="relative flex h-full flex-col justify-center gap-5 rounded-[26px] bg-white p-8">
+              <div>
+                <p className="flex items-center gap-2 font-serif text-xs tracking-[0.2em] text-ink-soft/70 uppercase">
+                  <Calendar className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" /> Date &amp; time
+                </p>
+                <p className="mt-1.5 font-display text-xl text-ink">{PARTY_DATE}, {PARTY_TIME}</p>
+              </div>
+              <div className="h-px w-full bg-ink/10" />
+              <div>
+                <p className="flex items-center gap-2 font-serif text-xs tracking-[0.2em] text-ink-soft/70 uppercase">
+                  <MapPin className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" /> Venue
+                </p>
+                <p className="mt-1.5 font-display text-xl text-ink">{VENUE_NAME}, Hammersmith</p>
+              </div>
+              <p className="font-reading text-sm text-ink-soft">
+                This one&rsquo;s drinks and catching up rather than a sit-down
+                meal — come fed! RSVP below and we&rsquo;ll see you there.
+              </p>
+            </div>
+          </SpotlightCard>
         </InView>
 
         <InView
@@ -420,25 +490,70 @@ function DetailsSection() {
           once
           variants={{ hidden: { opacity: 0, x: 16 }, visible: { opacity: 1, x: 0 } }}
           transition={{ duration: 0.6, delay: 0.1, ease: EASE }}
-          className="relative min-h-[320px] overflow-hidden rounded-[28px] border border-ink/10 shadow-[0_18px_50px_rgba(35,37,32,0.14)]"
+          className="h-full"
         >
-          <iframe
-            src={`https://www.google.com/maps?q=${mapQuery}&output=embed`}
-            className="absolute inset-0 h-full w-full border-0"
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-            title={`Map to ${VENUE_NAME}, Hammersmith`}
-          />
-          {/* No label overlay here — Google's own embed already places a
-              "The Black Lion" pin/label on the map itself now that it
-              points at a real, resolvable venue, and a second label of
-              ours sitting on top of it just duplicated and overlapped it.
-              The venue name is already stated in the text card beside
-              this one. */}
-          <div aria-hidden="true" className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/15" />
+          <SpotlightCard wrapperClassName="h-full min-h-[320px]">
+            <div className="relative h-full min-h-[316px] overflow-hidden rounded-[26px] shadow-[0_18px_50px_rgba(35,37,32,0.14)]">
+              <iframe
+                src={`https://www.google.com/maps?q=${mapQuery}&output=embed`}
+                className="absolute inset-0 h-full w-full border-0"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title={`Map to ${VENUE_NAME}, Hammersmith`}
+              />
+              {/* No label overlay here — Google's own embed already places a
+                  "The Black Lion" pin/label on the map itself now that it
+                  points at a real, resolvable venue, and a second label of
+                  ours sitting on top of it just duplicated and overlapped it.
+                  The venue name is already stated in the text card beside
+                  this one. */}
+              <div aria-hidden="true" className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/15" />
+            </div>
+          </SpotlightCard>
         </InView>
       </div>
     </section>
+  );
+}
+
+type OtherAttendee = { id: number; name: string };
+
+// One row of the "bringing others" list. The first row (index 0) is
+// already visible the instant the surrounding Disclosure opens (see the
+// "Bringing others" checkbox below), so it doesn't need its own reveal.
+// Every row after that is appended live while the user types — see
+// updateOtherName — so it mounts closed and flips itself open a frame
+// later, giving it the same smooth Disclosure grow-in the first field
+// gets from its parent, rather than popping in already-expanded.
+function OtherAttendeeField({
+  attendee,
+  index,
+  onChange,
+}: {
+  attendee: OtherAttendee;
+  index: number;
+  onChange: (id: number, value: string) => void;
+}) {
+  const [open, setOpen] = useState(index === 0);
+
+  useEffect(() => {
+    if (index === 0) return;
+    const raf = requestAnimationFrame(() => setOpen(true));
+    return () => cancelAnimationFrame(raf);
+  }, [index]);
+
+  return (
+    <Disclosure open={open}>
+      <DisclosureContent>
+        <input
+          type="text"
+          placeholder={index === 0 ? "Their name" : "Another name"}
+          value={attendee.name}
+          onChange={(e) => onChange(attendee.id, e.target.value)}
+          className="w-full rounded-full border border-ink/20 bg-white px-4.5 py-3 font-reading text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/15"
+        />
+      </DisclosureContent>
+    </Disclosure>
   );
 }
 
@@ -452,17 +567,38 @@ export function EngagementPageClient({
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [attending, setAttending] = useState<boolean | null>(null);
-  const [plusOne, setPlusOne] = useState(false);
-  const [plusOneName, setPlusOneName] = useState("");
+  const [bringingOthers, setBringingOthers] = useState(false);
+  const [others, setOthers] = useState<OtherAttendee[]>([{ id: 0, name: "" }]);
+  const nextOtherId = useRef(1);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+
+  // Classic "always show one empty trailing input": once the last field in
+  // the list has text in it, grow the list by one more empty field below
+  // it. This can keep going indefinitely — there's no cap in the UI.
+  function updateOtherName(id: number, value: string) {
+    setOthers((prev) => {
+      const next = prev.map((o) => (o.id === id ? { ...o, name: value } : o));
+      const last = next[next.length - 1];
+      if (last.name.trim().length > 0) {
+        next.push({ id: nextOtherId.current++, name: "" });
+      }
+      return next;
+    });
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (attending === null) return;
     setBusy(true);
     setError(null);
+    // Never send the dangling empty trailing field (or any other blank
+    // entry) to the server — only real names.
+    const otherNames =
+      attending && bringingOthers
+        ? others.map((o) => o.name.trim()).filter((name) => name.length > 0)
+        : [];
     const res = await fetch("/api/engagement-rsvp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -470,8 +606,7 @@ export function EngagementPageClient({
         fullName,
         email,
         attending,
-        plusOneAttending: plusOne,
-        plusOneName,
+        others: otherNames,
       }),
     });
     setBusy(false);
@@ -517,95 +652,119 @@ export function EngagementPageClient({
             variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
             transition={{ duration: 0.6, ease: EASE }}
           >
-            <form
-              onSubmit={submit}
-              className="rounded-[28px] border border-ink/10 bg-white p-8 shadow-[0_18px_50px_rgba(35,37,32,0.08)]"
-            >
-              <p className="font-serif text-xs tracking-[0.2em] text-ink-soft/70 uppercase">RSVP</p>
-              <h2 className="mt-1.5 font-display text-[22px]">Let us know you&rsquo;re coming</h2>
-
-              <div className="mt-6 flex flex-col gap-2.5">
-                <input
-                  type="text"
-                  required
-                  autoComplete="name"
-                  placeholder="Your name"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full rounded-full border border-ink/20 bg-white px-4.5 py-3 font-reading text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/15"
-                />
-                <input
-                  type="email"
-                  required
-                  autoComplete="email"
-                  placeholder="Your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-full border border-ink/20 bg-white px-4.5 py-3 font-reading text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/15"
-                />
-              </div>
-
-              <div className="mt-5 flex gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setAttending(true)}
-                  aria-pressed={attending === true}
-                  className={`flex-1 rounded-full py-3 font-serif text-[13px] transition ${
-                    attending === true
-                      ? "bg-accent text-cream shadow-[0_6px_16px_rgba(76,107,82,0.3)]"
-                      : "border border-ink/20 text-ink-soft hover:border-ink/40"
-                  }`}
-                >
-                  Joyfully attending
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAttending(false)}
-                  aria-pressed={attending === false}
-                  className={`flex-1 rounded-full py-3 font-serif text-[13px] transition ${
-                    attending === false
-                      ? "bg-ink text-cream shadow-[0_6px_16px_rgba(35,37,32,0.25)]"
-                      : "border border-ink/20 text-ink-soft hover:border-ink/40"
-                  }`}
-                >
-                  Can&rsquo;t make it
-                </button>
-              </div>
-
-              {attending && (
-                <div className="mt-5 flex flex-col gap-2.5">
-                  <label className="flex items-center gap-2.5 font-serif text-[13px] text-ink-soft">
-                    <input
-                      type="checkbox"
-                      checked={plusOne}
-                      onChange={(e) => setPlusOne(e.target.checked)}
-                    />
-                    Bringing a plus one
-                  </label>
-                  <Disclosure open={plusOne}>
-                    <DisclosureContent>
-                      <input
-                        type="text"
-                        placeholder="Plus one's name"
-                        value={plusOneName}
-                        onChange={(e) => setPlusOneName(e.target.value)}
-                        className="w-full rounded-full border border-ink/20 bg-white px-4.5 py-3 font-reading text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/15"
-                      />
-                    </DisclosureContent>
-                  </Disclosure>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={busy || attending === null}
-                className="mt-6 w-full rounded-full bg-ink px-7 py-3.5 font-serif text-sm text-cream transition hover:bg-ink-soft disabled:opacity-60"
+            <SpotlightCard>
+              <form
+                onSubmit={submit}
+                className="relative rounded-[26px] bg-white p-8 shadow-[0_18px_50px_rgba(35,37,32,0.08)]"
               >
-                {busy ? "Sending…" : "Send RSVP"}
-              </button>
+                <p className="font-serif text-xs tracking-[0.2em] text-ink-soft/70 uppercase">RSVP</p>
+                <h2 className="mt-1.5 font-display text-[22px]">Let us know you&rsquo;re coming</h2>
 
-              {error && <p className="mt-4 text-center font-reading text-sm text-alert">{error}</p>}
-            </form>
+                <div className="mt-6 flex flex-col gap-2.5">
+                  <input
+                    type="text"
+                    required
+                    autoComplete="name"
+                    placeholder="Your name"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="w-full rounded-full border border-ink/20 bg-white px-4.5 py-3 font-reading text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/15"
+                  />
+                  <input
+                    type="email"
+                    required
+                    autoComplete="email"
+                    placeholder="Your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full rounded-full border border-ink/20 bg-white px-4.5 py-3 font-reading text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/15"
+                  />
+                </div>
+
+                <div className="mt-5 flex gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setAttending(true)}
+                    aria-pressed={attending === true}
+                    className={`flex-1 rounded-full py-3 font-serif text-[13px] transition ${
+                      attending === true
+                        ? "bg-accent text-cream shadow-[0_6px_16px_rgba(76,107,82,0.3)]"
+                        : "border border-ink/20 text-ink-soft hover:border-ink/40"
+                    }`}
+                  >
+                    Joyfully attending
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAttending(false)}
+                    aria-pressed={attending === false}
+                    className={`flex-1 rounded-full py-3 font-serif text-[13px] transition ${
+                      attending === false
+                        ? "bg-ink text-cream shadow-[0_6px_16px_rgba(35,37,32,0.25)]"
+                        : "border border-ink/20 text-ink-soft hover:border-ink/40"
+                    }`}
+                  >
+                    Can&rsquo;t make it
+                  </button>
+                </div>
+
+                {attending && (
+                  <div className="mt-5 flex flex-col gap-2.5">
+                    <label className="flex items-center gap-2.5 font-serif text-[13px] text-ink-soft">
+                      <input
+                        type="checkbox"
+                        checked={bringingOthers}
+                        onChange={(e) => setBringingOthers(e.target.checked)}
+                      />
+                      Bringing others
+                    </label>
+                    <Disclosure open={bringingOthers}>
+                      <DisclosureContent>
+                        <div className="flex flex-col gap-2.5">
+                          {others.map((attendee, i) => (
+                            <OtherAttendeeField
+                              key={attendee.id}
+                              attendee={attendee}
+                              index={i}
+                              onChange={updateOtherName}
+                            />
+                          ))}
+                        </div>
+                      </DisclosureContent>
+                    </Disclosure>
+                  </div>
+                )}
+
+                {/* GlowEffect (vendored from motion-primitives) sits behind
+                    the button as an absolutely-positioned, pointer-events-
+                    none layer — the button itself needs `relative` so it
+                    paints above it, since an absolutely-positioned sibling
+                    earlier in the DOM otherwise paints over a plain static
+                    one regardless of source order. Botanical greens and warm
+                    cream/ink rather than the reference's rainbow, soft blur
+                    and a small scale bleed so it reads as a quiet halo, not
+                    a spotlight. */}
+                <div className="relative mt-6">
+                  <GlowEffect
+                    colors={["#4c6b52", "#7c9482", "#f4f1ec", "#232520"]}
+                    mode="colorShift"
+                    blur="soft"
+                    scale={1.04}
+                    duration={4}
+                    className="rounded-full"
+                  />
+                  <button
+                    type="submit"
+                    disabled={busy || attending === null}
+                    className="relative w-full rounded-full bg-ink px-7 py-3.5 font-serif text-sm text-cream transition hover:bg-ink-soft disabled:opacity-60"
+                  >
+                    {busy ? "Sending…" : "Send RSVP"}
+                  </button>
+                </div>
+
+                {error && <p className="mt-4 text-center font-reading text-sm text-alert">{error}</p>}
+              </form>
+            </SpotlightCard>
           </InView>
         )}
       </section>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Mail, Phone, UserPlus } from "lucide-react";
+import { CornerDownRight, Mail, Phone, UserPlus } from "lucide-react";
 import { deleteContact, updateContact } from "./actions";
 import { ROLE_BADGE, ROLE_LABEL, RSVP_STYLE } from "./badges";
 
@@ -19,7 +19,19 @@ export type Contact = {
 const DELETE_WARNING =
   "Delete this guest? Their RSVP, gift claims, and expense-split history will be permanently deleted too. A guest linked as the payer on an expense can't be removed until that expense is reassigned.";
 
-export function EditableGuestRow({ contact, isCouple }: { contact: Contact; isCouple: boolean }) {
+export function EditableGuestRow({
+  contact,
+  isCouple,
+  isChild = false,
+}: {
+  contact: Contact;
+  isCouple: boolean;
+  // True for a contact nested under a parent (e.g. an "other" added via
+  // the engagement party's group RSVP) — renders indented directly below
+  // the parent's row rather than as its own top-level row. Grouping is
+  // done by the caller (guests/page.tsx); this only affects styling.
+  isChild?: boolean;
+}) {
   const [editing, setEditing] = useState(false);
   const [deletePending, startDeleteTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +62,16 @@ export function EditableGuestRow({ contact, isCouple }: { contact: Contact; isCo
 
   return (
     <>
-      <td className="px-5 py-3.5 font-medium text-ink">{contact.full_name}</td>
+      <td className={`px-5 py-3.5 font-medium text-ink ${isChild ? "pl-11 text-ink-soft" : ""}`}>
+        {isChild && (
+          <CornerDownRight
+            className="mr-1.5 inline-block h-3.5 w-3.5 shrink-0 -translate-y-px text-ink-soft/40"
+            strokeWidth={2}
+            aria-hidden="true"
+          />
+        )}
+        {contact.full_name}
+      </td>
       <td className="px-5 py-3.5 text-ink-soft">
         <div className="flex flex-col gap-1">
           {contact.email && (
