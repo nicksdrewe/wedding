@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { Images } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
 import { PageHeader } from "@/components/PageHeader";
@@ -18,9 +20,10 @@ export default async function ProjectPage() {
   const [{ data: ideas }, { data: tasks }, { data: contacts }, { data: optionGroups }] = await Promise.all([
     supabase
       .from("idea_boards")
-      .select("id, title, body, created_at, created_by")
+      .select("id, title, body, tags, created_at, created_by, idea_board_images(id, image_url, sort_order)")
       .eq("tier", "wedding_party")
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .order("sort_order", { referencedTable: "idea_board_images", ascending: true }),
     supabase
       .from("tasks")
       .select("id, title, notes, status, due_date, owner_contact_id, contacts(full_name)")
@@ -68,7 +71,13 @@ export default async function ProjectPage() {
 
       <div className="mt-9 grid grid-cols-1 gap-10 md:grid-cols-2">
         <section>
-          <h2 className="font-serif text-[15px] font-semibold tracking-wide">Idea board</h2>
+          <Link
+            href="/project/ideas"
+            className="group inline-flex items-center gap-1.5 font-serif text-[15px] font-semibold tracking-wide transition-colors hover:text-accent"
+          >
+            Idea board
+            <Images className="h-3.5 w-3.5 text-ink-soft/50 transition-colors group-hover:text-accent" strokeWidth={2} aria-hidden="true" />
+          </Link>
           <IdeaForm />
           <ul className="mt-4 flex flex-col gap-2.5">
             {(ideas ?? []).map((idea) => (
@@ -77,6 +86,8 @@ export default async function ProjectPage() {
                 id={idea.id}
                 title={idea.title}
                 body={idea.body}
+                tags={idea.tags ?? []}
+                images={idea.idea_board_images ?? []}
                 canEdit={isCouple || idea.created_by === profile?.id}
               />
             ))}

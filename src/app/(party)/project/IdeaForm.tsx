@@ -30,6 +30,11 @@ export function IdeaForm() {
         rows={2}
         className="rounded-2xl border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
       />
+      <input
+        name="tags"
+        placeholder="Tags (comma, separated)"
+        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+      />
       <button
         type="submit"
         disabled={pending}
