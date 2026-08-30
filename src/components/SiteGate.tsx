@@ -10,7 +10,10 @@ import { Botanical } from "@/components/Botanical";
 // control still lives in Supabase auth/RLS for everything past the landing
 // page.
 const GATE_CODE = "N&E2028";
-const GATE_STORAGE_KEY = "site-gate-unlocked";
+// Exported so /i/[token]'s InviteRedirect can unlock the gate the same way
+// entering the code does, without duplicating the key as a second string
+// literal that could silently drift out of sync with this one.
+export const GATE_STORAGE_KEY = "site-gate-unlocked";
 
 type Status = "checking" | "locked" | "unlocked";
 

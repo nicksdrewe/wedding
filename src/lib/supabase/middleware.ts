@@ -16,6 +16,10 @@ const PUBLIC_PREFIXES = [
   "/rsvp",
   "/no-access",
   "/engagement",
+  // The reusable invite link (/i/[token], see lib/invite) — by design the
+  // whole point is that a signed-out invitee can follow it straight
+  // through, so it has to be public the same way "/" itself is.
+  "/i",
   "/api/rsvp",
   "/api/engagement-rsvp",
   "/api/auth/request-code",

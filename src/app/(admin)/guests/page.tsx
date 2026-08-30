@@ -3,15 +3,20 @@ import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { createClient } from "@/lib/supabase/server";
 import { InView } from "@/components/motion-primitives/in-view";
+import { getActiveInviteLink } from "@/lib/invite/actions";
 import { AddContactForm } from "./AddContactForm";
 import { EditableGuestRow } from "./EditableGuestRow";
+import { InviteLinkCard } from "./InviteLinkCard";
 
 export default async function GuestsPage() {
   const supabase = await createClient();
-  const { data: contacts } = await supabase
-    .from("contacts")
-    .select("id, full_name, email, phone, role, tags, plus_one_eligible, rsvp_status, rsvp_token, parent_contact_id")
-    .order("full_name");
+  const [{ data: contacts }, { token: activeInviteToken }] = await Promise.all([
+    supabase
+      .from("contacts")
+      .select("id, full_name, email, phone, role, tags, plus_one_eligible, rsvp_status, rsvp_token, parent_contact_id")
+      .order("full_name"),
+    getActiveInviteLink(),
+  ]);
 
   const hasContacts = !!contacts && contacts.length > 0;
 
@@ -41,6 +46,8 @@ export default async function GuestsPage() {
         title="Guest List"
         description="Your working guest list — doubles as the CRM for RSVP links, tags, and reminders."
       />
+
+      <InviteLinkCard initialToken={activeInviteToken} />
 
       <AddContactForm />
 
