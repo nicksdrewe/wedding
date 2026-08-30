@@ -11,7 +11,7 @@ import {
 } from "@/components/motion-primitives/disclosure";
 import { Spotlight } from "@/components/motion-primitives/spotlight";
 import { GlowEffect } from "@/components/motion-primitives/glow-effect";
-import { Cursor } from "@/components/motion-primitives/cursor";
+import { AnimatePresence, motion, useMotionValue, useSpring } from "motion/react";
 import { ImageUpload } from "@/components/ImageUpload";
 import { cn } from "@/lib/utils";
 import {
@@ -28,6 +28,14 @@ const VENUE_NAME = "The Black Lion";
 const VENUE_ADDRESS = "The Black Lion, Hammersmith, London";
 const PARTY_DATE = "24 October 2026";
 const PARTY_TIME = "7pm";
+
+// Hoisted to module scope rather than an inline array literal in the JSX
+// below — GlowEffect now memoises its animation target on this array's
+// VALUES (see glow-effect.tsx), but keeping the reference itself stable
+// too means React never even has a reason to consider it "changed" on
+// re-render, belt and suspenders against the glow restarting/stuttering
+// every time this form's state changes (typing, choosing attending, etc).
+const RSVP_GLOW_COLORS = ["#4c6b52", "#7c9482", "#f4f1ec", "#232520"];
 
 export type EngagementPhoto = {
   id: string;
@@ -102,29 +110,73 @@ const LAYOUT_CYCLE = [
   { rotate: 2, aspect: "aspect-[4/5]" },
 ];
 
-// A caption that stays hidden until the photo is hovered, then follows the
-// cursor within it — via the vendored Cursor component in attachToParent
-// mode, which hides the real OS cursor over its attached parent and shows
-// this pill in its place. The pill's own translate offset keeps it just
-// below-right of the pointer rather than dead-centred on it. Styled in this
-// site's palette (ink pill, cream text) rather than the reference demo's
-// neon green. On touch devices no hover ever fires, so the pill simply
-// never appears — nothing else needs to change for that to degrade safely.
-function HoverCaption({ caption }: { caption: string }) {
+// A caption that stays hidden until its photo is hovered, then follows the
+// cursor — via the vendored Cursor component, which hides the real OS
+// cursor and shows this pill in its place. Styled in this site's palette
+// (ink pill, cream text) rather than the reference demo's neon green. On
+// touch devices no hover ever fires, so the pill simply never appears.
+//
+// Rendered ONCE here at the gallery level (see GallerySection), not one
+// instance per photo nested inside each polaroid card — every polaroid is
+// rotated (either via `style={{ transform: rotate(...) }}` on
+// RealPolaroidCard, or via the InView wrapper's own `rotate` motion
+// variant for placeholders), and any ancestor with a CSS transform becomes
+// the containing block for a `position: fixed` descendant instead of the
+// viewport (standard, spec'd CSS behaviour). A follower pill nested inside
+// a rotated card was therefore positioning itself against that rotated
+// box's own (rotated) coordinate space while still receiving raw,
+// unrotated viewport mouse coordinates — a real, reported bug ("doesn't
+// align with where the mouse actually is"), worse the more a given card
+// was rotated. One shared instance living outside every rotated card,
+// driven by onMouseEnter/onMouseLeave from whichever photo is currently
+// hovered (see RealPolaroidCard/PlaceholderPolaroidCard), sidesteps the
+// whole problem — no rotated ancestor ever sits between it and the true
+// viewport.
+//
+// This is a small bespoke follower rather than the vendored Cursor
+// component: Cursor's `attachToParent` modes don't fit a single shared
+// instance tracking many separate hover targets — `attachToParent={true}`
+// needs to be a literal DOM child of the hovered element (which is exactly
+// the rotated nesting we're trying to get out of), and
+// `attachToParent={false}` sets `document.body.style.cursor = 'none'` for
+// the whole page with no cleanup to undo it, permanently hiding the real
+// cursor site-wide the moment this mounts. Springing our own motion values
+// off raw mousemove coordinates avoids both.
+function HoverCaption({ caption }: { caption: string | null }) {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const springX = useSpring(x, { stiffness: 420, damping: 32 });
+  const springY = useSpring(y, { stiffness: 420, damping: 32 });
+
+  useEffect(() => {
+    if (!caption) return;
+    const handleMove = (e: MouseEvent) => {
+      x.set(e.clientX);
+      y.set(e.clientY);
+    };
+    window.addEventListener("mousemove", handleMove);
+    return () => window.removeEventListener("mousemove", handleMove);
+  }, [caption, x, y]);
+
   return (
-    <Cursor
-      attachToParent
-      variants={{
-        initial: { opacity: 0, scale: 0.85 },
-        animate: { opacity: 1, scale: 1 },
-        exit: { opacity: 0, scale: 0.85 },
-      }}
-      transition={{ type: "spring", stiffness: 420, damping: 32 }}
+    <motion.div
+      className="pointer-events-none fixed top-0 left-0 z-50"
+      style={{ x: springX, y: springY }}
     >
-      <div className="translate-x-4 translate-y-4 rounded-full bg-ink/90 px-3.5 py-1.5 font-reading text-[11px] whitespace-nowrap text-cream shadow-[0_6px_16px_rgba(35,37,32,0.35)]">
-        {caption}
-      </div>
-    </Cursor>
+      <AnimatePresence>
+        {caption && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.85 }}
+            transition={{ type: "spring", stiffness: 420, damping: 32 }}
+            className="translate-x-4 translate-y-4 rounded-full bg-ink/90 px-3.5 py-1.5 font-reading text-[11px] whitespace-nowrap text-cream shadow-[0_6px_16px_rgba(35,37,32,0.35)]"
+          >
+            {caption}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }
 
@@ -133,11 +185,13 @@ function RealPolaroidCard({
   rotate,
   aspect,
   isCouple,
+  onHoverCaption,
 }: {
   photo: EngagementPhoto;
   rotate: number;
   aspect: string;
   isCouple: boolean;
+  onHoverCaption: (caption: string | null) => void;
 }) {
   const [removing, setRemoving] = useState(false);
   const [, startTransition] = useTransition();
@@ -178,7 +232,11 @@ function RealPolaroidCard({
       className="group relative rounded-[4px] border border-ink/5 bg-white p-3 pb-7 shadow-[0_14px_30px_rgba(35,37,32,0.14)]"
       style={{ transform: `rotate(${rotate}deg)` }}
     >
-      <div className={`relative w-full transform-gpu overflow-hidden rounded-[2px] ${aspect}`}>
+      <div
+        className={`relative w-full transform-gpu overflow-hidden rounded-[2px] ${aspect}`}
+        onMouseEnter={() => !isCouple && photo.caption && onHoverCaption(photo.caption)}
+        onMouseLeave={() => !isCouple && onHoverCaption(null)}
+      >
         {isCouple ? (
           // The X button below is a sibling of this label, not nested
           // inside it — clicking it removes the photo without also
@@ -196,12 +254,6 @@ function RealPolaroidCard({
         ) : (
           image
         )}
-        {/* Guests (not the couple, who get the always-visible click-to-edit
-            affordance below instead) only see the caption on hover, tracking
-            the cursor within the photo — the transform-gpu above gives this
-            container its own containing block so the Cursor pill's `fixed`
-            positioning is clipped/scoped to just this photo. */}
-        {!isCouple && photo.caption && <HoverCaption caption={photo.caption} />}
         {isCouple && (
           <button
             type="button"
@@ -258,10 +310,12 @@ function PlaceholderPolaroidCard({
   photo,
   isCouple,
   onUploaded,
+  onHoverCaption,
 }: {
   photo: (typeof PLACEHOLDER_PHOTOS)[number];
   isCouple: boolean;
   onUploaded: (url: string) => void;
+  onHoverCaption: (caption: string | null) => void;
 }) {
   const wash = (
     <div
@@ -279,7 +333,11 @@ function PlaceholderPolaroidCard({
 
   return (
     <div className="rounded-[4px] border border-ink/5 bg-white p-3 pb-7 shadow-[0_14px_30px_rgba(35,37,32,0.14)]">
-      <div className={`relative w-full transform-gpu overflow-hidden rounded-[2px] ${photo.aspect}`}>
+      <div
+        className={`relative w-full transform-gpu overflow-hidden rounded-[2px] ${photo.aspect}`}
+        onMouseEnter={() => onHoverCaption(photo.caption)}
+        onMouseLeave={() => onHoverCaption(null)}
+      >
         {isCouple ? (
           <ImageUpload onUploaded={onUploaded} className="h-full w-full">
             {wash}
@@ -287,7 +345,6 @@ function PlaceholderPolaroidCard({
         ) : (
           wash
         )}
-        <HoverCaption caption={photo.caption} />
       </div>
     </div>
   );
@@ -362,6 +419,7 @@ function HeroSection() {
 function GallerySection({ photos, isCouple }: { photos: EngagementPhoto[]; isCouple: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+  const [hoveredCaption, setHoveredCaption] = useState<string | null>(null);
 
   function handleUploaded(url: string) {
     setError(null);
@@ -418,6 +476,7 @@ function GallerySection({ photos, isCouple }: { photos: EngagementPhoto[]; isCou
                   isCouple={isCouple}
                   rotate={LAYOUT_CYCLE[i % LAYOUT_CYCLE.length].rotate}
                   aspect={LAYOUT_CYCLE[i % LAYOUT_CYCLE.length].aspect}
+                  onHoverCaption={setHoveredCaption}
                 />
               </InView>
             ))
@@ -434,10 +493,19 @@ function GallerySection({ photos, isCouple }: { photos: EngagementPhoto[]; isCou
                 transition={{ duration: 0.6, delay: i * 0.07, ease: EASE }}
                 className="mb-5 break-inside-avoid"
               >
-                <PlaceholderPolaroidCard photo={photo} isCouple={isCouple} onUploaded={handleUploaded} />
+                <PlaceholderPolaroidCard
+                  photo={photo}
+                  isCouple={isCouple}
+                  onUploaded={handleUploaded}
+                  onHoverCaption={setHoveredCaption}
+                />
               </InView>
             ))}
       </div>
+
+      {/* Single shared instance, rendered here rather than inside each
+          polaroid card — see the comment on HoverCaption above. */}
+      <HoverCaption caption={hoveredCaption} />
     </section>
   );
 }
@@ -746,7 +814,7 @@ export function EngagementPageClient({
                     a spotlight. */}
                 <div className="relative mt-6">
                   <GlowEffect
-                    colors={["#4c6b52", "#7c9482", "#f4f1ec", "#232520"]}
+                    colors={RSVP_GLOW_COLORS}
                     mode="colorShift"
                     blur="soft"
                     scale={1.04}
