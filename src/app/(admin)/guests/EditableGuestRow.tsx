@@ -23,6 +23,7 @@ export function EditableGuestRow({
   contact,
   isCouple,
   isChild = false,
+  engagementRsvpStatus,
 }: {
   contact: Contact;
   isCouple: boolean;
@@ -31,6 +32,11 @@ export function EditableGuestRow({
   // the parent's row rather than as its own top-level row. Grouping is
   // done by the caller (guests/page.tsx); this only affects styling.
   isChild?: boolean;
+  // Computed by the caller from the shared `rsvps` table (keyed by
+  // event_id) rather than read straight off the contact — contact.rsvp_status
+  // is a single column that only ever tracks the WEDDING rsvp (see
+  // api/rsvp/[token]/route.ts), so it can't also represent this.
+  engagementRsvpStatus: "pending" | "attending" | "declined";
 }) {
   const [editing, setEditing] = useState(false);
   const [deletePending, startDeleteTransition] = useTransition();
@@ -47,7 +53,7 @@ export function EditableGuestRow({
 
   if (editing) {
     return (
-      <td colSpan={7} className="px-5 py-4">
+      <td colSpan={8} className="px-5 py-4">
         <GuestEditForm
           contact={contact}
           onCancel={() => setEditing(false)}
@@ -59,6 +65,8 @@ export function EditableGuestRow({
 
   const rsvp = RSVP_STYLE[contact.rsvp_status] ?? RSVP_STYLE.pending;
   const RsvpIcon = rsvp.icon;
+  const engagementRsvp = RSVP_STYLE[engagementRsvpStatus] ?? RSVP_STYLE.pending;
+  const EngagementRsvpIcon = engagementRsvp.icon;
 
   return (
     <>
@@ -124,6 +132,14 @@ export function EditableGuestRow({
         >
           <RsvpIcon className="h-3.5 w-3.5" strokeWidth={2} />
           {rsvp.label}
+        </span>
+      </td>
+      <td className="px-5 py-3.5">
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium tracking-[0.02em] ${engagementRsvp.className}`}
+        >
+          <EngagementRsvpIcon className="h-3.5 w-3.5" strokeWidth={2} />
+          {engagementRsvp.label}
         </span>
       </td>
       <td className="px-5 py-3.5 text-right">

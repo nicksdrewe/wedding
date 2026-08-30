@@ -10,13 +10,32 @@ import { InviteLinkCard } from "./InviteLinkCard";
 
 export default async function GuestsPage() {
   const supabase = await createClient();
-  const [{ data: contacts }, { token: activeInviteToken }] = await Promise.all([
+  // contacts.rsvp_status only ever reflects the WEDDING rsvp (see
+  // api/rsvp/[token]/route.ts, the only writer of that column) — the
+  // engagement party RSVP (api/engagement-rsvp/route.ts) instead
+  // upserts into the shared `rsvps` table keyed by event_id, which is why
+  // engagement respondents were showing as "pending" here even after
+  // responding. Pulling every rsvps row per contact (not just the
+  // engagement one) and picking the engagement event's out of it in JS,
+  // rather than an inner-joined/filtered query, so a contact with no
+  // engagement rsvp at all still gets listed as "pending" instead of being
+  // silently dropped from the result set entirely.
+  const [{ data: contacts }, { token: activeInviteToken }, { data: engagementEvent }] = await Promise.all([
     supabase
       .from("contacts")
-      .select("id, full_name, email, phone, role, tags, plus_one_eligible, rsvp_status, rsvp_token, parent_contact_id")
+      .select(
+        "id, full_name, email, phone, role, tags, plus_one_eligible, rsvp_status, rsvp_token, parent_contact_id, rsvps(event_id, attending)"
+      )
       .order("full_name"),
     getActiveInviteLink(),
+    supabase.from("events").select("id").eq("name", "Engagement Party").maybeSingle(),
   ]);
+
+  function engagementRsvpStatus(rsvps: { event_id: string; attending: boolean | null }[] | null) {
+    const rsvp = rsvps?.find((r) => r.event_id === engagementEvent?.id);
+    if (!rsvp || rsvp.attending === null) return "pending";
+    return rsvp.attending ? "attending" : "declined";
+  }
 
   const hasContacts = !!contacts && contacts.length > 0;
 
@@ -63,7 +82,12 @@ export default async function GuestsPage() {
                 <th className="px-5 py-3 text-center text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
                   Plus one
                 </th>
-                <th className="px-5 py-3 text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">RSVP</th>
+                <th className="px-5 py-3 text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
+                  Wedding RSVP
+                </th>
+                <th className="px-5 py-3 text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
+                  Engagement RSVP
+                </th>
                 <th className="px-5 py-3 text-right text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
                   <span className="sr-only">Actions</span>
                 </th>
@@ -79,7 +103,11 @@ export default async function GuestsPage() {
                     transition={{ duration: 0.3, delay: Math.min(i, 12) * 0.03 }}
                     className="group transition-colors duration-150 hover:bg-cream-deep/40"
                   >
-                    <EditableGuestRow contact={c} isCouple={isCouple} />
+                    <EditableGuestRow
+                      contact={c}
+                      isCouple={isCouple}
+                      engagementRsvpStatus={engagementRsvpStatus(c.rsvps)}
+                    />
                   </InView>
                   {(childrenByParent.get(c.id) ?? []).map((child) => (
                     <InView
@@ -90,7 +118,12 @@ export default async function GuestsPage() {
                       transition={{ duration: 0.3, delay: Math.min(i, 12) * 0.03 }}
                       className="group bg-cream-deep/20 transition-colors duration-150 hover:bg-cream-deep/40"
                     >
-                      <EditableGuestRow contact={child} isCouple={isCouple} isChild />
+                      <EditableGuestRow
+                        contact={child}
+                        isCouple={isCouple}
+                        isChild
+                        engagementRsvpStatus={engagementRsvpStatus(child.rsvps)}
+                      />
                     </InView>
                   ))}
                 </React.Fragment>
