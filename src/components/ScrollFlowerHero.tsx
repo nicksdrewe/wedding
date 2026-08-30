@@ -81,8 +81,8 @@ function ctaCopy(cta: HeroCta) {
         eyebrow: "You're invited",
         heading: WEDDING_RSVP_ENABLED ? "Let us know you're coming" : "Join us for the engagement party",
         body: WEDDING_RSVP_ENABLED
-          ? "RSVP to celebrate with us, or sign in to the hub to see the full details."
-          : "The wedding date is still to come — for now, come celebrate the engagement with us, or sign in to the hub.",
+          ? "RSVP to celebrate with us."
+          : "The wedding date is still to come — for now, let us know you'll be there to celebrate the engagement.",
         primary: { href: "/rsvp", label: "RSVP" },
         secondary: { href: "/login", label: "Sign in" },
       };
@@ -494,32 +494,43 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
             >
               {copy.body}
             </p>
-            <div className="mt-8 flex flex-wrap justify-center gap-4">
-              {cta.kind === "guest" ? (
-                <>
-                  {/* Deliberately NOT wrapped in a "relative z-10" div:
-                      each MorphingPopoverContent is already position:fixed
-                      with its own z-40, meant to compare against the
-                      page's real top-level stacking context. Wrapping a
-                      trigger in its own positioned+z-indexed div traps its
-                      whole popover (including that z-40) inside a small
-                      sibling stacking context instead — whichever trigger
-                      is later in the DOM then paints its entire popover
-                      over the other's, in full, regardless of the z-40.
-                      That was the "sign in sits in front of RSVP" bug. */}
-                  {WEDDING_RSVP_ENABLED && <RsvpMorphingButton />}
-                  <SignInMorphingButton />
-                </>
-              ) : (
-                <>
-                  <PrimaryButton href={copy.primary.href}>{copy.primary.label}</PrimaryButton>
-                  <GlassButton href={copy.secondary.href}>{copy.secondary.label}</GlassButton>
-                </>
-              )}
-              {/* Independent of sign-in state — the engagement party is its
-                  own open, separately-run RSVP, not part of the account
-                  flow above. */}
-              <GhostButton href="/engagement">Engagement party</GhostButton>
+            <div className="mt-8 flex flex-col items-center gap-4">
+              <div className="flex flex-wrap justify-center gap-4">
+                {cta.kind === "guest" ? (
+                  <>
+                    {/* Deliberately NOT wrapped in a "relative z-10" div:
+                        each MorphingPopoverContent is already position:fixed
+                        with its own z-40, meant to compare against the
+                        page's real top-level stacking context. Wrapping a
+                        trigger in its own positioned+z-indexed div traps its
+                        whole popover (including that z-40) inside a small
+                        sibling stacking context instead — whichever trigger
+                        is later in the DOM then paints its entire popover
+                        over the other's, in full, regardless of the z-40.
+                        That was the "sign in sits in front of RSVP" bug. */}
+                    {WEDDING_RSVP_ENABLED && <RsvpMorphingButton />}
+                    {/* The engagement party is the front door for now — an
+                        open RSVP anyone can fill in, not gated by an account
+                        at all, so it leads with the same prominence the
+                        wedding RSVP itself gets once that's live. */}
+                    <PrimaryButton href="/engagement">
+                      RSVP to the engagement party
+                    </PrimaryButton>
+                  </>
+                ) : (
+                  <>
+                    <PrimaryButton href={copy.primary.href}>{copy.primary.label}</PrimaryButton>
+                    <GlassButton href={copy.secondary.href}>{copy.secondary.label}</GlassButton>
+                  </>
+                )}
+              </div>
+              {/* Hub login lives here — a small, muted, secondary line under
+                  the engagement CTA rather than a same-weight button beside
+                  it, and never mentioned in the heading/body copy above.
+                  Most visitors right now are engagement-party respondents
+                  with no account at all; the hub is for the couple/family
+                  who already know it exists. */}
+              {cta.kind === "guest" && <HubLoginTrigger />}
             </div>
           </div>
         </div>
@@ -579,21 +590,6 @@ function PrimaryButton({ href, children }: { href: string; children: React.React
   return (
     <Link href={href} className={PRIMARY_BUTTON_CLASS}>
       <ButtonShineLabel>{children}</ButtonShineLabel>
-    </Link>
-  );
-}
-
-const GHOST_BUTTON_CLASS =
-  "inline-block rounded-full border border-cream/35 px-8 py-4 font-serif text-sm font-medium text-cream/90 transition-[transform,border-color,color] duration-300 ease-[cubic-bezier(.22,1,.36,1)] hover:-translate-y-0.5 hover:border-cream/70 hover:text-cream";
-
-// The third, always-visible option — separate from the RSVP/sign-in pair
-// above since it isn't gated by account state at all: anyone can add
-// themselves to the engagement party regardless of whether they're on the
-// wedding guest list or signed in.
-function GhostButton({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <Link href={href} className={GHOST_BUTTON_CLASS}>
-      {children}
     </Link>
   );
 }
@@ -732,12 +728,13 @@ function RsvpMorphingButton() {
 }
 
 // Mirrors RsvpMorphingButton's structure (same morph, same spotlight-border
-// treatment) but in light glass rather than dark — this is the "you're
-// already one of ours, just prove it" panel rather than the "here's what to
-// do next" one, so it reads as a distinct, cooler surface. Nests the same
+// panel) but the trigger itself is a small muted text link rather than a
+// full button — this is the quiet, secondary path for the couple/family who
+// already know the hub exists, not something an anonymous engagement-party
+// respondent should read as an equally-weighted choice. Nests the same
 // sign-in form used on the standalone /login page (kept as a no-JS/bookmark
 // fallback) rather than re-implementing it.
-function SignInMorphingButton() {
+function HubLoginTrigger() {
   const [open, setOpen] = useState(false);
   const spotlightWrapRef = useRef<HTMLDivElement>(null);
   useSpotlightReveal(open, spotlightWrapRef);
@@ -770,9 +767,10 @@ function SignInMorphingButton() {
         <MorphingPopoverTrigger asChild>
           <button
             type="button"
-            className="inline-block rounded-full border border-ink/10 bg-cream/95 px-10 py-4 font-serif text-sm font-medium text-ink shadow-[0_8px_24px_rgba(0,0,0,0.22)] backdrop-blur-md transition-[transform,box-shadow,background] duration-300 ease-[cubic-bezier(.22,1,.36,1)] hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-cream"
+            className="font-serif text-xs font-medium tracking-[0.08em] text-cream/55 underline decoration-cream/30 decoration-dotted underline-offset-4 transition-colors duration-200 hover:text-cream/85 hover:decoration-cream/60"
+            style={{ textShadow: "0 1px 6px rgba(0,0,0,0.5)" }}
           >
-            Sign in
+            Hub login
           </button>
         </MorphingPopoverTrigger>
         <MorphingPopoverContent
