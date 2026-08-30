@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { CornerDownRight, Mail, Phone, UserPlus } from "lucide-react";
-import { deleteContact, updateContact } from "./actions";
+import { addChildContact, deleteContact, updateContact } from "./actions";
 import { ROLE_BADGE, ROLE_LABEL, RSVP_STYLE } from "./badges";
 
 export type Contact = {
@@ -39,6 +39,7 @@ export function EditableGuestRow({
   engagementRsvpStatus: "pending" | "attending" | "declined";
 }) {
   const [editing, setEditing] = useState(false);
+  const [addingChild, setAddingChild] = useState(false);
   const [deletePending, startDeleteTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -58,6 +59,19 @@ export function EditableGuestRow({
           contact={contact}
           onCancel={() => setEditing(false)}
           onSaved={() => setEditing(false)}
+        />
+      </td>
+    );
+  }
+
+  if (addingChild) {
+    return (
+      <td colSpan={8} className="px-5 py-4">
+        <AddChildForm
+          parentContactId={contact.id}
+          parentName={contact.full_name}
+          onCancel={() => setAddingChild(false)}
+          onAdded={() => setAddingChild(false)}
         />
       </td>
     );
@@ -145,6 +159,18 @@ export function EditableGuestRow({
       <td className="px-5 py-3.5 text-right">
         {isCouple && (
           <div className="flex shrink-0 justify-end gap-3 opacity-0 transition-opacity group-hover:opacity-100">
+            {/* Only on top-level rows — a plus-one's plus-one isn't a
+                shape the engagement RSVP form itself ever produces, and
+                the DB has no need to support arbitrarily deep nesting. */}
+            {!isChild && (
+              <button
+                type="button"
+                onClick={() => setAddingChild(true)}
+                className="font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-accent"
+              >
+                + Plus one
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setEditing(true)}
@@ -270,6 +296,100 @@ function GuestEditForm({
             className="rounded-full bg-ink px-5 py-2 text-sm text-cream transition-colors duration-150 hover:bg-ink-soft disabled:opacity-60"
           >
             {pending ? "Saving…" : "Save"}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-full border border-ink/20 px-5 py-2 text-sm text-ink-soft transition-colors duration-150 hover:border-ink/40"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+      {error && <p className="mt-3 font-reading text-xs text-alert">{error}</p>}
+    </form>
+  );
+}
+
+// For a guest who didn't use the engagement RSVP form's own "bringing
+// others" field the first time round — this creates the same shape that
+// field does (a child contact under this one, see 0011_contact_hierarchy.sql)
+// so it appears indented under the parent exactly like a self-service
+// addition would, rather than as its own unrelated top-level row.
+function AddChildForm({
+  parentContactId,
+  parentName,
+  onCancel,
+  onAdded,
+}: {
+  parentContactId: string;
+  parentName: string;
+  onCancel: () => void;
+  onAdded: () => void;
+}) {
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  function handleSubmit(formData: FormData) {
+    setError(null);
+    startTransition(async () => {
+      const result = await addChildContact(formData);
+      if (result?.error) {
+        setError(result.error);
+        return;
+      }
+      onAdded();
+    });
+  }
+
+  return (
+    <form action={handleSubmit} className="rounded-[10px] border border-ink/10 bg-white/50 p-4">
+      <input type="hidden" name="parentContactId" value={parentContactId} />
+      <p className="mb-3 font-serif text-[11px] font-medium tracking-[0.04em] text-ink-soft uppercase">
+        Add a plus one under {parentName}
+      </p>
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="flex flex-col gap-1">
+          <label className="font-serif text-[11px] font-medium tracking-[0.04em] text-ink-soft uppercase">
+            Name
+          </label>
+          <input
+            name="fullName"
+            required
+            autoFocus
+            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="font-serif text-[11px] font-medium tracking-[0.04em] text-ink-soft uppercase">
+            Email
+          </label>
+          <input
+            name="email"
+            type="email"
+            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="font-serif text-[11px] font-medium tracking-[0.04em] text-ink-soft uppercase">
+            Phone
+          </label>
+          <input
+            name="phone"
+            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+          />
+        </div>
+        <label className="flex items-center gap-2 pb-2 text-sm text-ink-soft">
+          <input type="checkbox" name="attendingEngagement" defaultChecked className="accent-accent" />
+          Attending engagement party
+        </label>
+        <div className="flex gap-2">
+          <button
+            type="submit"
+            disabled={pending}
+            className="rounded-full bg-ink px-5 py-2 text-sm text-cream transition-colors duration-150 hover:bg-ink-soft disabled:opacity-60"
+          >
+            {pending ? "Adding…" : "Add"}
           </button>
           <button
             type="button"
