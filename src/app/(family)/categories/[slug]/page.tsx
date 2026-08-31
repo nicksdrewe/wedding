@@ -7,6 +7,8 @@ import type { MapOption } from "@/components/options/OptionsMap";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { CostRange } from "@/components/CostRange";
+import { getLinkedCostItemsForCategory } from "@/lib/costs/links";
+import { LinkedCostItems } from "./LinkedCostItems";
 import { CostForm } from "./CostForm";
 import { ContactForm } from "./ContactForm";
 import { ContactRow } from "./ContactRow";
@@ -64,7 +66,7 @@ export default async function CategoryDetailPage({
     : [];
   const hasPinnedOptions = mapOptions.some((o) => o.latitude != null && o.longitude != null);
 
-  const [{ data: cost }, { data: contacts }, { data: dates }] = await Promise.all([
+  const [{ data: cost }, { data: contacts }, { data: dates }, linkedCostItems] = await Promise.all([
     supabase
       .from("category_costs")
       .select("predicted_cost_min, predicted_cost_max, actual_cost, currency")
@@ -80,6 +82,7 @@ export default async function CategoryDetailPage({
       .select("id, title, entry_date")
       .eq("category_page_id", page.id)
       .order("entry_date"),
+    getLinkedCostItemsForCategory(page.id),
   ]);
 
   const isCouple = profile?.role === "couple";
@@ -116,6 +119,7 @@ export default async function CategoryDetailPage({
             <div className="mt-4">
               <OptionsBoard
                 groupId={optionGroup.id}
+                categoryPageId={page.id}
                 revalidate={`/categories/${page.slug}`}
                 isCouple={isCouple}
               />
@@ -151,6 +155,16 @@ export default async function CategoryDetailPage({
           />
         )}
       </section>
+
+      {linkedCostItems.length > 0 && (
+        <section className="mt-6 rounded-[10px] border border-ink/10 bg-white p-6">
+          <h2 className="font-serif text-[15px] font-semibold">Linked costs</h2>
+          <p className="mt-1.5 font-reading text-[13px] text-ink-soft">
+            Cost items logged under another category, also shown here.
+          </p>
+          <LinkedCostItems items={linkedCostItems} isCouple={isCouple} />
+        </section>
+      )}
 
       <section className="mt-6 rounded-[10px] border border-ink/10 bg-white p-6">
         <h2 className="font-serif text-[15px] font-semibold">Key contacts</h2>

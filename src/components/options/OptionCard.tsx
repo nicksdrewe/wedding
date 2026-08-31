@@ -26,6 +26,7 @@ import { ImageUpload } from "@/components/ImageUpload";
 import { toDriveImageUrl } from "@/lib/google/image-url";
 import { CostRange } from "@/components/CostRange";
 import type { Currency } from "@/lib/currency/convert";
+import { linkCostItem, unlinkCostItem } from "@/lib/costs/links";
 import { EditOptionForm } from "./EditOptionForm";
 
 export type OptionImage = {
@@ -53,14 +54,21 @@ export type OptionDetail = {
   images: OptionImage[];
 };
 
+export type LinkableCategory = { id: string; title: string };
+export type CostItemLink = { id: string; categoryTitle: string };
+
 export function OptionCard({
   option,
   isCouple,
   revalidate,
+  linkableCategories = [],
+  existingLinks = [],
 }: {
   option: OptionDetail;
   isCouple: boolean;
   revalidate: string;
+  linkableCategories?: LinkableCategory[];
+  existingLinks?: CostItemLink[];
 }) {
   const [open, setOpen] = useState(false);
   const cover = option.images[0];
@@ -114,7 +122,13 @@ export function OptionCard({
         </div>
       </DisclosureTrigger>
       <DisclosureContent>
-        <OptionDetailPanel option={option} isCouple={isCouple} revalidate={revalidate} />
+        <OptionDetailPanel
+          option={option}
+          isCouple={isCouple}
+          revalidate={revalidate}
+          linkableCategories={linkableCategories}
+          existingLinks={existingLinks}
+        />
       </DisclosureContent>
     </Disclosure>
   );
@@ -124,10 +138,14 @@ function OptionDetailPanel({
   option,
   isCouple,
   revalidate,
+  linkableCategories,
+  existingLinks,
 }: {
   option: OptionDetail;
   isCouple: boolean;
   revalidate: string;
+  linkableCategories: LinkableCategory[];
+  existingLinks: CostItemLink[];
 }) {
   const [error, setError] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState("");
@@ -138,6 +156,9 @@ function OptionDetailPanel({
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [, startRemoveTransition] = useTransition();
   const [deletePending, startDeleteTransition] = useTransition();
+  const [linkCategoryId, setLinkCategoryId] = useState("");
+  const [linkPending, startLinkTransition] = useTransition();
+  const [unlinkingId, setUnlinkingId] = useState<string | null>(null);
 
   function handleMarkWinner() {
     setError(null);
@@ -195,6 +216,32 @@ function OptionDetailPanel({
   }
 
   const hasContact = option.contact_name || option.contact_phone || option.contact_email;
+
+  function handleLink() {
+    if (!linkCategoryId) return;
+    setError(null);
+    const formData = new FormData();
+    formData.set("sourcePageOptionId", option.id);
+    formData.set("targetCategoryPageId", linkCategoryId);
+    startLinkTransition(async () => {
+      const result = await linkCostItem(formData);
+      if (result?.error) {
+        setError(result.error);
+        return;
+      }
+      setLinkCategoryId("");
+    });
+  }
+
+  function handleUnlink(linkId: string) {
+    setError(null);
+    setUnlinkingId(linkId);
+    startLinkTransition(async () => {
+      const result = await unlinkCostItem(linkId);
+      if (result?.error) setError(result.error);
+      setUnlinkingId(null);
+    });
+  }
 
   return (
     <div className="border-t border-ink/10 p-5">
@@ -330,6 +377,55 @@ function OptionDetailPanel({
               Date
             </p>
             <p className="mt-1 text-ink">{option.option_date}</p>
+          </div>
+        )}
+
+        {linkableCategories.length > 0 && (
+          <div>
+            <p className="font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft/70 uppercase">
+              Also show this cost under
+            </p>
+            {existingLinks.length > 0 && (
+              <ul className="mt-1 flex flex-col gap-1">
+                {existingLinks.map((link) => (
+                  <li key={link.id} className="flex items-center gap-2 text-ink">
+                    {link.categoryTitle}
+                    <button
+                      type="button"
+                      onClick={() => handleUnlink(link.id)}
+                      disabled={unlinkingId === link.id}
+                      className="font-serif text-[11px] tracking-[0.06em] text-alert/80 uppercase hover:text-alert disabled:opacity-60"
+                    >
+                      {unlinkingId === link.id ? "Removing…" : "Unlink"}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="mt-1.5 flex items-center gap-2">
+              <select
+                value={linkCategoryId}
+                onChange={(e) => setLinkCategoryId(e.target.value)}
+                className="rounded-full border border-ink/20 bg-cream px-3.5 py-1.5 text-xs text-ink-soft outline-none focus:border-accent"
+              >
+                <option value="">Choose a category…</option>
+                {linkableCategories
+                  .filter((c) => !existingLinks.some((l) => l.categoryTitle === c.title))
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.title}
+                    </option>
+                  ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleLink}
+                disabled={linkPending || !linkCategoryId}
+                className="rounded-full border border-ink/20 px-3.5 py-1.5 font-serif text-xs text-ink-soft transition hover:border-ink/40 disabled:opacity-60"
+              >
+                Link
+              </button>
+            </div>
           </div>
         )}
       </div>

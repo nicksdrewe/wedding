@@ -13,10 +13,12 @@ import { OptionCard, type OptionDetail } from "./OptionCard";
 // screens now want different interactions over the same page_options rows.
 export async function OptionsBoard({
   groupId,
+  categoryPageId,
   revalidate,
   isCouple,
 }: {
   groupId: string;
+  categoryPageId: string | null;
   revalidate: string;
   isCouple: boolean;
 }) {
@@ -29,6 +31,31 @@ export async function OptionsBoard({
     .eq("option_group_id", groupId)
     .order("created_at")
     .order("sort_order", { referencedTable: "page_option_images", ascending: true });
+
+  // Linking an option's cost into another category (0024_linked_cost_items.sql)
+  // only makes sense from a real category board, not Project Management's
+  // standalone comparisons — categoryPageId is null there.
+  let otherCategories: { id: string; title: string }[] = [];
+  let linksByOption: Record<string, { id: string; categoryTitle: string }[]> = {};
+  if (categoryPageId && isCouple) {
+    const optionIds = (data ?? []).map((o) => o.id);
+    const [{ data: categories }, { data: links }] = await Promise.all([
+      supabase.from("category_pages").select("id, title").neq("id", categoryPageId).order("title"),
+      optionIds.length > 0
+        ? supabase
+            .from("cost_item_links")
+            .select("id, source_page_option_id, category_pages!linked_category_page_id (title)")
+            .in("source_page_option_id", optionIds)
+        : Promise.resolve({ data: [] }),
+    ]);
+    otherCategories = categories ?? [];
+    linksByOption = (links ?? []).reduce<Record<string, { id: string; categoryTitle: string }[]>>((acc, l) => {
+      const category = Array.isArray(l.category_pages) ? l.category_pages[0] : l.category_pages;
+      const entry = { id: l.id, categoryTitle: category?.title ?? "Unknown" };
+      acc[l.source_page_option_id] = [...(acc[l.source_page_option_id] ?? []), entry];
+      return acc;
+    }, {});
+  }
 
   const options: OptionDetail[] = (data ?? []).map((o) => ({
     id: o.id,
@@ -69,7 +96,14 @@ export async function OptionsBoard({
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {options.map((option) => (
-            <OptionCard key={option.id} option={option} isCouple={isCouple} revalidate={revalidate} />
+            <OptionCard
+              key={option.id}
+              option={option}
+              isCouple={isCouple}
+              revalidate={revalidate}
+              linkableCategories={otherCategories}
+              existingLinks={linksByOption[option.id] ?? []}
+            />
           ))}
         </div>
       )}
