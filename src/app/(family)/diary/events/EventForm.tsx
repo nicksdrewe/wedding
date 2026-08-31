@@ -10,6 +10,9 @@ export type EventFormData = {
   starts_at: string | null;
   location: string | null;
   is_landing_cta: boolean;
+  landing_cta_eyebrow: string | null;
+  landing_cta_heading: string | null;
+  landing_cta_body: string | null;
   landing_cta_copy: string | null;
   rsvp_enabled: boolean;
   rsvp_open: boolean;
@@ -134,16 +137,6 @@ export function EventForm({ event }: { event?: EventFormData }) {
           <Field label="Time">
             <input type="time" name="startsAtTime" defaultValue={startsAtTime} className={INPUT_CLASS} />
           </Field>
-          <div className="sm:col-span-2">
-            <Field label="Location / address">
-              <input
-                name="location"
-                defaultValue={event?.location ?? ""}
-                placeholder="The Black Lion, Hammersmith, London"
-                className={INPUT_CLASS}
-              />
-            </Field>
-          </div>
         </div>
         <label className="mt-4 flex items-center gap-2 text-sm text-ink-soft">
           <input type="checkbox" name="showOnDiary" defaultChecked={event?.show_on_diary ?? true} className="accent-accent" />
@@ -155,8 +148,33 @@ export function EventForm({ event }: { event?: EventFormData }) {
         name="isLandingCta"
         defaultChecked={event?.is_landing_cta ?? false}
         label="Home page CTA"
-        description="Make this event the featured button on the home page hero."
+        description="Make this event the featured content on the home page hero — its heading, intro line, and button all read from here, not just the button."
       >
+        <Field label="Eyebrow">
+          <input
+            name="landingCtaEyebrow"
+            defaultValue={event?.landing_cta_eyebrow ?? ""}
+            placeholder="You're invited"
+            className={INPUT_CLASS}
+          />
+        </Field>
+        <Field label="Heading">
+          <input
+            name="landingCtaHeading"
+            defaultValue={event?.landing_cta_heading ?? ""}
+            placeholder="Join us for the hen do"
+            className={INPUT_CLASS}
+          />
+        </Field>
+        <Field label="Intro line">
+          <textarea
+            name="landingCtaBody"
+            defaultValue={event?.landing_cta_body ?? ""}
+            rows={2}
+            placeholder="A line or two under the heading, above the button."
+            className={TEXTAREA_CLASS}
+          />
+        </Field>
         <Field label="Button copy">
           <input
             name="landingCtaCopy"
@@ -282,8 +300,17 @@ export function EventForm({ event }: { event?: EventFormData }) {
         name="showMap"
         defaultChecked={event?.show_map ?? false}
         label="Map"
-        description="An embedded map for the address entered above."
-      />
+        description="An embedded map, built from the address you enter here."
+      >
+        <Field label="Address">
+          <input
+            name="location"
+            defaultValue={event?.location ?? ""}
+            placeholder="The Black Lion, Hammersmith, London"
+            className={INPUT_CLASS}
+          />
+        </Field>
+      </ToggleSection>
 
       <div>
         <button

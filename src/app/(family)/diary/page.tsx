@@ -77,6 +77,14 @@ export default async function DiaryPage() {
         )}
       </div>
 
+      {isCouple && (
+        <p className="mt-3">
+          <Link href="/diary/events" className="font-serif text-xs tracking-[0.06em] text-ink-soft uppercase hover:text-accent">
+            Manage all events →
+          </Link>
+        </p>
+      )}
+
       {timeline.length === 0 ? (
         <EmptyState
           className="mt-9"

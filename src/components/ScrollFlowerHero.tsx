@@ -74,15 +74,29 @@ export type HeroCta =
   | { kind: "signed-in"; label: string; href: string }
   | { kind: "no-profile" };
 
-function ctaCopy(cta: HeroCta) {
+function ctaCopy(cta: HeroCta, landingCta: LandingCta | null) {
   switch (cta.kind) {
     case "guest":
       return {
-        eyebrow: "You're invited",
-        heading: WEDDING_RSVP_ENABLED ? "Let us know you're coming" : "Join us for the engagement party",
+        // Every piece of this reads from whichever event is flagged as
+        // the landing CTA (see app/page.tsx and 0017/0019's migrations)
+        // when one exists and the wedding RSVP isn't live yet — a couple
+        // managing a hen do, stag do, or anything else through the
+        // events system needs the heading/body here to actually match
+        // what the button below says, not stay fixed to whatever
+        // engagement-party wording was hardcoded when this shipped.
+        // Falls back to that original copy if no event currently has the
+        // flag on, so the page never renders truly empty.
+        eyebrow:
+          (WEDDING_RSVP_ENABLED ? null : landingCta?.eyebrow) ?? "You're invited",
+        heading:
+          WEDDING_RSVP_ENABLED
+            ? "Let us know you're coming"
+            : (landingCta?.heading ?? "Join us for the engagement party"),
         body: WEDDING_RSVP_ENABLED
           ? "RSVP to celebrate with us."
-          : "The wedding date is still to come — for now, let us know you'll be there to celebrate the engagement.",
+          : (landingCta?.body ??
+              "The wedding date is still to come — for now, let us know you'll be there to celebrate the engagement."),
         primary: { href: "/rsvp", label: "RSVP" },
         secondary: { href: "/login", label: "Sign in" },
       };
@@ -105,6 +119,14 @@ function ctaCopy(cta: HeroCta) {
   }
 }
 
+export type LandingCta = {
+  href: string;
+  label: string;
+  eyebrow: string | null;
+  heading: string | null;
+  body: string | null;
+};
+
 export function ScrollFlowerHero({
   cta,
   landingCta,
@@ -113,9 +135,9 @@ export function ScrollFlowerHero({
   // Whichever event is flagged as the front door (see 0017_events_system.sql
   // and app/page.tsx) — null when no event currently has that flag on,
   // in which case the primary CTA button simply doesn't render.
-  landingCta: { href: string; label: string } | null;
+  landingCta: LandingCta | null;
 }) {
-  const copy = ctaCopy(cta);
+  const copy = ctaCopy(cta, landingCta);
 
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);

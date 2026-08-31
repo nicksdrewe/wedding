@@ -30,7 +30,7 @@ export default async function LandingPage() {
   const supabase = await createClient();
   const { data: landingEvent } = await supabase
     .from("events")
-    .select("slug, landing_cta_copy")
+    .select("slug, landing_cta_copy, landing_cta_eyebrow, landing_cta_heading, landing_cta_body")
     .eq("is_landing_cta", true)
     .not("slug", "is", null)
     .maybeSingle();
@@ -42,7 +42,13 @@ export default async function LandingPage() {
           cta={cta}
           landingCta={
             landingEvent
-              ? { href: `/events/${landingEvent.slug}`, label: landingEvent.landing_cta_copy ?? "RSVP" }
+              ? {
+                  href: `/events/${landingEvent.slug}`,
+                  label: landingEvent.landing_cta_copy ?? "RSVP",
+                  eyebrow: landingEvent.landing_cta_eyebrow,
+                  heading: landingEvent.landing_cta_heading,
+                  body: landingEvent.landing_cta_body,
+                }
               : null
           }
         />
