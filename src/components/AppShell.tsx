@@ -7,6 +7,7 @@ import {
   FolderKanban,
   LayoutGrid,
   LogOut,
+  Mail,
   PartyPopper,
   Users,
   Wallet,
@@ -54,6 +55,7 @@ const NAV_LINKS: NavLink[] = [
   },
   { href: "/project", label: "Project", icon: FolderKanban, roles: ["couple"] },
   { href: "/budget", label: "Budget", icon: Wallet, roles: ["couple"] },
+  { href: "/comms", label: "Comms", icon: Mail, roles: ["couple"] },
   { href: "/diary", label: "Diary", icon: BookOpen, roles: ["couple", "family", "wedding_party"] },
   // Leaves the app shell for the public /engagement page (it isn't part of
   // this route-group system) — same idea as the wordmark's "back to
