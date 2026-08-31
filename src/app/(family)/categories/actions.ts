@@ -48,6 +48,14 @@ export async function createCategoryPage(formData: FormData) {
     return { error: error.message };
   }
 
+  // So this category has an access-control entry (see
+  // 0025_page_permissions.sql) from the moment it exists — not fatal if it
+  // fails, since fn_resolve_data_access/getEffectivePermission both default
+  // to "allowed" for a page_key with no registry row at all.
+  await supabase
+    .from("page_registry")
+    .insert({ page_key: `categories:${slug}`, parent_page_key: "categories", label: title, default_min_role: "family" });
+
   // Every category gets its options board from the moment it exists —
   // there's no real reason for a category to ever NOT have one (see
   // migration 0007, which backfills this for categories created before

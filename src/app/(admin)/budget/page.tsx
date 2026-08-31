@@ -1,11 +1,22 @@
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AnimatedNumber } from "@/components/motion-primitives/animated-number";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { getFxRates } from "@/lib/currency/rates";
 import { convertToGBP, type Currency } from "@/lib/currency/convert";
+import { getCurrentProfile } from "@/lib/auth/roles";
+import { getEffectivePermission } from "@/lib/permissions/actions";
 
 export default async function BudgetPage() {
+  // The (admin) layout already restricts this route to couple by role —
+  // this adds the same fine-grained page_access override every other
+  // registered page respects, in case a future permission ever needs to
+  // narrow it further than the route-group guard already does.
+  const profile = await getCurrentProfile();
+  const permission = await getEffectivePermission("budget", profile);
+  if (!permission.pageAccess) redirect("/no-access");
+
   const supabase = await createClient();
   const [{ data: rows }, rates] = await Promise.all([
     supabase

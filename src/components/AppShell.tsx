@@ -145,9 +145,19 @@ export function AppShell({ profile, children }: AppShellProps) {
           {/* Right: identity + sign out. */}
           <div className="flex shrink-0 items-center gap-3">
             {name && <span className="hidden text-[13px] text-ink-soft sm:inline">{name}</span>}
-            <span className="rounded-full bg-cream-deep px-2 py-0.5 text-[10px] tracking-[0.08em] text-ink-soft uppercase">
-              {ROLE_LABEL[profile.role]}
-            </span>
+            {profile.role === "couple" ? (
+              <Link
+                href="/access"
+                title="Manage roles & access"
+                className="rounded-full bg-cream-deep px-2 py-0.5 text-[10px] tracking-[0.08em] text-ink-soft uppercase transition-colors hover:text-accent"
+              >
+                {ROLE_LABEL[profile.role]}
+              </Link>
+            ) : (
+              <span className="rounded-full bg-cream-deep px-2 py-0.5 text-[10px] tracking-[0.08em] text-ink-soft uppercase">
+                {ROLE_LABEL[profile.role]}
+              </span>
+            )}
             <a
               href="/logout"
               aria-label="Sign out"

@@ -1,6 +1,7 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
+import { getEffectivePermission } from "@/lib/permissions/actions";
 import { OptionsBoard } from "@/components/options/OptionsBoard";
 import { OptionsMapLoader } from "@/components/options/OptionsMapLoader";
 import type { MapOption } from "@/components/options/OptionsMap";
@@ -32,6 +33,9 @@ export default async function CategoryDetailPage({
     .maybeSingle();
 
   if (!page) notFound();
+
+  const permission = await getEffectivePermission(`categories:${page.slug}`, profile);
+  if (!permission.pageAccess) redirect("/no-access");
 
   const { data: optionGroup } = await supabase
     .from("option_groups")
@@ -102,7 +106,12 @@ export default async function CategoryDetailPage({
             />
           )}
         </div>
-        {optionGroup ? (
+        {optionGroup && !permission.dataAccess ? (
+          <p className="mt-1.5 font-reading text-[13px] text-ink-soft">
+            Itemized options aren&rsquo;t shown for your account — the
+            totals below still reflect the live numbers.
+          </p>
+        ) : optionGroup ? (
           <>
             <p className="mt-1.5 font-reading text-[13px] text-ink-soft">
               Every option on one board — open a card to see its full
