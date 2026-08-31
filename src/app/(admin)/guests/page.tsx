@@ -29,7 +29,7 @@ export default async function GuestsPage() {
       // HTML, so selecting it here would ship every guest's token to
       // whoever's viewing this page for no reason.
       .select(
-        "id, full_name, email, phone, role, tags, plus_one_eligible, rsvp_status, parent_contact_id, rsvps(event_id, attending, plus_one_attending)"
+        "id, full_name, email, phone, role, tags, plus_one_limit, rsvp_status, parent_contact_id, rsvps(event_id, attending, plus_one_attending)"
       )
       .order("full_name"),
     getActiveInviteLink(),

@@ -15,7 +15,7 @@ export async function GET(
 
   const { data: contact, error } = await supabase
     .from("contacts")
-    .select("id, full_name, plus_one_eligible, rsvp_status")
+    .select("id, full_name, plus_one_limit, rsvp_status")
     .eq("rsvp_token", token)
     .maybeSingle();
 
@@ -61,7 +61,7 @@ export async function POST(
 
   const { data: contact, error: contactError } = await supabase
     .from("contacts")
-    .select("id, plus_one_eligible")
+    .select("id, plus_one_limit")
     .eq("rsvp_token", token)
     .maybeSingle();
 
@@ -88,8 +88,13 @@ export async function POST(
       contact_id: contact.id,
       event_id: eventId,
       attending,
-      plus_one_attending: contact.plus_one_eligible ? plusOneAttending ?? false : false,
-      plus_one_name: contact.plus_one_eligible ? plusOneName ?? null : null,
+      // This flow only ever supports a single named plus-one — it
+      // predates plus_one_limit's per-event, multi-name "bringing
+      // others" (see api/events/[eventSlug]/rsvp/route.ts) and hasn't
+      // been asked to grow that far, so a contact with a limit above 1
+      // still only gets one field here.
+      plus_one_attending: contact.plus_one_limit > 0 ? plusOneAttending ?? false : false,
+      plus_one_name: contact.plus_one_limit > 0 ? plusOneName ?? null : null,
       dietary_requirements: dietaryRequirements ?? null,
       notes: notes ?? null,
       responded_at: new Date().toISOString(),

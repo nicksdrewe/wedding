@@ -68,8 +68,8 @@ export function GuestTable({
     return contacts.filter((c) => {
       if (role && c.role !== role) return false;
       if (tag && !(c.tags ?? []).includes(tag)) return false;
-      if (plusOne === "yes" && !c.plus_one_eligible) return false;
-      if (plusOne === "no" && c.plus_one_eligible) return false;
+      if (plusOne === "yes" && c.plus_one_limit <= 0) return false;
+      if (plusOne === "no" && c.plus_one_limit > 0) return false;
       if (weddingRsvp && c.rsvp_status !== weddingRsvp) return false;
       for (const [eventId, status] of Object.entries(eventRsvpFilters)) {
         if (status && c.eventRsvpStatuses[eventId] !== status) return false;

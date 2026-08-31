@@ -11,7 +11,13 @@ const contactSchema = z.object({
   email: z.string().email().optional().or(z.literal("")),
   phone: z.string().optional(),
   role: z.enum(["couple", "family", "wedding_party", "guest"]),
-  plusOneEligible: z.boolean(),
+  // How many extra attendees this contact can bring when an event
+  // restricts "bringing others" to eligible guests only (see
+  // 0022_plus_one_limits.sql) — 0 means none. Coerced from the number
+  // input's string value; NaN (an empty/invalid field) falls back to 0
+  // rather than failing validation outright, matching that field's
+  // browser-level min=0 default.
+  plusOneLimit: z.coerce.number().int().min(0).catch(0),
 });
 
 const updateContactSchema = contactSchema.extend({
@@ -60,7 +66,7 @@ export async function addContact(formData: FormData) {
     email: formData.get("email") || "",
     phone: formData.get("phone") || "",
     role: formData.get("role"),
-    plusOneEligible: formData.get("plusOneEligible") === "on",
+    plusOneLimit: formData.get("plusOneLimit") || "0",
   });
 
   const supabase = await createClient();
@@ -69,7 +75,7 @@ export async function addContact(formData: FormData) {
     email: parsed.email || null,
     phone: parsed.phone || null,
     role: parsed.role,
-    plus_one_eligible: parsed.plusOneEligible,
+    plus_one_limit: parsed.plusOneLimit,
   });
 
   revalidatePath("/guests");
@@ -83,7 +89,7 @@ export async function updateContact(formData: FormData) {
     email: formData.get("email") || "",
     phone: formData.get("phone") || "",
     role: formData.get("role"),
-    plusOneEligible: formData.get("plusOneEligible") === "on",
+    plusOneLimit: formData.get("plusOneLimit") || "0",
     tags: formData.get("tags") || "",
     rsvpStatus: formData.get("rsvpStatus"),
     eventRsvpStatuses: formData.get("eventRsvpStatuses") ?? "{}",
@@ -104,7 +110,7 @@ export async function updateContact(formData: FormData) {
       email: parsed.email || null,
       phone: parsed.phone || null,
       role: parsed.role,
-      plus_one_eligible: parsed.plusOneEligible,
+      plus_one_limit: parsed.plusOneLimit,
       tags: tagsToArray(parsed.tags),
       rsvp_status: parsed.rsvpStatus,
     })

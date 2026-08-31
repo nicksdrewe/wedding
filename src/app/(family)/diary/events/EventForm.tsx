@@ -16,6 +16,7 @@ export type EventFormData = {
   landing_cta_copy: string | null;
   rsvp_enabled: boolean;
   rsvp_open: boolean;
+  plus_ones_open: boolean;
   show_rsvp_form: boolean;
   show_guest_list_column: boolean;
   show_header: boolean;
@@ -194,6 +195,15 @@ export function EventForm({ event }: { event?: EventFormData }) {
         <label className="flex items-center gap-2 text-sm text-ink-soft">
           <input type="checkbox" name="rsvpOpen" defaultChecked={event?.rsvp_open ?? true} className="accent-accent" />
           Open to anyone (unchecked = only emails already on the guest list can RSVP)
+        </label>
+        <label className="flex items-center gap-2 text-sm text-ink-soft">
+          <input
+            type="checkbox"
+            name="plusOnesOpen"
+            defaultChecked={event?.plus_ones_open ?? true}
+            className="accent-accent"
+          />
+          Anyone can bring plus-ones freely (unchecked = capped by each guest&rsquo;s plus-one limit)
         </label>
         <label className="flex items-center gap-2 text-sm text-ink-soft">
           <input

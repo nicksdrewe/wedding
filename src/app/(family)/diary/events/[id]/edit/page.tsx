@@ -13,7 +13,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
   const { data: event } = await supabase
     .from("events")
     .select(
-      "id, name, slug, starts_at, location, is_landing_cta, landing_cta_eyebrow, landing_cta_heading, landing_cta_body, landing_cta_copy, rsvp_enabled, rsvp_open, show_rsvp_form, show_guest_list_column, show_header, header_eyebrow, header_title, header_body, show_photo_board, show_details, details_eyebrow, details_title, venue_name, venue_body, show_map, show_on_diary"
+      "id, name, slug, starts_at, location, is_landing_cta, landing_cta_eyebrow, landing_cta_heading, landing_cta_body, landing_cta_copy, rsvp_enabled, rsvp_open, plus_ones_open, show_rsvp_form, show_guest_list_column, show_header, header_eyebrow, header_title, header_body, show_photo_board, show_details, details_eyebrow, details_title, venue_name, venue_body, show_map, show_on_diary"
     )
     .eq("id", id)
     .maybeSingle();

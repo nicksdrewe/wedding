@@ -58,7 +58,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ eve
 
   const { data: event } = await supabase
     .from("events")
-    .select("id, rsvp_enabled, rsvp_open")
+    .select("id, rsvp_enabled, rsvp_open, plus_ones_open")
     .eq("slug", eventSlug)
     .maybeSingle();
 
@@ -79,12 +79,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ eve
   // already-answered contact.
   const { data: existingContact } = await supabase
     .from("contacts")
-    .select("id")
+    .select("id, plus_one_limit")
     .ilike("email", escapedEmail)
     .maybeSingle();
 
   let contactId: string | undefined;
   let flaggedDuplicate = false;
+  // A brand-new self-added contact has no pre-existing eligibility
+  // decision from the couple to check — defaults to the conventional
+  // single plus-one rather than 0 (which would block anyone new from
+  // ever bringing someone) or something unbounded.
+  let plusOneLimit = 1;
 
   if (existingContact) {
     const { data: existingRsvp } = await supabase
@@ -98,6 +103,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ eve
       flaggedDuplicate = true;
     } else {
       contactId = existingContact.id;
+      plusOneLimit = existingContact.plus_one_limit;
     }
   }
 
@@ -117,7 +123,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ eve
       .insert({
         full_name: fullName,
         email: normalizedEmail,
-        plus_one_eligible: true,
+        plus_one_limit: plusOneLimit,
         tags: flaggedDuplicate ? ["needs review — duplicate email"] : [],
       })
       .select("id")
@@ -126,6 +132,23 @@ export async function POST(request: Request, { params }: { params: Promise<{ eve
       return NextResponse.json({ error: "Couldn't save your RSVP — try again." }, { status: 500 });
     }
     contactId = newContact.id;
+  }
+
+  // Checked before any write happens for this request — a cap violation
+  // shouldn't leave a half-applied RSVP (attending flipped, but the group
+  // rejected) or wipe out a previous submission's plus-ones before
+  // finding out the new one doesn't fit.
+  const requestedOthers = attending ? others ?? [] : [];
+  if (!event.plus_ones_open && requestedOthers.length > plusOneLimit) {
+    return NextResponse.json(
+      {
+        error:
+          plusOneLimit === 0
+            ? "You're not able to bring additional guests to this event."
+            : `You can bring up to ${plusOneLimit} additional guest${plusOneLimit === 1 ? "" : "s"} to this event — please remove some names and try again.`,
+      },
+      { status: 400 }
+    );
   }
 
   const { error: upsertError } = await supabase.from("rsvps").upsert(
@@ -159,13 +182,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ eve
     return NextResponse.json({ error: deleteChildrenError.message }, { status: 500 });
   }
 
-  const otherNames = attending ? others ?? [] : [];
-
-  if (otherNames.length > 0) {
+  if (requestedOthers.length > 0) {
     const { data: childContacts, error: childInsertError } = await supabase
       .from("contacts")
       .insert(
-        otherNames.map((name) => ({
+        requestedOthers.map((name) => ({
           full_name: name,
           parent_contact_id: contactId,
           role: "guest",

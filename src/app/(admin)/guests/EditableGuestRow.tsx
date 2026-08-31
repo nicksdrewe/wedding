@@ -13,7 +13,10 @@ export type Contact = {
   phone: string | null;
   role: string;
   tags: string[] | null;
-  plus_one_eligible: boolean;
+  // How many extra attendees this contact can bring when an event
+  // restricts "bringing others" (see 0022_plus_one_limits.sql) — 0 means
+  // none.
+  plus_one_limit: number;
   rsvp_status: string;
   eventRsvpStatuses: Record<string, "pending" | "attending" | "declined">;
 };
@@ -143,8 +146,11 @@ export function EditableGuestRow({
         )}
       </td>
       <td className="px-5 py-3.5 text-center">
-        {contact.plus_one_eligible ? (
-          <UserPlus className="mx-auto h-4 w-4 text-accent" strokeWidth={2} />
+        {contact.plus_one_limit > 0 ? (
+          <span className="inline-flex items-center gap-1 text-accent">
+            <UserPlus className="h-4 w-4" strokeWidth={2} />
+            <span className="font-serif text-xs font-medium tabular-nums">{contact.plus_one_limit}</span>
+          </span>
         ) : (
           <span className="text-ink-soft/30">—</span>
         )}
@@ -371,15 +377,18 @@ function GuestEditForm({
             </select>
           </div>
         ))}
-        <label className="flex items-center gap-2 pb-2 text-sm text-ink-soft">
+        <div className="flex flex-col gap-1">
+          <label className="font-serif text-[11px] font-medium tracking-[0.04em] text-ink-soft uppercase">
+            Plus-ones
+          </label>
           <input
-            type="checkbox"
-            name="plusOneEligible"
-            defaultChecked={contact.plus_one_eligible}
-            className="accent-accent"
+            type="number"
+            name="plusOneLimit"
+            min={0}
+            defaultValue={contact.plus_one_limit}
+            className="w-20 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
           />
-          Plus-one eligible
-        </label>
+        </div>
         <div className="flex gap-2">
           <button
             type="submit"

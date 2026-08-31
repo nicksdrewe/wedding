@@ -17,7 +17,7 @@ type RsvpRow = {
   dietary_requirements: string | null;
   notes: string | null;
 };
-type Contact = { id: string; full_name: string; plus_one_eligible: boolean; rsvp_status: string };
+type Contact = { id: string; full_name: string; plus_one_limit: number; rsvp_status: string };
 
 export default function RsvpTokenPage({
   params,
@@ -239,7 +239,7 @@ function EventCard({
         </button>
       </div>
 
-      {contact.plus_one_eligible && (
+      {contact.plus_one_limit > 0 && (
         <div className="mt-5 flex flex-col gap-2.5">
           <label className="flex items-center gap-2.5 font-serif text-[13px] text-ink-soft">
             <input

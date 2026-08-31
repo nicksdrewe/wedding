@@ -72,10 +72,18 @@ export function AddContactForm() {
             <option value="couple">Couple</option>
           </select>
         </div>
-        <label className="flex items-center gap-2 pb-2 text-sm text-ink-soft">
-          <input type="checkbox" name="plusOneEligible" className="accent-accent" />
-          Plus-one eligible
-        </label>
+        <div className="flex flex-col gap-1">
+          <label className="font-serif text-[11px] font-medium tracking-[0.04em] text-ink-soft uppercase">
+            Plus-ones
+          </label>
+          <input
+            type="number"
+            name="plusOneLimit"
+            min={0}
+            defaultValue={0}
+            className="w-20 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+          />
+        </div>
         <button
           type="submit"
           disabled={pending}
