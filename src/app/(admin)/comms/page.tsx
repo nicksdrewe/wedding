@@ -6,26 +6,25 @@ import { CommsComposer, type CommsContact } from "./CommsComposer";
 export default async function CommsPage() {
   const supabase = await createClient();
 
-  const [{ data: contacts }, { data: engagementEvent }, { data: weddingEvent }, { data: messages }] =
-    await Promise.all([
-      supabase
-        .from("contacts")
-        .select("id, full_name, email, role, tags, rsvp_status, rsvps(event_id, attending)")
-        .order("full_name"),
-      supabase.from("events").select("id").eq("name", "Engagement Party").maybeSingle(),
-      supabase.from("events").select("id").eq("name", "Wedding").maybeSingle(),
-      supabase
-        .from("comms_messages")
-        .select("id, subject, created_at, comms_recipients(contact_id, email, status, sent_at, error)")
-        .order("created_at", { ascending: false }),
-    ]);
+  const [{ data: contacts }, { data: rsvpEvents }, { data: messages }] = await Promise.all([
+    supabase
+      .from("contacts")
+      .select("id, full_name, email, role, tags, rsvp_status, rsvps(event_id, attending)")
+      .order("full_name"),
+    // Every event with an open RSVP that's worth filtering an audience
+    // by — the couple-managed set from the events system (see
+    // 0017_events_system.sql), not a fixed "engagement"/"wedding" pair.
+    supabase.from("events").select("id, name").eq("rsvp_enabled", true).order("starts_at", { nullsFirst: false }),
+    supabase
+      .from("comms_messages")
+      .select("id, subject, created_at, comms_recipients(contact_id, email, status, sent_at, error)")
+      .order("created_at", { ascending: false }),
+  ]);
 
+  const events = rsvpEvents ?? [];
   const nameByContactId = new Map((contacts ?? []).map((c) => [c.id, c.full_name]));
 
-  function rsvpStatusFor(
-    rsvps: { event_id: string; attending: boolean | null }[] | null,
-    eventId: string | undefined
-  ) {
+  function rsvpStatusFor(rsvps: { event_id: string; attending: boolean | null }[] | null, eventId: string) {
     const rsvp = rsvps?.find((r) => r.event_id === eventId);
     if (!rsvp || rsvp.attending === null) return "pending";
     return rsvp.attending ? "attending" : "declined";
@@ -43,8 +42,7 @@ export default async function CommsPage() {
       email: c.email as string,
       role: c.role,
       tags: c.tags ?? [],
-      engagementStatus: rsvpStatusFor(c.rsvps, engagementEvent?.id),
-      weddingStatus: rsvpStatusFor(c.rsvps, weddingEvent?.id),
+      eventStatuses: Object.fromEntries(events.map((e) => [e.id, rsvpStatusFor(c.rsvps, e.id)])),
     }));
 
   const history = (messages ?? []).map((m) => {
@@ -75,7 +73,7 @@ export default async function CommsPage() {
       />
 
       {commsContacts.length > 0 ? (
-        <CommsComposer contacts={commsContacts} history={history} />
+        <CommsComposer contacts={commsContacts} events={events} history={history} />
       ) : (
         <EmptyState
           className="mt-10"

@@ -16,29 +16,68 @@ import { ImageUpload } from "@/components/ImageUpload";
 import { toDriveImageUrl } from "@/lib/google/image-url";
 import { cn } from "@/lib/utils";
 import {
-  addEngagementPhoto,
-  removeEngagementPhoto,
-  updateEngagementPhoto,
-  updateEngagementPhotoCaption,
-} from "@/lib/engagement/actions";
+  addEventPhoto,
+  removeEventPhoto,
+  updateEventPhoto,
+  updateEventPhotoCaption,
+} from "@/lib/events/photos";
 
 const EASE = [0.22, 1, 0.36, 1] as [number, number, number, number];
 const FADE_UP = { hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } };
 
-const VENUE_NAME = "The Black Lion";
-const VENUE_ADDRESS = "The Black Lion, Hammersmith, London";
-const PARTY_DATE = "24 October 2026";
-const PARTY_TIME = "7pm";
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+// Deterministic, not toLocaleDateString/toLocaleTimeString — this
+// component renders on the server for the initial paint same as any
+// other client component, and locale-dependent formatting APIs can
+// resolve differently between Node's ICU data and the browser's,
+// producing a hydration mismatch. A fixed format sidesteps that
+// entirely, and matches what the hardcoded engagement-party copy this
+// generalizes always looked like anyway ("24 October 2026, 7pm").
+function formatEventDateTime(startsAt: string) {
+  const d = new Date(startsAt);
+  const date = `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  let hours = d.getHours();
+  const minutes = d.getMinutes();
+  const ampm = hours >= 12 ? "pm" : "am";
+  hours = hours % 12 || 12;
+  const time = minutes === 0 ? `${hours}${ampm}` : `${hours}:${String(minutes).padStart(2, "0")}${ampm}`;
+  return { date, time };
+}
+
+export type EventConfig = {
+  id: string;
+  slug: string;
+  name: string;
+  starts_at: string | null;
+  location: string | null;
+  show_header: boolean;
+  header_eyebrow: string | null;
+  header_title: string | null;
+  header_body: string | null;
+  show_photo_board: boolean;
+  show_details: boolean;
+  details_eyebrow: string | null;
+  details_title: string | null;
+  venue_name: string | null;
+  venue_body: string | null;
+  show_map: boolean;
+  show_rsvp_form: boolean;
+  rsvp_enabled: boolean;
+};
 
 // Hoisted to module scope rather than an inline array literal in the JSX
-// below — GlowEffect now memoises its animation target on this array's
+// below — GlowEffect memoises its animation target on this array's
 // VALUES (see glow-effect.tsx), but keeping the reference itself stable
 // too means React never even has a reason to consider it "changed" on
 // re-render, belt and suspenders against the glow restarting/stuttering
 // every time this form's state changes (typing, choosing attending, etc).
 const RSVP_GLOW_COLORS = ["#4c6b52", "#7c9482", "#f4f1ec", "#232520"];
 
-export type EngagementPhoto = {
+export type EventPhoto = {
   id: string;
   image_url: string;
   caption: string | null;
@@ -64,11 +103,6 @@ function SectionDivider({ seed }: { seed: number }) {
 // panel over a dark photo: a quieter ink-tinted gap and semi-transparent
 // botanical-green gradient stops (rather than those popovers' fully
 // opaque ones) so the rim reads as a soft glow, not a bright halo.
-// The self-contained radial-gradient with hex baked directly in is
-// required here, not the from-*/via-*/to-* utilities — this project's
-// Tailwind build never wires up --tw-gradient-stops from those bare
-// colour-stop utilities alone (confirmed multiple times elsewhere in
-// this codebase), which is what Spotlight's own base classes rely on.
 function SpotlightCard({
   wrapperClassName,
   children,
@@ -92,10 +126,10 @@ function SpotlightCard({
 // prompt instead) — keeps the section from looking broken/empty before
 // any photos exist.
 const PLACEHOLDER_PHOTOS = [
-  { id: "p1", caption: "The proposal", rotate: -3, aspect: "aspect-[4/5]", from: "#dfe4d7", to: "#9fb29f" },
+  { id: "p1", caption: "A moment to remember", rotate: -3, aspect: "aspect-[4/5]", from: "#dfe4d7", to: "#9fb29f" },
   { id: "p2", caption: "First toast", rotate: 2, aspect: "aspect-square", from: "#ece7dc", to: "#c9bd9e" },
   { id: "p3", caption: "Just the two of us", rotate: -2, aspect: "aspect-[5/4]", from: "#c9d6c6", to: "#4c6b52" },
-  { id: "p4", caption: "The ring", rotate: 3, aspect: "aspect-[3/4]", from: "#f4f1ec", to: "#cfc2a3" },
+  { id: "p4", caption: "Together", rotate: 3, aspect: "aspect-[3/4]", from: "#f4f1ec", to: "#cfc2a3" },
   { id: "p5", caption: "With family", rotate: -1, aspect: "aspect-square", from: "#d8ded2", to: "#7c9482" },
   { id: "p6", caption: "More to come", rotate: 2, aspect: "aspect-[4/5]", from: "#ece7dc", to: "#dfd6bd" },
 ];
@@ -111,38 +145,13 @@ const LAYOUT_CYCLE = [
   { rotate: 2, aspect: "aspect-[4/5]" },
 ];
 
-// A caption that stays hidden until its photo is hovered, then follows the
-// cursor — via the vendored Cursor component, which hides the real OS
-// cursor and shows this pill in its place. Styled in this site's palette
-// (ink pill, cream text) rather than the reference demo's neon green. On
-// touch devices no hover ever fires, so the pill simply never appears.
-//
-// Rendered ONCE here at the gallery level (see GallerySection), not one
-// instance per photo nested inside each polaroid card — every polaroid is
-// rotated (either via `style={{ transform: rotate(...) }}` on
-// RealPolaroidCard, or via the InView wrapper's own `rotate` motion
-// variant for placeholders), and any ancestor with a CSS transform becomes
-// the containing block for a `position: fixed` descendant instead of the
-// viewport (standard, spec'd CSS behaviour). A follower pill nested inside
-// a rotated card was therefore positioning itself against that rotated
-// box's own (rotated) coordinate space while still receiving raw,
-// unrotated viewport mouse coordinates — a real, reported bug ("doesn't
-// align with where the mouse actually is"), worse the more a given card
-// was rotated. One shared instance living outside every rotated card,
-// driven by onMouseEnter/onMouseLeave from whichever photo is currently
-// hovered (see RealPolaroidCard/PlaceholderPolaroidCard), sidesteps the
-// whole problem — no rotated ancestor ever sits between it and the true
-// viewport.
-//
-// This is a small bespoke follower rather than the vendored Cursor
-// component: Cursor's `attachToParent` modes don't fit a single shared
-// instance tracking many separate hover targets — `attachToParent={true}`
-// needs to be a literal DOM child of the hovered element (which is exactly
-// the rotated nesting we're trying to get out of), and
-// `attachToParent={false}` sets `document.body.style.cursor = 'none'` for
-// the whole page with no cleanup to undo it, permanently hiding the real
-// cursor site-wide the moment this mounts. Springing our own motion values
-// off raw mousemove coordinates avoids both.
+// A caption that stays hidden until its photo is hovered, then follows
+// the cursor — via a small bespoke follower (see the reasoning captured
+// in git history for EngagementPageClient, which this generalizes):
+// every polaroid is rotated, and any ancestor with a CSS transform
+// becomes the containing block for a position:fixed descendant instead
+// of the viewport, so this is rendered ONCE here at the gallery level,
+// outside every rotated card, driven by onMouseEnter/onMouseLeave.
 function HoverCaption({ caption }: { caption: string | null }) {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -183,14 +192,12 @@ function HoverCaption({ caption }: { caption: string | null }) {
 
 // The cursor-follow caption pill only makes sense on a real mouse — on
 // touch, "hover" is simulated from a tap with no continuous movement to
-// follow, which is exactly the "glitches a tiny bit" report (the pill
-// jumping to the tap point and sticking, or briefly appearing on scroll).
-// Gating the hover handlers on this rather than a screen-width check,
-// since a touch device isn't reliably identified by viewport size (a
-// large tablet, a touch laptop) and this is evaluated per-event rather
-// than at render time, so there's no server/client markup to keep in sync
-// (see the CSS-only `[@media(hover:none)]` static caption below, which
-// takes the opposite, no-JS approach for the same reason).
+// follow. Gated on this rather than a screen-width check, since a touch
+// device isn't reliably identified by viewport size, and this is
+// evaluated per-event rather than at render time, so there's no server/
+// client markup to keep in sync (see the CSS-only `[@media(hover:none)]`
+// static caption below, which takes the opposite, no-JS approach for the
+// same reason).
 function isHoverCapable() {
   return typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 }
@@ -200,12 +207,14 @@ function RealPolaroidCard({
   rotate,
   aspect,
   isCouple,
+  slug,
   onHoverCaption,
 }: {
-  photo: EngagementPhoto;
+  photo: EventPhoto;
   rotate: number;
   aspect: string;
   isCouple: boolean;
+  slug: string;
   onHoverCaption: (caption: string | null) => void;
 }) {
   const [removing, setRemoving] = useState(false);
@@ -214,14 +223,14 @@ function RealPolaroidCard({
   function handleRemove() {
     setRemoving(true);
     startTransition(async () => {
-      await removeEngagementPhoto(photo.id);
+      await removeEventPhoto(photo.id, slug);
       setRemoving(false);
     });
   }
 
   function handleReplaced(url: string) {
     startTransition(async () => {
-      await updateEngagementPhoto(photo.id, url);
+      await updateEventPhoto(photo.id, slug, url);
     });
   }
 
@@ -233,7 +242,7 @@ function RealPolaroidCard({
     setEditingCaption(false);
     if (captionDraft === (photo.caption ?? "")) return;
     startCaptionTransition(async () => {
-      await updateEngagementPhotoCaption(photo.id, captionDraft);
+      await updateEventPhotoCaption(photo.id, slug, captionDraft);
     });
   }
 
@@ -241,7 +250,7 @@ function RealPolaroidCard({
     // eslint-disable-next-line @next/next/no-img-element -- Drive-hosted, arbitrary host
     <img
       src={toDriveImageUrl(photo.image_url)}
-      alt={photo.caption ?? "Engagement photo"}
+      alt={photo.caption ?? "Event photo"}
       loading="lazy"
       className="h-full w-full object-cover"
     />
@@ -319,10 +328,6 @@ function RealPolaroidCard({
         )
       ) : (
         photo.caption && (
-          // Hidden by default (the cursor-follow pill handles it on a real
-          // mouse) and shown only on devices with no hover capability — see
-          // isHoverCapable above for why this is a pure CSS media query
-          // rather than a JS touch check.
           <p className="mt-3 hidden text-center font-reading text-xs text-ink-soft italic [@media(hover:none)]:block">
             {photo.caption}
           </p>
@@ -381,7 +386,7 @@ function PlaceholderPolaroidCard({
   );
 }
 
-function HeroSection() {
+function HeroSection({ event }: { event: EventConfig }) {
   return (
     <section className="relative flex w-full flex-col items-center overflow-hidden px-6 pt-20 pb-16 text-center">
       <div
@@ -412,42 +417,56 @@ function HeroSection() {
         className="pointer-events-none absolute -bottom-4 -left-8 rotate-[18deg]"
       />
 
-      <InView
-        as="p"
-        once
-        variants={FADE_UP}
-        transition={{ duration: 0.6, ease: EASE }}
-        className="relative z-10 font-serif text-xs tracking-[0.3em] text-ink-soft uppercase"
-      >
-        Nick &amp; Ellie
-      </InView>
+      {event.header_eyebrow && (
+        <InView
+          as="p"
+          once
+          variants={FADE_UP}
+          transition={{ duration: 0.6, ease: EASE }}
+          className="relative z-10 font-serif text-xs tracking-[0.3em] text-ink-soft uppercase"
+        >
+          {event.header_eyebrow}
+        </InView>
+      )}
 
-      <TextEffect
-        as="h1"
-        per="word"
-        preset="fade-in-blur"
-        delay={0.15}
-        className="relative z-10 mt-4 font-hero text-[13vw] leading-[0.96] font-semibold tracking-tight text-ink sm:text-[58px] lg:text-[72px]"
-      >
-        {"Let’s celebrate early"}
-      </TextEffect>
+      {event.header_title && (
+        <TextEffect
+          as="h1"
+          per="word"
+          preset="fade-in-blur"
+          delay={0.15}
+          className="relative z-10 mt-4 font-hero text-[13vw] leading-[0.96] font-semibold tracking-tight text-ink sm:text-[58px] lg:text-[72px]"
+        >
+          {event.header_title}
+        </TextEffect>
+      )}
 
-      <InView
-        as="p"
-        once
-        variants={{ hidden: { opacity: 0, y: 14, filter: "blur(6px)" }, visible: { opacity: 1, y: 0, filter: "blur(0px)" } }}
-        transition={{ duration: 0.7, delay: 0.55, ease: EASE }}
-        className="relative z-10 mt-6 max-w-md text-center font-reading text-[17px] text-ink-soft italic"
-      >
-        Before the wedding itself, we&rsquo;d love to celebrate the
-        engagement with anyone who can make it — no formal invite needed,
-        just let us know you&rsquo;re coming.
-      </InView>
+      {event.header_body && (
+        <InView
+          as="p"
+          once
+          variants={{ hidden: { opacity: 0, y: 14, filter: "blur(6px)" }, visible: { opacity: 1, y: 0, filter: "blur(0px)" } }}
+          transition={{ duration: 0.7, delay: 0.55, ease: EASE }}
+          className="relative z-10 mt-6 max-w-md text-center font-reading text-[17px] text-ink-soft italic"
+        >
+          {event.header_body}
+        </InView>
+      )}
     </section>
   );
 }
 
-function GallerySection({ photos, isCouple }: { photos: EngagementPhoto[]; isCouple: boolean }) {
+function GallerySection({
+  photos,
+  isCouple,
+  eventId,
+  slug,
+}: {
+  photos: EventPhoto[];
+  isCouple: boolean;
+  eventId: string;
+  slug: string;
+}) {
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const [hoveredCaption, setHoveredCaption] = useState<string | null>(null);
@@ -455,7 +474,7 @@ function GallerySection({ photos, isCouple }: { photos: EngagementPhoto[]; isCou
   function handleUploaded(url: string) {
     setError(null);
     startTransition(async () => {
-      const result = await addEngagementPhoto(url);
+      const result = await addEventPhoto(eventId, slug, url);
       if (result.error) setError(result.error);
     });
   }
@@ -490,17 +509,6 @@ function GallerySection({ photos, isCouple }: { photos: EngagementPhoto[]; isCou
         </div>
       )}
 
-      {/* A CSS Grid, not a columns-based masonry — the previous
-          `columns-2 sm:columns-3` layout is a well-known source of real
-          mobile Safari rendering bugs (reflow when async content settles,
-          inconsistent break-inside-avoid support), and kept producing
-          live "images out of alignment on mobile" reports even after the
-          actual image-loading failures behind the first report were
-          fixed. Trades true masonry's tight vertical packing (a shorter
-          card next to a taller one in the same row leaves visible
-          whitespace below it) for layout that's simply correct and
-          reflow-free on every browser, which matters more on a page real
-          guests are actively using. */}
       <div className="mt-8 grid grid-cols-2 gap-5 sm:grid-cols-3">
         {hasRealPhotos
           ? photos.map((photo, i) => (
@@ -515,6 +523,7 @@ function GallerySection({ photos, isCouple }: { photos: EngagementPhoto[]; isCou
                 <RealPolaroidCard
                   photo={photo}
                   isCouple={isCouple}
+                  slug={slug}
                   rotate={LAYOUT_CYCLE[i % LAYOUT_CYCLE.length].rotate}
                   aspect={LAYOUT_CYCLE[i % LAYOUT_CYCLE.length].aspect}
                   onHoverCaption={setHoveredCaption}
@@ -543,82 +552,97 @@ function GallerySection({ photos, isCouple }: { photos: EngagementPhoto[]; isCou
             ))}
       </div>
 
-      {/* Single shared instance, rendered here rather than inside each
-          polaroid card — see the comment on HoverCaption above. */}
       <HoverCaption caption={hoveredCaption} />
     </section>
   );
 }
 
-function DetailsSection() {
-  const mapQuery = encodeURIComponent(VENUE_ADDRESS);
+function DetailsSection({ event }: { event: EventConfig }) {
+  const mapQuery = event.location ? encodeURIComponent(event.location) : "";
+  const { date, time } = event.starts_at ? formatEventDateTime(event.starts_at) : { date: null, time: null };
+  const showInfo = event.show_details;
+  const showMap = event.show_map && !!event.location;
+
+  if (!showInfo && !showMap) return null;
 
   return (
     <section className="relative w-full max-w-5xl px-6 py-16">
-      <InView as="p" once variants={FADE_UP} transition={{ duration: 0.6, ease: EASE }} className="text-center font-serif text-xs tracking-[0.3em] text-ink-soft uppercase">
-        When &amp; where
-      </InView>
-      <InView as="h2" once variants={FADE_UP} transition={{ duration: 0.6, delay: 0.1, ease: EASE }} className="mt-3 text-center font-display text-[30px] tracking-tight">
-        Join us at {VENUE_NAME}
-      </InView>
-
-      <div className="mt-10 grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] md:items-stretch">
-        <InView
-          as="div"
-          once
-          variants={{ hidden: { opacity: 0, x: -16 }, visible: { opacity: 1, x: 0 } }}
-          transition={{ duration: 0.6, ease: EASE }}
-          className="h-full"
-        >
-          <SpotlightCard wrapperClassName="h-full">
-            <div className="relative flex h-full flex-col justify-center gap-5 rounded-[26px] bg-white p-8">
-              <div>
-                <p className="flex items-center gap-2 font-serif text-xs tracking-[0.2em] text-ink-soft/70 uppercase">
-                  <Calendar className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" /> Date &amp; time
-                </p>
-                <p className="mt-1.5 font-display text-xl text-ink">{PARTY_DATE}, {PARTY_TIME}</p>
-              </div>
-              <div className="h-px w-full bg-ink/10" />
-              <div>
-                <p className="flex items-center gap-2 font-serif text-xs tracking-[0.2em] text-ink-soft/70 uppercase">
-                  <MapPin className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" /> Venue
-                </p>
-                <p className="mt-1.5 font-display text-xl text-ink">{VENUE_NAME}, Hammersmith</p>
-              </div>
-              <p className="font-reading text-sm text-ink-soft">
-                This one&rsquo;s drinks and catching up rather than a sit-down
-                meal — come fed! RSVP below and we&rsquo;ll see you there.
-              </p>
-            </div>
-          </SpotlightCard>
+      {event.details_eyebrow && (
+        <InView as="p" once variants={FADE_UP} transition={{ duration: 0.6, ease: EASE }} className="text-center font-serif text-xs tracking-[0.3em] text-ink-soft uppercase">
+          {event.details_eyebrow}
         </InView>
-
-        <InView
-          as="div"
-          once
-          variants={{ hidden: { opacity: 0, x: 16 }, visible: { opacity: 1, x: 0 } }}
-          transition={{ duration: 0.6, delay: 0.1, ease: EASE }}
-          className="h-full"
-        >
-          <SpotlightCard wrapperClassName="h-full min-h-[320px]">
-            <div className="relative h-full min-h-[316px] overflow-hidden rounded-[26px] shadow-[0_18px_50px_rgba(35,37,32,0.14)]">
-              <iframe
-                src={`https://www.google.com/maps?q=${mapQuery}&output=embed`}
-                className="absolute inset-0 h-full w-full border-0"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                title={`Map to ${VENUE_NAME}, Hammersmith`}
-              />
-              {/* No label overlay here — Google's own embed already places a
-                  "The Black Lion" pin/label on the map itself now that it
-                  points at a real, resolvable venue, and a second label of
-                  ours sitting on top of it just duplicated and overlapped it.
-                  The venue name is already stated in the text card beside
-                  this one. */}
-              <div aria-hidden="true" className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/15" />
-            </div>
-          </SpotlightCard>
+      )}
+      {event.details_title && (
+        <InView as="h2" once variants={FADE_UP} transition={{ duration: 0.6, delay: 0.1, ease: EASE }} className="mt-3 text-center font-display text-[30px] tracking-tight">
+          {event.details_title}
         </InView>
+      )}
+
+      <div
+        className={`mt-10 grid gap-6 md:items-stretch ${
+          showInfo && showMap ? "md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]" : ""
+        }`}
+      >
+        {showInfo && (
+          <InView
+            as="div"
+            once
+            variants={{ hidden: { opacity: 0, x: -16 }, visible: { opacity: 1, x: 0 } }}
+            transition={{ duration: 0.6, ease: EASE }}
+            className="h-full"
+          >
+            <SpotlightCard wrapperClassName="h-full">
+              <div className="relative flex h-full flex-col justify-center gap-5 rounded-[26px] bg-white p-8">
+                {date && (
+                  <div>
+                    <p className="flex items-center gap-2 font-serif text-xs tracking-[0.2em] text-ink-soft/70 uppercase">
+                      <Calendar className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" /> Date &amp; time
+                    </p>
+                    <p className="mt-1.5 font-display text-xl text-ink">
+                      {date}
+                      {time && `, ${time}`}
+                    </p>
+                  </div>
+                )}
+                {date && event.venue_name && <div className="h-px w-full bg-ink/10" />}
+                {event.venue_name && (
+                  <div>
+                    <p className="flex items-center gap-2 font-serif text-xs tracking-[0.2em] text-ink-soft/70 uppercase">
+                      <MapPin className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" /> Venue
+                    </p>
+                    <p className="mt-1.5 font-display text-xl text-ink">{event.venue_name}</p>
+                  </div>
+                )}
+                {event.venue_body && (
+                  <p className="font-reading text-sm text-ink-soft">{event.venue_body}</p>
+                )}
+              </div>
+            </SpotlightCard>
+          </InView>
+        )}
+
+        {showMap && (
+          <InView
+            as="div"
+            once
+            variants={{ hidden: { opacity: 0, x: 16 }, visible: { opacity: 1, x: 0 } }}
+            transition={{ duration: 0.6, delay: 0.1, ease: EASE }}
+            className="h-full"
+          >
+            <SpotlightCard wrapperClassName="h-full min-h-[320px]">
+              <div className="relative h-full min-h-[316px] overflow-hidden rounded-[26px] shadow-[0_18px_50px_rgba(35,37,32,0.14)]">
+                <iframe
+                  src={`https://www.google.com/maps?q=${mapQuery}&output=embed`}
+                  className="absolute inset-0 h-full w-full border-0"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title={`Map to ${event.venue_name ?? event.location}`}
+                />
+                <div aria-hidden="true" className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/15" />
+              </div>
+            </SpotlightCard>
+          </InView>
+        )}
       </div>
     </section>
   );
@@ -627,12 +651,12 @@ function DetailsSection() {
 type OtherAttendee = { id: number; name: string };
 
 // One row of the "bringing others" list. The first row (index 0) is
-// already visible the instant the surrounding Disclosure opens (see the
-// "Bringing others" checkbox below), so it doesn't need its own reveal.
-// Every row after that is appended live while the user types — see
-// updateOtherName — so it mounts closed and flips itself open a frame
-// later, giving it the same smooth Disclosure grow-in the first field
-// gets from its parent, rather than popping in already-expanded.
+// already visible the instant the surrounding Disclosure opens, so it
+// doesn't need its own reveal. Every row after that is appended live
+// while the user types — see updateOtherName — so it mounts closed and
+// flips itself open a frame later, giving it the same smooth Disclosure
+// grow-in the first field gets from its parent, rather than popping in
+// already-expanded.
 function OtherAttendeeField({
   attendee,
   index,
@@ -665,13 +689,7 @@ function OtherAttendeeField({
   );
 }
 
-export function EngagementPageClient({
-  photos,
-  isCouple,
-}: {
-  photos: EngagementPhoto[];
-  isCouple: boolean;
-}) {
+function RsvpSection({ event }: { event: EventConfig }) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [attending, setAttending] = useState<boolean | null>(null);
@@ -682,9 +700,6 @@ export function EngagementPageClient({
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
-  // Classic "always show one empty trailing input": once the last field in
-  // the list has text in it, grow the list by one more empty field below
-  // it. This can keep going indefinitely — there's no cap in the UI.
   function updateOtherName(id: number, value: string) {
     setOthers((prev) => {
       const next = prev.map((o) => (o.id === id ? { ...o, name: value } : o));
@@ -701,21 +716,14 @@ export function EngagementPageClient({
     if (attending === null) return;
     setBusy(true);
     setError(null);
-    // Never send the dangling empty trailing field (or any other blank
-    // entry) to the server — only real names.
     const otherNames =
       attending && bringingOthers
         ? others.map((o) => o.name.trim()).filter((name) => name.length > 0)
         : [];
-    const res = await fetch("/api/engagement-rsvp", {
+    const res = await fetch(`/api/events/${event.slug}/rsvp`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        fullName,
-        email,
-        attending,
-        others: otherNames,
-      }),
+      body: JSON.stringify({ fullName, email, attending, others: otherNames }),
     });
     setBusy(false);
     if (!res.ok) {
@@ -727,156 +735,168 @@ export function EngagementPageClient({
   }
 
   return (
+    <section className="relative w-full max-w-lg px-6 pt-4 pb-24">
+      {done ? (
+        <div
+          className="rounded-[28px] border border-ink/10 bg-white p-10 text-center shadow-[0_18px_50px_rgba(35,37,32,0.1)]"
+          style={{ animation: "fadeUp 550ms cubic-bezier(0.22,1,0.36,1) both" }}
+        >
+          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent/12">
+            <Check className="h-5 w-5 text-accent" strokeWidth={2.5} aria-hidden="true" />
+          </span>
+          <h2 className="mt-5 font-display text-2xl">
+            {attending ? "Wonderful — see you there!" : "Thanks for letting us know"}
+          </h2>
+          <p className="mt-3 font-reading text-ink-soft">
+            {attending
+              ? "Thank you for letting us know — we can't wait to celebrate with you."
+              : "Thank you for letting us know, and we'll miss you."}
+            {" "}If you need any further details in the meantime, please get in touch with us.
+          </p>
+        </div>
+      ) : (
+        <InView
+          as="div"
+          once
+          variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+          transition={{ duration: 0.6, ease: EASE }}
+        >
+          <SpotlightCard>
+            <form
+              onSubmit={submit}
+              className="relative rounded-[26px] bg-white p-8 shadow-[0_18px_50px_rgba(35,37,32,0.08)]"
+            >
+              <p className="font-serif text-xs tracking-[0.2em] text-ink-soft/70 uppercase">RSVP</p>
+              <h2 className="mt-1.5 font-display text-[22px]">Let us know you&rsquo;re coming</h2>
+
+              <div className="mt-6 flex flex-col gap-2.5">
+                <input
+                  type="text"
+                  required
+                  autoComplete="name"
+                  placeholder="Your name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="w-full rounded-full border border-ink/20 bg-white px-4.5 py-3 font-reading text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/15"
+                />
+                <input
+                  type="email"
+                  required
+                  autoComplete="email"
+                  placeholder="Your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-full border border-ink/20 bg-white px-4.5 py-3 font-reading text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/15"
+                />
+              </div>
+
+              <div className="mt-5 flex gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setAttending(true)}
+                  aria-pressed={attending === true}
+                  className={`flex-1 rounded-full py-3 font-serif text-[13px] transition ${
+                    attending === true
+                      ? "bg-accent text-cream shadow-[0_6px_16px_rgba(76,107,82,0.3)]"
+                      : "border border-ink/20 text-ink-soft hover:border-ink/40"
+                  }`}
+                >
+                  Joyfully attending
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAttending(false)}
+                  aria-pressed={attending === false}
+                  className={`flex-1 rounded-full py-3 font-serif text-[13px] transition ${
+                    attending === false
+                      ? "bg-ink text-cream shadow-[0_6px_16px_rgba(35,37,32,0.25)]"
+                      : "border border-ink/20 text-ink-soft hover:border-ink/40"
+                  }`}
+                >
+                  Can&rsquo;t make it
+                </button>
+              </div>
+
+              {attending && (
+                <div className="mt-5 flex flex-col gap-2.5">
+                  <label className="flex items-center gap-2.5 font-serif text-[13px] text-ink-soft">
+                    <input
+                      type="checkbox"
+                      checked={bringingOthers}
+                      onChange={(e) => setBringingOthers(e.target.checked)}
+                    />
+                    Bringing others
+                  </label>
+                  <Disclosure open={bringingOthers}>
+                    <DisclosureContent>
+                      <div className="flex flex-col gap-2.5">
+                        {others.map((attendee, i) => (
+                          <OtherAttendeeField
+                            key={attendee.id}
+                            attendee={attendee}
+                            index={i}
+                            onChange={updateOtherName}
+                          />
+                        ))}
+                      </div>
+                    </DisclosureContent>
+                  </Disclosure>
+                </div>
+              )}
+
+              <div className="relative mt-6">
+                <GlowEffect
+                  colors={RSVP_GLOW_COLORS}
+                  mode="colorShift"
+                  blur="soft"
+                  scale={1.04}
+                  duration={4}
+                  className="rounded-full"
+                />
+                <button
+                  type="submit"
+                  disabled={busy || attending === null}
+                  className="relative w-full rounded-full bg-ink px-7 py-3.5 font-serif text-sm text-cream transition hover:bg-ink-soft disabled:opacity-60"
+                >
+                  {busy ? "Sending…" : "Send RSVP"}
+                </button>
+              </div>
+
+              {error && <p className="mt-4 text-center font-reading text-sm text-alert">{error}</p>}
+            </form>
+          </SpotlightCard>
+        </InView>
+      )}
+    </section>
+  );
+}
+
+export function EventPageClient({
+  event,
+  photos,
+  isCouple,
+}: {
+  event: EventConfig;
+  photos: EventPhoto[];
+  isCouple: boolean;
+}) {
+  const sections = [
+    event.show_header && <HeroSection key="header" event={event} />,
+    event.show_photo_board && (
+      <GallerySection key="photos" photos={photos} isCouple={isCouple} eventId={event.id} slug={event.slug} />
+    ),
+    (event.show_details || event.show_map) && <DetailsSection key="details" event={event} />,
+    event.show_rsvp_form && <RsvpSection key="rsvp" event={event} />,
+  ].filter(Boolean);
+
+  return (
     <main className="relative flex flex-1 flex-col items-center overflow-hidden">
-      <HeroSection />
-      <SectionDivider seed={21} />
-      <GallerySection photos={photos} isCouple={isCouple} />
-      <SectionDivider seed={27} />
-      <DetailsSection />
-      <SectionDivider seed={33} />
-
-      <section className="relative w-full max-w-lg px-6 pt-4 pb-24">
-        {done ? (
-          <div
-            className="rounded-[28px] border border-ink/10 bg-white p-10 text-center shadow-[0_18px_50px_rgba(35,37,32,0.1)]"
-            style={{ animation: "fadeUp 550ms cubic-bezier(0.22,1,0.36,1) both" }}
-          >
-            <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent/12">
-              <Check className="h-5 w-5 text-accent" strokeWidth={2.5} aria-hidden="true" />
-            </span>
-            <h2 className="mt-5 font-display text-2xl">
-              {attending ? "Wonderful — see you there!" : "Thanks for letting us know"}
-            </h2>
-            <p className="mt-3 font-reading text-ink-soft">
-              {attending
-                ? "Thank you for letting us know — we can't wait to celebrate with you."
-                : "Thank you for letting us know, and we'll miss you."}
-              {" "}If you need any further details in the meantime, please get in touch with us.
-            </p>
-          </div>
-        ) : (
-          <InView
-            as="div"
-            once
-            variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-            transition={{ duration: 0.6, ease: EASE }}
-          >
-            <SpotlightCard>
-              <form
-                onSubmit={submit}
-                className="relative rounded-[26px] bg-white p-8 shadow-[0_18px_50px_rgba(35,37,32,0.08)]"
-              >
-                <p className="font-serif text-xs tracking-[0.2em] text-ink-soft/70 uppercase">RSVP</p>
-                <h2 className="mt-1.5 font-display text-[22px]">Let us know you&rsquo;re coming</h2>
-
-                <div className="mt-6 flex flex-col gap-2.5">
-                  <input
-                    type="text"
-                    required
-                    autoComplete="name"
-                    placeholder="Your name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="w-full rounded-full border border-ink/20 bg-white px-4.5 py-3 font-reading text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/15"
-                  />
-                  <input
-                    type="email"
-                    required
-                    autoComplete="email"
-                    placeholder="Your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-full border border-ink/20 bg-white px-4.5 py-3 font-reading text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/15"
-                  />
-                </div>
-
-                <div className="mt-5 flex gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => setAttending(true)}
-                    aria-pressed={attending === true}
-                    className={`flex-1 rounded-full py-3 font-serif text-[13px] transition ${
-                      attending === true
-                        ? "bg-accent text-cream shadow-[0_6px_16px_rgba(76,107,82,0.3)]"
-                        : "border border-ink/20 text-ink-soft hover:border-ink/40"
-                    }`}
-                  >
-                    Joyfully attending
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAttending(false)}
-                    aria-pressed={attending === false}
-                    className={`flex-1 rounded-full py-3 font-serif text-[13px] transition ${
-                      attending === false
-                        ? "bg-ink text-cream shadow-[0_6px_16px_rgba(35,37,32,0.25)]"
-                        : "border border-ink/20 text-ink-soft hover:border-ink/40"
-                    }`}
-                  >
-                    Can&rsquo;t make it
-                  </button>
-                </div>
-
-                {attending && (
-                  <div className="mt-5 flex flex-col gap-2.5">
-                    <label className="flex items-center gap-2.5 font-serif text-[13px] text-ink-soft">
-                      <input
-                        type="checkbox"
-                        checked={bringingOthers}
-                        onChange={(e) => setBringingOthers(e.target.checked)}
-                      />
-                      Bringing others
-                    </label>
-                    <Disclosure open={bringingOthers}>
-                      <DisclosureContent>
-                        <div className="flex flex-col gap-2.5">
-                          {others.map((attendee, i) => (
-                            <OtherAttendeeField
-                              key={attendee.id}
-                              attendee={attendee}
-                              index={i}
-                              onChange={updateOtherName}
-                            />
-                          ))}
-                        </div>
-                      </DisclosureContent>
-                    </Disclosure>
-                  </div>
-                )}
-
-                {/* GlowEffect (vendored from motion-primitives) sits behind
-                    the button as an absolutely-positioned, pointer-events-
-                    none layer — the button itself needs `relative` so it
-                    paints above it, since an absolutely-positioned sibling
-                    earlier in the DOM otherwise paints over a plain static
-                    one regardless of source order. Botanical greens and warm
-                    cream/ink rather than the reference's rainbow, soft blur
-                    and a small scale bleed so it reads as a quiet halo, not
-                    a spotlight. */}
-                <div className="relative mt-6">
-                  <GlowEffect
-                    colors={RSVP_GLOW_COLORS}
-                    mode="colorShift"
-                    blur="soft"
-                    scale={1.04}
-                    duration={4}
-                    className="rounded-full"
-                  />
-                  <button
-                    type="submit"
-                    disabled={busy || attending === null}
-                    className="relative w-full rounded-full bg-ink px-7 py-3.5 font-serif text-sm text-cream transition hover:bg-ink-soft disabled:opacity-60"
-                  >
-                    {busy ? "Sending…" : "Send RSVP"}
-                  </button>
-                </div>
-
-                {error && <p className="mt-4 text-center font-reading text-sm text-alert">{error}</p>}
-              </form>
-            </SpotlightCard>
-          </InView>
-        )}
-      </section>
+      {sections.map((section, i) => (
+        <span key={i} className="contents">
+          {i > 0 && <SectionDivider seed={21 + i * 6} />}
+          {section}
+        </span>
+      ))}
     </main>
   );
 }

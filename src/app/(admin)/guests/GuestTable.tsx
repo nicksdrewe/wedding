@@ -5,9 +5,15 @@ import { ArrowDownAZ, ArrowUpAZ } from "lucide-react";
 import { InView } from "@/components/motion-primitives/in-view";
 import { EditableGuestRow, type Contact } from "./EditableGuestRow";
 
+export type GuestListEvent = { id: string; name: string };
+
 export type GuestTableContact = Contact & {
   parent_contact_id: string | null;
-  engagementRsvpStatus: "pending" | "attending" | "declined";
+  // One entry per event with its guest-list column turned on (see
+  // 0017_events_system.sql) — keyed by event id rather than a fixed
+  // "engagementRsvpStatus" field, since which events even exist is now
+  // couple-managed instead of hardcoded.
+  eventRsvpStatuses: Record<string, "pending" | "attending" | "declined">;
 };
 
 const SELECT_CLASS =
@@ -19,13 +25,21 @@ const RSVP_OPTIONS = [
   { value: "pending", label: "Pending" },
 ];
 
-export function GuestTable({ contacts, isCouple }: { contacts: GuestTableContact[]; isCouple: boolean }) {
+export function GuestTable({
+  contacts,
+  events,
+  isCouple,
+}: {
+  contacts: GuestTableContact[];
+  events: GuestListEvent[];
+  isCouple: boolean;
+}) {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [role, setRole] = useState("");
   const [tag, setTag] = useState("");
   const [plusOne, setPlusOne] = useState("");
   const [weddingRsvp, setWeddingRsvp] = useState("");
-  const [engagementRsvp, setEngagementRsvp] = useState("");
+  const [eventRsvpFilters, setEventRsvpFilters] = useState<Record<string, string>>({});
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
@@ -33,14 +47,15 @@ export function GuestTable({ contacts, isCouple }: { contacts: GuestTableContact
     return [...set].sort((a, b) => a.localeCompare(b));
   }, [contacts]);
 
-  const hasActiveFilters = !!(role || tag || plusOne || weddingRsvp || engagementRsvp);
+  const activeEventFilters = Object.values(eventRsvpFilters).filter(Boolean);
+  const hasActiveFilters = !!(role || tag || plusOne || weddingRsvp || activeEventFilters.length > 0);
 
   function clearFilters() {
     setRole("");
     setTag("");
     setPlusOne("");
     setWeddingRsvp("");
-    setEngagementRsvp("");
+    setEventRsvpFilters({});
   }
 
   const filtered = useMemo(() => {
@@ -50,10 +65,12 @@ export function GuestTable({ contacts, isCouple }: { contacts: GuestTableContact
       if (plusOne === "yes" && !c.plus_one_eligible) return false;
       if (plusOne === "no" && c.plus_one_eligible) return false;
       if (weddingRsvp && c.rsvp_status !== weddingRsvp) return false;
-      if (engagementRsvp && c.engagementRsvpStatus !== engagementRsvp) return false;
+      for (const [eventId, status] of Object.entries(eventRsvpFilters)) {
+        if (status && c.eventRsvpStatuses[eventId] !== status) return false;
+      }
       return true;
     });
-  }, [contacts, role, tag, plusOne, weddingRsvp, engagementRsvp]);
+  }, [contacts, role, tag, plusOne, weddingRsvp, eventRsvpFilters]);
 
   const topLevel = useMemo(() => {
     const list = filtered.filter((c) => !c.parent_contact_id);
@@ -117,14 +134,21 @@ export function GuestTable({ contacts, isCouple }: { contacts: GuestTableContact
             </option>
           ))}
         </select>
-        <select value={engagementRsvp} onChange={(e) => setEngagementRsvp(e.target.value)} className={SELECT_CLASS}>
-          <option value="">Engagement RSVP: any</option>
-          {RSVP_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+        {events.map((e) => (
+          <select
+            key={e.id}
+            value={eventRsvpFilters[e.id] ?? ""}
+            onChange={(ev) => setEventRsvpFilters((prev) => ({ ...prev, [e.id]: ev.target.value }))}
+            className={SELECT_CLASS}
+          >
+            <option value="">{e.name} RSVP: any</option>
+            {RSVP_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        ))}
         {hasActiveFilters && (
           <button
             type="button"
@@ -171,9 +195,11 @@ export function GuestTable({ contacts, isCouple }: { contacts: GuestTableContact
                 <th className="px-5 py-3 text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
                   Wedding RSVP
                 </th>
-                <th className="px-5 py-3 text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
-                  Engagement RSVP
-                </th>
+                {events.map((e) => (
+                  <th key={e.id} className="px-5 py-3 text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
+                    {e.name} RSVP
+                  </th>
+                ))}
                 <th className="px-5 py-3 text-right text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
                   <span className="sr-only">Actions</span>
                 </th>
@@ -189,7 +215,7 @@ export function GuestTable({ contacts, isCouple }: { contacts: GuestTableContact
                     transition={{ duration: 0.3, delay: Math.min(i, 12) * 0.03 }}
                     className="group transition-colors duration-150 hover:bg-cream-deep/40"
                   >
-                    <EditableGuestRow contact={c} isCouple={isCouple} engagementRsvpStatus={c.engagementRsvpStatus} />
+                    <EditableGuestRow contact={c} isCouple={isCouple} events={events} />
                   </InView>
                   {(childrenByParent.get(c.id) ?? []).map((child) => (
                     <InView
@@ -200,12 +226,7 @@ export function GuestTable({ contacts, isCouple }: { contacts: GuestTableContact
                       transition={{ duration: 0.3, delay: Math.min(i, 12) * 0.03 }}
                       className="group bg-cream-deep/20 transition-colors duration-150 hover:bg-cream-deep/40"
                     >
-                      <EditableGuestRow
-                        contact={child}
-                        isCouple={isCouple}
-                        isChild
-                        engagementRsvpStatus={child.engagementRsvpStatus}
-                      />
+                      <EditableGuestRow contact={child} isCouple={isCouple} isChild events={events} />
                     </InView>
                   ))}
                 </React.Fragment>
@@ -219,7 +240,7 @@ export function GuestTable({ contacts, isCouple }: { contacts: GuestTableContact
                   transition={{ duration: 0.3, delay: Math.min(i, 12) * 0.03 }}
                   className="group transition-colors duration-150 hover:bg-cream-deep/40"
                 >
-                  <EditableGuestRow contact={c} isCouple={isCouple} engagementRsvpStatus={c.engagementRsvpStatus} />
+                  <EditableGuestRow contact={c} isCouple={isCouple} events={events} />
                 </InView>
               ))}
             </tbody>

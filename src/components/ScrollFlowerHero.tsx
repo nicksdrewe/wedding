@@ -105,7 +105,16 @@ function ctaCopy(cta: HeroCta) {
   }
 }
 
-export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
+export function ScrollFlowerHero({
+  cta,
+  landingCta,
+}: {
+  cta: HeroCta;
+  // Whichever event is flagged as the front door (see 0017_events_system.sql
+  // and app/page.tsx) — null when no event currently has that flag on,
+  // in which case the primary CTA button simply doesn't render.
+  landingCta: { href: string; label: string } | null;
+}) {
   const copy = ctaCopy(cta);
 
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -531,13 +540,15 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
                         over the other's, in full, regardless of the z-40.
                         That was the "sign in sits in front of RSVP" bug. */}
                     {WEDDING_RSVP_ENABLED && <RsvpMorphingButton />}
-                    {/* The engagement party is the front door for now — an
-                        open RSVP anyone can fill in, not gated by an account
-                        at all, so it leads with the same prominence the
-                        wedding RSVP itself gets once that's live. */}
-                    <PrimaryButton href="/engagement">
-                      RSVP to the engagement party
-                    </PrimaryButton>
+                    {/* Whichever event is flagged as the front door (see
+                        app/page.tsx and 0017_events_system.sql) — an open
+                        RSVP anyone can fill in, not gated by an account at
+                        all, so it leads with the same prominence the
+                        wedding RSVP itself gets once that's live. No event
+                        currently flagged just means this doesn't render. */}
+                    {landingCta && (
+                      <PrimaryButton href={landingCta.href}>{landingCta.label}</PrimaryButton>
+                    )}
                   </>
                 ) : (
                   <>

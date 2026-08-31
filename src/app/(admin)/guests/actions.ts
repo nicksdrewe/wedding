@@ -18,7 +18,10 @@ const updateContactSchema = contactSchema.extend({
   id: z.string().uuid(),
   tags: z.string().optional(),
   rsvpStatus: RSVP_STATUS,
-  engagementRsvpStatus: RSVP_STATUS,
+  // One JSON blob rather than a fixed field per event — which events even
+  // exist is couple-managed now (see 0017_events_system.sql), not a fixed
+  // "engagement" one this action used to know about by name.
+  eventRsvpStatuses: z.string(),
 });
 
 function tagsToArray(tags: string | undefined) {
@@ -29,27 +32,20 @@ function tagsToArray(tags: string | undefined) {
 }
 
 // Shared by updateContact (manually correcting a response) and
-// addChildContact (marking a manually-added plus one as attending) — the
-// engagement party RSVP has no dedicated column on contacts the way the
-// wedding one does (contacts.rsvp_status); it lives in the shared rsvps
-// table keyed by event_id (see api/engagement-rsvp/route.ts), so setting
-// it always means resolving the Engagement Party event id first.
-async function upsertEngagementRsvp(
+// addChildContact (marking a manually-added plus one as attending) — any
+// event's RSVP has no dedicated column on contacts the way the wedding
+// one does (contacts.rsvp_status); it lives in the shared rsvps table
+// keyed by event_id (see api/events/[eventSlug]/rsvp/route.ts).
+async function upsertEventRsvp(
   supabase: Awaited<ReturnType<typeof createClient>>,
   contactId: string,
+  eventId: string,
   status: z.infer<typeof RSVP_STATUS>
 ) {
-  const { data: event } = await supabase
-    .from("events")
-    .select("id")
-    .eq("name", "Engagement Party")
-    .maybeSingle();
-  if (!event) return null;
-
   const { error } = await supabase.from("rsvps").upsert(
     {
       contact_id: contactId,
-      event_id: event.id,
+      event_id: eventId,
       attending: status === "pending" ? null : status === "attending",
       responded_at: status === "pending" ? null : new Date().toISOString(),
     },
@@ -90,8 +86,15 @@ export async function updateContact(formData: FormData) {
     plusOneEligible: formData.get("plusOneEligible") === "on",
     tags: formData.get("tags") || "",
     rsvpStatus: formData.get("rsvpStatus"),
-    engagementRsvpStatus: formData.get("engagementRsvpStatus"),
+    eventRsvpStatuses: formData.get("eventRsvpStatuses") ?? "{}",
   });
+
+  let eventStatuses: Record<string, string>;
+  try {
+    eventStatuses = JSON.parse(parsed.eventRsvpStatuses);
+  } catch {
+    return { error: "Couldn't read the event RSVP selections — try again." };
+  }
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -108,8 +111,12 @@ export async function updateContact(formData: FormData) {
     .eq("id", parsed.id);
   if (error) return { error: error.message };
 
-  const rsvpError = await upsertEngagementRsvp(supabase, parsed.id, parsed.engagementRsvpStatus);
-  if (rsvpError) return { error: rsvpError.message };
+  for (const [eventId, status] of Object.entries(eventStatuses)) {
+    const statusParsed = RSVP_STATUS.safeParse(status);
+    if (!statusParsed.success) continue;
+    const rsvpError = await upsertEventRsvp(supabase, parsed.id, eventId, statusParsed.data);
+    if (rsvpError) return { error: rsvpError.message };
+  }
 
   revalidatePath("/guests");
   return { error: null };
@@ -120,25 +127,23 @@ const addChildSchema = z.object({
   fullName: z.string().min(1),
   email: z.string().email().optional().or(z.literal("")),
   phone: z.string().optional(),
-  attendingEngagement: z.boolean(),
 });
 
 // Manually adds a "plus one" under an existing contact — the same shape
-// the engagement RSVP form's dynamically-growing "bringing others" list
-// creates on its own (see api/engagement-rsvp/route.ts and
-// 0011_contact_hierarchy.sql), for guests who missed that field the first
-// time and need adding after the fact. Mirrors that route's two writes:
-// the child contact itself, then (if marked attending) an rsvps row for
-// the Engagement Party event, so this plus-one shows correctly in the
-// Engagement RSVP column immediately rather than sitting on "pending"
-// until someone re-submits the form.
+// an event's own self-service group RSVP form's dynamically-growing
+// "bringing others" list creates on its own (see
+// api/events/[eventSlug]/rsvp/route.ts and 0011_contact_hierarchy.sql),
+// for guests who missed that field the first time and need adding after
+// the fact. Mirrors that route's two writes: the child contact itself,
+// then (for each event checked "attending") an rsvps row, so this
+// plus-one shows correctly in that event's guest-list column immediately
+// rather than sitting on "pending" until someone re-submits the form.
 export async function addChildContact(formData: FormData) {
   const parsed = addChildSchema.parse({
     parentContactId: formData.get("parentContactId"),
     fullName: formData.get("fullName"),
     email: formData.get("email") || "",
     phone: formData.get("phone") || "",
-    attendingEngagement: formData.get("attendingEngagement") === "on",
   });
 
   const supabase = await createClient();
@@ -156,12 +161,16 @@ export async function addChildContact(formData: FormData) {
     .single();
   if (insertError || !child) return { error: insertError?.message ?? "Couldn't add guest." };
 
-  const rsvpError = await upsertEngagementRsvp(
-    supabase,
-    child.id,
-    parsed.attendingEngagement ? "attending" : "pending"
-  );
-  if (rsvpError) return { error: rsvpError.message };
+  // Dynamic field names (attending_<eventId>) rather than a zod-validated
+  // fixed shape — the set of events on the form is couple-managed and
+  // unknown to this action ahead of time.
+  for (const [key, value] of formData.entries()) {
+    if (!key.startsWith("attending_") || value !== "on") continue;
+    const eventId = z.string().uuid().safeParse(key.slice("attending_".length));
+    if (!eventId.success) continue;
+    const rsvpError = await upsertEventRsvp(supabase, child.id, eventId.data, "attending");
+    if (rsvpError) return { error: rsvpError.message };
+  }
 
   revalidatePath("/guests");
   return { error: null };

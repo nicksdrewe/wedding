@@ -3,11 +3,12 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit } from "@/lib/rate-limit";
 
-// Public, unauthenticated self-service RSVP for the engagement party — no
-// personal invite link required, unlike the main wedding's token-gated
-// /api/rsvp/[token]. Anyone can add themselves, their email, and any
-// number of others they're bringing (parent/child, a plus one, a whole
-// family) straight into the CRM under the "Engagement Party" event.
+// Public, unauthenticated self-service RSVP for any event created through
+// the events system (see 0017_events_system.sql) — generalized from what
+// was originally a one-off /api/engagement-rsvp built just for the
+// engagement party. The main wedding's personal invite-link RSVP
+// (/api/rsvp/[token]) is a deliberately separate, untouched flow — this
+// is for events the couple explicitly opts into open/guest-list RSVP for.
 //
 // Each "other" becomes its own contacts row, nested under the submitter
 // via parent_contact_id (see 0011_contact_hierarchy.sql), with its own
@@ -18,29 +19,23 @@ const schema = z.object({
   fullName: z.string().trim().min(1).max(200),
   email: z.string().trim().email().max(320),
   attending: z.boolean(),
-  // Names of additional attendees the submitter is bringing. No email
-  // required for these — they're not the ones logging in with an RSVP
-  // link, just guests being logged. Capped generously as a defensive
-  // limit, not a UX-visible one (the form itself has no cap).
   others: z.array(z.string().trim().min(1).max(200)).max(25).optional(),
 });
 
 // PostgREST's ilike operator treats `*` as an alternate wildcard (so URLs
 // don't need %25-encoded `%`), in addition to Postgres's own `%`/`_`/`\`
-// LIKE metacharacters — escaping only the latter three (as this route
-// originally did) still lets a value containing a literal `*` match more
-// than the exact email typed in. `*` is not valid in a real email address,
-// so this is defensive rather than a live exploit path.
+// LIKE metacharacters — escaping only the latter three isn't enough. `*`
+// is not valid in a real email address, so this is defensive rather than
+// a live exploit path.
 function escapeIlike(value: string) {
   return value.replace(/[%_\\*]/g, "\\$&");
 }
 
-export async function POST(request: Request) {
-  // No session to key a rate limit off, so this falls back to the
-  // client's IP — spoofable by anyone motivated enough, but sufficient to
-  // stop a trivial scripted flood, which is the actual threat here.
+export async function POST(request: Request, { params }: { params: Promise<{ eventSlug: string }> }) {
+  const { eventSlug } = await params;
+
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  const { ok: withinLimit } = await checkRateLimit(`engagement-rsvp:${ip}`, {
+  const { ok: withinLimit } = await checkRateLimit(`event-rsvp:${eventSlug}:${ip}`, {
     max: 20,
     windowSeconds: 60 * 60,
   });
@@ -63,28 +58,25 @@ export async function POST(request: Request) {
 
   const { data: event } = await supabase
     .from("events")
-    .select("id")
-    .eq("name", "Engagement Party")
+    .select("id, rsvp_enabled, rsvp_open")
+    .eq("slug", eventSlug)
     .maybeSingle();
 
-  if (!event) {
-    return NextResponse.json(
-      { error: "The engagement party isn't set up yet — try again shortly." },
-      { status: 500 }
-    );
+  if (!event || !event.rsvp_enabled) {
+    return NextResponse.json({ error: "RSVPs aren't open for this event." }, { status: 404 });
   }
 
-  // Reuse an existing contact by email if they're already on the list
-  // (e.g. a real wedding guest also RSVPing here) — BUT only if that
-  // contact hasn't already answered the engagement RSVP. This endpoint is
-  // fully public and unauthenticated: anyone who knows (or guesses) a
-  // guest's email could otherwise submit on their behalf and silently
-  // flip their attending status, or — worse — trigger the group-replace
-  // step further down and permanently delete every plus-one that guest
-  // had already added. Once a contact has a real response recorded, any
-  // further submission under that same email creates a new, clearly
-  // flagged row instead of touching the original — nothing here ever
-  // overwrites or deletes an already-answered contact.
+  // Reuse an existing contact by email if they're already on the list —
+  // BUT only if that contact hasn't already answered THIS event's RSVP.
+  // This endpoint is fully public and unauthenticated: anyone who knows
+  // (or guesses) a guest's email could otherwise submit on their behalf
+  // and silently flip their attending status, or — worse — trigger the
+  // group-replace step further down and permanently delete every
+  // plus-one that guest had already added. Once a contact has a real
+  // response recorded for this event, any further submission under that
+  // same email creates a new, clearly flagged row instead of touching
+  // the original — nothing here ever overwrites or deletes an
+  // already-answered contact.
   const { data: existingContact } = await supabase
     .from("contacts")
     .select("id")
@@ -110,6 +102,16 @@ export async function POST(request: Request) {
   }
 
   if (!contactId) {
+    // Guest-list-only events don't get to auto-create a contact for an
+    // email that isn't already on file — same gate the sign-in code
+    // request uses, just applied here instead.
+    if (!event.rsvp_open) {
+      return NextResponse.json(
+        { error: "We don't have that email on our guest list — check with Nick or Ellie." },
+        { status: 404 }
+      );
+    }
+
     const { data: newContact, error: insertError } = await supabase
       .from("contacts")
       .insert({
@@ -143,12 +145,11 @@ export async function POST(request: Request) {
   // Replace any group members recorded by a previous submission from this
   // same contact — resubmitting (e.g. to fix a typo'd name, or to change
   // who's coming) shouldn't accumulate duplicate contacts under the same
-  // parent. If they're now declining, this also correctly leaves no
-  // children behind: there's no one coming to log. Safe against the
-  // spoofing case above: contactId here is either a fresh row (no
-  // children exist yet) or a contact that had never actually responded —
-  // an already-answered contact's children are never reachable through
-  // this delete, because contactId is never set to their id in that case.
+  // parent. Safe against the spoofing case above: contactId here is
+  // either a fresh row (no children exist yet) or a contact that had
+  // never actually responded — an already-answered contact's children are
+  // never reachable through this delete, because contactId is never set
+  // to their id in that case.
   const { error: deleteChildrenError } = await supabase
     .from("contacts")
     .delete()

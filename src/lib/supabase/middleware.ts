@@ -15,13 +15,18 @@ const PUBLIC_PREFIXES = [
   "/logout",
   "/rsvp",
   "/no-access",
+  // /engagement itself only redirects now (see app/engagement/page.tsx)
+  // — kept public so that redirect can actually run for a signed-out
+  // visitor instead of being intercepted first. /events is the real,
+  // generic events system (see 0017_events_system.sql) it redirects into.
   "/engagement",
+  "/events",
   "/api/rsvp",
-  "/api/engagement-rsvp",
+  "/api/events",
   "/api/auth/request-code",
   // Every uploaded photo's <img src> now points here (see
-  // lib/google/drive.ts) — an anonymous engagement-party visitor has to
-  // be able to load it the same way they can reach /engagement itself.
+  // lib/google/drive.ts) — an anonymous event visitor has to be able to
+  // load it the same way they can reach the event's own page.
   "/api/drive-image",
 ];
 

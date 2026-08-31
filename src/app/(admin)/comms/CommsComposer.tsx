@@ -5,14 +5,17 @@ import { useRouter } from "next/navigation";
 import { Check, ChevronDown, ChevronUp, Loader2, Mail, Send, Trash2, Users } from "lucide-react";
 import { createMessage, deleteMessage, sendToRecipient } from "./actions";
 
+export type CommsEvent = { id: string; name: string };
+
 export type CommsContact = {
   id: string;
   full_name: string;
   email: string;
   role: string;
   tags: string[];
-  engagementStatus: "pending" | "attending" | "declined";
-  weddingStatus: "pending" | "attending" | "declined";
+  // One entry per RSVP-enabled event (see 0017_events_system.sql) — the
+  // couple-managed set, not a fixed "engagement"/"wedding" pair.
+  eventStatuses: Record<string, "pending" | "attending" | "declined">;
 };
 
 export type MessageRecipient = {
@@ -51,9 +54,11 @@ type SendState =
 
 export function CommsComposer({
   contacts,
+  events,
   history,
 }: {
   contacts: CommsContact[];
+  events: CommsEvent[];
   history: MessageHistoryItem[];
 }) {
   const router = useRouter();
@@ -72,8 +77,7 @@ export function CommsComposer({
 
   const [role, setRole] = useState("");
   const [tag, setTag] = useState("");
-  const [engagementStatus, setEngagementStatus] = useState("");
-  const [weddingStatus, setWeddingStatus] = useState("");
+  const [eventStatusFilters, setEventStatusFilters] = useState<Record<string, string>>({});
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -99,12 +103,13 @@ export function CommsComposer({
     return contacts.filter((c) => {
       if (role && c.role !== role) return false;
       if (tag && !c.tags.includes(tag)) return false;
-      if (engagementStatus && c.engagementStatus !== engagementStatus) return false;
-      if (weddingStatus && c.weddingStatus !== weddingStatus) return false;
+      for (const [eventId, status] of Object.entries(eventStatusFilters)) {
+        if (status && c.eventStatuses[eventId] !== status) return false;
+      }
       if (q && !c.full_name.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [contacts, role, tag, engagementStatus, weddingStatus, search]);
+  }, [contacts, role, tag, eventStatusFilters, search]);
 
   const filteredIds = useMemo(() => filtered.map((c) => c.id), [filtered]);
   const allFilteredSelected = filteredIds.length > 0 && filteredIds.every((id) => selected.has(id));
@@ -206,22 +211,19 @@ export function CommsComposer({
                 ))}
               </select>
             )}
-            <select
-              value={engagementStatus}
-              onChange={(e) => setEngagementStatus(e.target.value)}
-              className={SELECT_CLASS}
-            >
-              <option value="">Engagement RSVP: any</option>
-              <option value="attending">Attending</option>
-              <option value="declined">Declined</option>
-              <option value="pending">Pending</option>
-            </select>
-            <select value={weddingStatus} onChange={(e) => setWeddingStatus(e.target.value)} className={SELECT_CLASS}>
-              <option value="">Wedding RSVP: any</option>
-              <option value="attending">Attending</option>
-              <option value="declined">Declined</option>
-              <option value="pending">Pending</option>
-            </select>
+            {events.map((ev) => (
+              <select
+                key={ev.id}
+                value={eventStatusFilters[ev.id] ?? ""}
+                onChange={(e) => setEventStatusFilters((prev) => ({ ...prev, [ev.id]: e.target.value }))}
+                className={SELECT_CLASS}
+              >
+                <option value="">{ev.name} RSVP: any</option>
+                <option value="attending">Attending</option>
+                <option value="declined">Declined</option>
+                <option value="pending">Pending</option>
+              </select>
+            ))}
           </div>
 
           <div className="mt-4 flex items-center justify-between border-b border-ink/10 pb-2">
