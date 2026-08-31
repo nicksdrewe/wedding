@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { InView } from "@/components/motion-primitives/in-view";
+import { toDriveImageUrl } from "@/lib/google/image-url";
 
 const EASE = [0.22, 1, 0.36, 1] as [number, number, number, number];
 
@@ -166,7 +167,7 @@ function IdeaTile({ idea }: { idea: BoardIdea }) {
           remotePatterns allowlist, which doesn't fit "any URL pasted in". */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={cover.image_url}
+        src={toDriveImageUrl(cover.image_url)}
         alt={idea.title}
         className="block h-auto w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
       />

@@ -52,9 +52,20 @@ function getDriveClient() {
 
 export type DriveUploadResult = {
   fileId: string;
-  // Google's image-serving CDN — more reliable for hotlinking as an <img
-  // src> than the drive.google.com/uc?export=view URL, which can trigger
-  // an interstitial "can't scan for viruses" page for some file types.
+  // Points at this app's own /api/drive-image/[fileId] proxy (see that
+  // route) rather than hotlinking a Google URL directly — every option
+  // that does that turned out to be unreliable under concurrent load,
+  // confirmed by direct testing: loading the engagement gallery's ~13
+  // photos at once got roughly 2 in 3 requests rejected outright, first
+  // from the undocumented lh3.googleusercontent.com/d/<id> CDN endpoint
+  // this used originally, then AGAIN from drive.google.com/thumbnail (the
+  // documented alternative) under the same quick-succession load. The
+  // proxy fetches through the app's own authenticated Drive API access
+  // instead of a public, rate-limited hotlink, and lets Vercel/the
+  // browser cache the (immutable, per-fileId) result. See
+  // lib/google/image-url.ts, which transforms any already-stored raw
+  // Google URL to this same shape at render time, since this change
+  // alone doesn't touch photos uploaded before it.
   imageUrl: string;
   viewUrl: string;
 };
@@ -83,7 +94,7 @@ export async function uploadToDrive(
 
   return {
     fileId,
-    imageUrl: `https://lh3.googleusercontent.com/d/${fileId}`,
+    imageUrl: `/api/drive-image/${fileId}`,
     viewUrl: data.webViewLink ?? `https://drive.google.com/file/d/${fileId}/view`,
   };
 }
@@ -91,4 +102,24 @@ export async function uploadToDrive(
 export async function deleteFromDrive(fileId: string): Promise<void> {
   const drive = getDriveClient();
   await drive.files.delete({ fileId });
+}
+
+// Backs /api/drive-image/[fileId] — fetches the file's actual bytes
+// through the app's own authenticated Drive API access, the same client
+// uploadToDrive uses, rather than a public hotlink URL. See
+// DriveUploadResult's imageUrl comment for why this exists at all.
+export async function getDriveFileBuffer(
+  fileId: string
+): Promise<{ buffer: Buffer; mimeType: string }> {
+  const drive = getDriveClient();
+
+  const [{ data: meta }, mediaRes] = await Promise.all([
+    drive.files.get({ fileId, fields: "mimeType" }),
+    drive.files.get({ fileId, alt: "media" }, { responseType: "arraybuffer" }),
+  ]);
+
+  return {
+    buffer: Buffer.from(mediaRes.data as ArrayBuffer),
+    mimeType: meta.mimeType ?? "application/octet-stream",
+  };
 }

@@ -19,6 +19,10 @@ const PUBLIC_PREFIXES = [
   "/api/rsvp",
   "/api/engagement-rsvp",
   "/api/auth/request-code",
+  // Every uploaded photo's <img src> now points here (see
+  // lib/google/drive.ts) — an anonymous engagement-party visitor has to
+  // be able to load it the same way they can reach /engagement itself.
+  "/api/drive-image",
 ];
 
 // The reusable invite link (/i/[token], see lib/invite) — checked

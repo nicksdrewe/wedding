@@ -268,6 +268,18 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
     if (!ready || !wrapRef.current) return;
 
     gsap.registerPlugin(ScrollTrigger);
+    // A mobile browser's address bar collapsing as the visitor scrolls
+    // fires a genuine window resize event a few seconds into the session
+    // — ScrollTrigger's default behavior is to fully refresh (recompute
+    // the pin spacer, re-measure the trigger) on any resize, which
+    // reflows this whole pinned section including the CTA row. If a
+    // popover (RSVP/hub-login — see MorphingPopover) happens to be open
+    // at that moment, its Framer Motion layoutId-tracked position gets
+    // pulled out from under it by that reflow — it doesn't visually
+    // recover until closed and reopened against the now-settled layout.
+    // This is documented, common enough on mobile that GSAP ships a flag
+    // specifically for it, rather than something to fix by hand here.
+    ScrollTrigger.config({ ignoreMobileResize: true });
     drawFrame(0);
 
     const ctx = gsap.context(() => {
@@ -441,7 +453,17 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
           >
             <p
               ref={eyebrowRef}
-              className="font-serif text-xl font-bold tracking-[0.28em] text-white uppercase"
+              // Static opacity-0, matching ctaRef/footerRef below —
+              // GSAP's tl.fromTo() for this element (REVEAL_FROM, also
+              // opacity:0) only actually sets that starting value once the
+              // effect below runs, which is gated on `ready` (every hero
+              // frame finished preloading). Without a static default too,
+              // this rendered fully visible, in its final position, for
+              // that whole window — directly on top of the equally
+              // unhidden prompt below, since both containers are dead
+              // centred. That's the "everything stacks in the centre
+              // before settling" flash.
+              className="font-serif text-xl font-bold tracking-[0.28em] text-white uppercase opacity-0"
               style={{ textShadow: "0 2px 14px rgba(0,0,0,0.65), 0 1px 3px rgba(0,0,0,0.85)" }}
             >
               We&rsquo;re getting married
@@ -449,14 +471,14 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
             <h1 className="mt-5 font-hero text-[15vw] leading-[0.94] font-semibold tracking-[-0.01em] text-white sm:text-[110px] lg:text-[148px]">
               <span
                 ref={nickRef}
-                className="inline-block"
+                className="inline-block opacity-0"
                 style={{ textShadow: "0 2px 24px rgba(0,0,0,0.7), 0 1px 3px rgba(0,0,0,0.9)" }}
               >
                 Nick
               </span>{" "}
               <span
                 ref={ellieRef}
-                className="inline-block"
+                className="inline-block opacity-0"
                 style={{ textShadow: "0 2px 24px rgba(0,0,0,0.7), 0 1px 3px rgba(0,0,0,0.9)" }}
               >
                 &amp; Ellie
@@ -464,7 +486,7 @@ export function ScrollFlowerHero({ cta }: { cta: HeroCta }) {
             </h1>
             <p
               ref={dateRef}
-              className="mt-5 font-reading text-2xl text-cream italic md:text-[28px]"
+              className="mt-5 font-reading text-2xl text-cream italic opacity-0 md:text-[28px]"
               style={{ textShadow: "0 1px 14px rgba(0,0,0,0.6)" }}
             >
               Summer 2028

@@ -13,6 +13,7 @@ import { Spotlight } from "@/components/motion-primitives/spotlight";
 import { GlowEffect } from "@/components/motion-primitives/glow-effect";
 import { AnimatePresence, motion, useMotionValue, useSpring } from "motion/react";
 import { ImageUpload } from "@/components/ImageUpload";
+import { toDriveImageUrl } from "@/lib/google/image-url";
 import { cn } from "@/lib/utils";
 import {
   addEngagementPhoto,
@@ -238,7 +239,12 @@ function RealPolaroidCard({
 
   const image = (
     // eslint-disable-next-line @next/next/no-img-element -- Drive-hosted, arbitrary host
-    <img src={photo.image_url} alt={photo.caption ?? "Engagement photo"} className="h-full w-full object-cover" />
+    <img
+      src={toDriveImageUrl(photo.image_url)}
+      alt={photo.caption ?? "Engagement photo"}
+      loading="lazy"
+      className="h-full w-full object-cover"
+    />
   );
 
   return (

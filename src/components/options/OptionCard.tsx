@@ -23,6 +23,7 @@ import {
   removeOptionImage,
 } from "@/lib/options/actions";
 import { ImageUpload } from "@/components/ImageUpload";
+import { toDriveImageUrl } from "@/lib/google/image-url";
 import { EditOptionForm } from "./EditOptionForm";
 
 export type OptionImage = {
@@ -77,7 +78,7 @@ export function OptionCard({
               // domain, which doesn't fit "any URL the couple pastes in".
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={cover.image_url}
+                src={toDriveImageUrl(cover.image_url)}
                 alt={option.name}
                 className="h-full w-full object-cover"
               />
@@ -196,7 +197,7 @@ function OptionDetailPanel({
           {option.images.map((img) => (
             <div key={img.id} className="group relative aspect-square overflow-hidden rounded-[8px] bg-cream-deep">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={img.image_url} alt={option.name} className="h-full w-full object-cover" />
+              <img src={toDriveImageUrl(img.image_url)} alt={option.name} className="h-full w-full object-cover" />
               {isCouple && (
                 <button
                   type="button"

@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Loader2, X } from "lucide-react";
 import { ImageUpload } from "@/components/ImageUpload";
+import { toDriveImageUrl } from "@/lib/google/image-url";
 import { addIdeaImage, deleteIdea, removeIdeaImage, updateIdea } from "./actions";
 
 export type IdeaImage = {
@@ -160,7 +161,7 @@ export function IdeaCard({
           {images.map((img) => (
             <div key={img.id} className="group/img relative aspect-square overflow-hidden rounded-[6px] bg-cream-deep">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={img.image_url} alt={title} className="h-full w-full object-cover" />
+              <img src={toDriveImageUrl(img.image_url)} alt={title} className="h-full w-full object-cover" />
               {canEdit && (
                 <button
                   type="button"

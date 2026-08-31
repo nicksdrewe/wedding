@@ -31,6 +31,7 @@ import "./options-map.css";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
+import { toDriveImageUrl } from "@/lib/google/image-url";
 
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -85,7 +86,7 @@ export function OptionsMap({ options }: { options: MapOption[] }) {
                 {option.coverImageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={option.coverImageUrl}
+                    src={toDriveImageUrl(option.coverImageUrl)}
                     alt={option.name}
                     className="h-12 w-12 shrink-0 rounded-[6px] object-cover"
                   />
