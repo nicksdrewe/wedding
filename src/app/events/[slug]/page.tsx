@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/auth/roles";
 import { EventPageClient, type EventConfig } from "./EventPageClient";
 
@@ -10,9 +10,16 @@ import { EventPageClient, type EventConfig } from "./EventPageClient";
 // than converting the whole page to a server component, since the
 // gallery/RSVP form/scroll reveals all need client state and event
 // handlers.
+//
+// Admin client, not the session-aware one: this page is publicly reachable
+// (anonymous guests RSVP here), and events' RLS ("read events") requires
+// auth.uid() is not null — a signed-out visitor got zero rows back here,
+// hitting notFound() for every event page (see src/app/page.tsx for the
+// same bug on the home page CTA lookup). Only non-sensitive event config
+// is selected below, so bypassing RLS is safe.
 export default async function EventPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: event } = await supabase
     .from("events")
