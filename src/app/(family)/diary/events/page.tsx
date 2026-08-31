@@ -23,7 +23,7 @@ export default async function EventsListPage() {
   return (
     <div>
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <PageHeader eyebrow="Us" title="All events" description="Every event, whether or not it's set to show on the diary timeline." />
+        <PageHeader eyebrow="Us" title="All events" infoText="Every event, whether or not it's set to show on the diary timeline." />
         <Link
           href="/diary/events/new"
           className="flex items-center gap-1.5 rounded-full bg-ink px-5 py-2.5 font-serif text-sm text-cream transition-colors duration-150 hover:bg-ink-soft"

@@ -64,7 +64,7 @@ export default async function DiaryPage() {
         <PageHeader
           eyebrow="Us"
           title="Diary"
-          description="Every event and key date, in one shared timeline."
+          infoText="Every event and key date, in one shared timeline."
         />
         {isCouple && (
           <Link

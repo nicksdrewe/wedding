@@ -5,7 +5,7 @@ import { AnimatedNumber } from "@/components/motion-primitives/animated-number";
 import { getActiveInviteLink } from "@/lib/invite/actions";
 import { AddContactForm } from "./AddContactForm";
 import { GuestTable, type GuestTableContact } from "./GuestTable";
-import { InviteLinkCard } from "./InviteLinkCard";
+import { InviteLinkButton } from "./InviteLinkCard";
 
 export default async function GuestsPage() {
   const supabase = await createClient();
@@ -110,11 +110,14 @@ export default async function GuestsPage() {
 
   return (
     <div>
-      <PageHeader
-        eyebrow="Household"
-        title="Guest List"
-        description="Your working guest list — doubles as the CRM for RSVP links, tags, and reminders."
-      />
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <PageHeader
+          eyebrow="Household"
+          title="Guest List"
+          infoText="Your working guest list — doubles as the CRM for RSVP links, tags, and reminders."
+        />
+        <InviteLinkButton initialToken={activeInviteToken} />
+      </div>
 
       {/* Confirmed counts, front and centre — the numbers people actually
           come to this page for, same treatment as the budget page's
@@ -148,8 +151,6 @@ export default async function GuestsPage() {
           </div>
         )}
       </div>
-
-      <InviteLinkCard initialToken={activeInviteToken} />
 
       <AddContactForm />
 

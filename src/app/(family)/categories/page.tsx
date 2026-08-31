@@ -22,7 +22,7 @@ export default async function CategoriesPage() {
       <PageHeader
         eyebrow="Planning"
         title="Categories"
-        description="Venue, outfits, flowers, catering — everything with a cost, a contact, or a date lives here."
+        infoText="Venue, outfits, flowers, catering — everything with a cost, a contact, or a date lives here."
       />
 
       {profile?.role === "couple" && <NewCategoryForm />}

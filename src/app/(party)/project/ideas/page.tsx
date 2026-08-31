@@ -73,7 +73,7 @@ export default async function IdeaBoardPage() {
         <PageHeader
           eyebrow="Planning"
           title="Idea Board"
-          description="Every idea the wedding party has dropped in, grouped by tag — a private Pinterest, just for us."
+          infoText="Every idea the wedding party has dropped in, grouped by tag — a private Pinterest, just for us."
         />
       </div>
 

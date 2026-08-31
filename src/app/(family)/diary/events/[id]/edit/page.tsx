@@ -25,7 +25,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
       <PageHeader
         eyebrow="Us"
         title={`Edit ${event.name}`}
-        description="Tick on whatever this event needs — each one reveals what to fill in for it."
+        infoText="Tick on whatever this event needs — each one reveals what to fill in for it."
       />
       <div className="mt-8 max-w-2xl">
         <EventForm event={event as EventFormData} />

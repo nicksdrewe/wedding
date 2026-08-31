@@ -69,7 +69,7 @@ export default async function CommsPage() {
       <PageHeader
         eyebrow="Household"
         title="Guest Communications"
-        description="Compose a message once, pick who it's for, and send — every send is logged so you always know who's already heard what."
+        infoText="Compose a message once, pick who it's for, and send — every send is logged so you always know who's already heard what."
       />
 
       {commsContacts.length > 0 ? (

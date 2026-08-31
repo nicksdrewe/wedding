@@ -17,7 +17,7 @@ export default async function NewEventPage() {
       <PageHeader
         eyebrow="Us"
         title="Add an event"
-        description="Tick on whatever this event needs — each one reveals what to fill in for it."
+        infoText="Tick on whatever this event needs — each one reveals what to fill in for it."
       />
       <div className="mt-8 max-w-2xl">
         <EventForm />

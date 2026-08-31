@@ -51,7 +51,7 @@ export default async function ExpensesPage() {
       <PageHeader
         eyebrow="Planning"
         title="Expense Splitting"
-        description="Log a cost, split it evenly among whoever's in on it, settle up when it's paid back."
+        infoText="Log a cost, split it evenly among whoever's in on it, settle up when it's paid back."
       />
 
       <ProjectTabs active="expenses" />

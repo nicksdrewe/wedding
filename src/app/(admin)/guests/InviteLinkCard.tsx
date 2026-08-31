@@ -3,8 +3,43 @@
 import { useEffect, useState, useTransition } from "react";
 import { Check, Copy, Link2, RefreshCw } from "lucide-react";
 import { generateInviteLink } from "@/lib/invite/actions";
+import { InfoTooltip } from "@/components/InfoTooltip";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/motion-primitives/dialog";
 
-export function InviteLinkCard({ initialToken }: { initialToken: string | null }) {
+// The compact trigger the guests page renders inline — the actual link UI
+// only ever mounts inside the popup once opened, same shape as before this
+// became a modal.
+export function InviteLinkButton({ initialToken }: { initialToken: string | null }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger
+        className="flex items-center gap-1.5 rounded-full border border-ink/15 px-4 py-2 font-serif text-xs font-medium text-ink-soft transition hover:border-ink/30 hover:text-ink"
+      >
+        <Link2 className="h-3.5 w-3.5" strokeWidth={2} />
+        Invite
+      </DialogTrigger>
+      <DialogContent className="w-[420px] max-w-[90vw] bg-cream p-6">
+        <DialogHeader>
+          <div className="flex items-center gap-1.5">
+            <DialogTitle className="font-serif text-base font-semibold text-ink">Invite link</DialogTitle>
+            <InfoTooltip text="One link for everyone on the list — anyone who follows it skips the site's access code entirely. Share the same link with all of your invitees; there's no need to generate a new one per person." />
+          </div>
+        </DialogHeader>
+        <InviteLinkCard initialToken={initialToken} />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function InviteLinkCard({ initialToken }: { initialToken: string | null }) {
   const [token, setToken] = useState(initialToken);
   // Left blank until mount, then filled from window.location.origin — an
   // absolute URL depends on the browser's own host, which the server
@@ -43,19 +78,8 @@ export function InviteLinkCard({ initialToken }: { initialToken: string | null }
   }
 
   return (
-    <div className="mt-8 rounded-[10px] border border-ink/10 bg-cream-deep/30 p-5">
-      <p className="flex items-center gap-1.5 font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
-        <Link2 className="h-3.5 w-3.5" strokeWidth={2} />
-        Invite link
-      </p>
-      <p className="mt-1 max-w-lg font-reading text-sm text-ink-soft">
-        One link for everyone on the list — anyone who follows it skips the
-        site&rsquo;s access code entirely. Share the same link with all of
-        your invitees; there&rsquo;s no need to generate a new one per
-        person.
-      </p>
-
-      <div className="mt-4 flex flex-wrap items-center gap-2">
+    <div className="mt-4">
+      <div className="flex flex-wrap items-center gap-2">
         {token ? (
           <>
             <code className="min-w-0 flex-1 truncate rounded-full border border-ink/10 bg-white px-4 py-2 font-mono text-xs text-ink">
@@ -87,15 +111,12 @@ export function InviteLinkCard({ initialToken }: { initialToken: string | null }
           <RefreshCw className={`h-3.5 w-3.5 ${pending ? "animate-spin" : ""}`} strokeWidth={2} />
           {token ? "Regenerate" : "Generate link"}
         </button>
+        {token && (
+          <InfoTooltip text="Regenerating replaces this link — anyone still using the old one will be asked for the access code again." />
+        )}
       </div>
 
       {error && <p className="mt-2 font-reading text-xs text-alert">{error}</p>}
-      {token && (
-        <p className="mt-3 font-reading text-xs text-ink-soft/70 italic">
-          Regenerating replaces this link — anyone still using the old one
-          will be asked for the access code again.
-        </p>
-      )}
     </div>
   );
 }

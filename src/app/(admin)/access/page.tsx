@@ -23,7 +23,7 @@ export default async function AccessPage() {
       <PageHeader
         eyebrow="Household"
         title="Roles & Access"
-        description="Control which roles and contact tags can see each page, and whether they see itemized detail or just the totals."
+        infoText="Control which roles and contact tags can see each page, and whether they see itemized detail or just the totals."
       />
 
       <div className="mt-8 flex flex-col gap-4">

@@ -64,7 +64,7 @@ export default async function ProjectPage() {
       <PageHeader
         eyebrow="Planning"
         title="Project Management"
-        description="Ideas, plans, and who's doing what — plus expense splitting."
+        infoText="Ideas, plans, and who's doing what — plus expense splitting."
       />
 
       <ProjectTabs active="project" />

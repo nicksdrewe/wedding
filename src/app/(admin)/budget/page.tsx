@@ -58,7 +58,7 @@ export default async function BudgetPage() {
       <PageHeader
         eyebrow="Planning"
         title="Budget Tracker"
-        description="Rolls up automatically from the cost fields on every category page — always shown in GBP, converted live from whatever currency each category was entered in."
+        infoText="Rolls up automatically from the cost fields on every category page — always shown in GBP, converted live from whatever currency each category was entered in."
       />
 
       {items.length === 0 ? (

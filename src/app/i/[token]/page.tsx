@@ -2,7 +2,7 @@ import { isValidInviteToken } from "@/lib/invite/validate";
 import { InviteRedirect } from "./InviteRedirect";
 
 // The short "shortlink style" URL the couple hands to every engagement
-// party invitee (see InviteLinkCard on /guests) instead of the site's
+// party invitee (see InviteLinkButton on /guests) instead of the site's
 // access code — the same link works for all 80+ of them, indefinitely,
 // until the couple regenerates it. Always redirects to "/"; an invalid or
 // revoked token just skips unlocking the gate, so that visitor lands on
