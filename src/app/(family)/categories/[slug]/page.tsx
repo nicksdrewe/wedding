@@ -6,6 +6,7 @@ import { OptionsMapLoader } from "@/components/options/OptionsMapLoader";
 import type { MapOption } from "@/components/options/OptionsMap";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
+import { CostRange } from "@/components/CostRange";
 import { CostForm } from "./CostForm";
 import { ContactForm } from "./ContactForm";
 import { ContactRow } from "./ContactRow";
@@ -45,7 +46,7 @@ export default async function CategoryDetailPage({
         await supabase
           .from("page_options")
           .select(
-            "id, name, predicted_cost, latitude, longitude, page_option_images(image_url, sort_order)"
+            "id, name, predicted_cost_min, predicted_cost_max, currency, latitude, longitude, page_option_images(image_url, sort_order)"
           )
           .eq("option_group_id", optionGroup.id)
           .order("sort_order", { referencedTable: "page_option_images", ascending: true })
@@ -53,7 +54,9 @@ export default async function CategoryDetailPage({
       ).map((o) => ({
         id: o.id,
         name: o.name,
-        predicted_cost: o.predicted_cost,
+        predicted_cost_min: o.predicted_cost_min,
+        predicted_cost_max: o.predicted_cost_max,
+        currency: o.currency,
         latitude: o.latitude,
         longitude: o.longitude,
         coverImageUrl: o.page_option_images?.[0]?.image_url ?? null,
@@ -64,7 +67,7 @@ export default async function CategoryDetailPage({
   const [{ data: cost }, { data: contacts }, { data: dates }] = await Promise.all([
     supabase
       .from("category_costs")
-      .select("predicted_cost, actual_cost")
+      .select("predicted_cost_min, predicted_cost_max, actual_cost, currency")
       .eq("category_page_id", page.id)
       .maybeSingle(),
     supabase
@@ -132,15 +135,20 @@ export default async function CategoryDetailPage({
           <div className="mt-2">
             <CostForm
               categoryPageId={page.id}
-              predictedCost={cost?.predicted_cost ?? ""}
+              predictedCostMin={cost?.predicted_cost_min ?? ""}
+              predictedCostMax={cost?.predicted_cost_max ?? ""}
               actualCost={cost?.actual_cost ?? ""}
+              currency={cost?.currency ?? "GBP"}
             />
           </div>
         ) : (
-          <p className="mt-2 font-reading text-[15px] text-ink-soft">
-            Predicted £{cost?.predicted_cost ?? "—"} · Actual £
-            {cost?.actual_cost ?? "—"}
-          </p>
+          <CostRange
+            className="mt-2 block font-reading text-[15px] text-ink-soft"
+            predictedMin={cost?.predicted_cost_min ?? null}
+            predictedMax={cost?.predicted_cost_max ?? null}
+            actual={cost?.actual_cost ?? null}
+            currency={cost?.currency ?? "GBP"}
+          />
         )}
       </section>
 

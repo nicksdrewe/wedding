@@ -2,14 +2,18 @@
 
 import Link from "next/link";
 import { useRef, useState, useTransition } from "react";
+import { CostRange } from "@/components/CostRange";
+import type { Currency } from "@/lib/currency/convert";
 import { deleteCategoryPage, updateCategoryPage } from "./actions";
 
 type CategoryPage = {
   id: string;
   slug: string;
   title: string;
-  predictedCost: number | string;
-  actualCost: number | string;
+  predictedCostMin: number | null;
+  predictedCostMax: number | null;
+  actualCost: number | null;
+  currency: Currency;
 };
 
 const DELETE_CONFIRM =
@@ -89,9 +93,13 @@ export function CategoryCard({
         <h2 className="font-serif text-[15px] font-semibold text-ink transition-colors duration-150 group-hover:text-accent">
           {category.title}
         </h2>
-        <p className="mt-1.5 font-reading text-[13px] text-ink-soft">
-          Predicted £{category.predictedCost ?? "—"} · Actual £{category.actualCost ?? "—"}
-        </p>
+        <CostRange
+          className="mt-1.5 block font-reading text-[13px] text-ink-soft"
+          predictedMin={category.predictedCostMin}
+          predictedMax={category.predictedCostMax}
+          actual={category.actualCost}
+          currency={category.currency}
+        />
       </Link>
       {isCouple && (
         <div className="absolute top-3 right-3 flex shrink-0 gap-2 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100">

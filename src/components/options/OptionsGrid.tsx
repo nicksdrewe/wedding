@@ -10,12 +10,16 @@ import {
   DialogDescription,
   DialogClose,
 } from "@/components/motion-primitives/dialog";
+import { CostRange } from "@/components/CostRange";
+import type { Currency } from "@/lib/currency/convert";
 
 export type OptionRow = {
   id: string;
   name: string;
-  predicted_cost: number | null;
+  predicted_cost_min: number | null;
+  predicted_cost_max: number | null;
   actual_cost: number | null;
+  currency: Currency;
   option_date: string | null;
   contact_name: string | null;
   contact_phone: string | null;
@@ -102,10 +106,13 @@ export function OptionsGrid({
             </span>
           )}
           <span className="font-semibold">{o.name}</span>
-          <p className="mt-2 font-reading text-[13px] text-ink-soft">
-            £{o.predicted_cost ?? "—"} predicted
-            {o.actual_cost != null ? ` · £${o.actual_cost} actual` : ""}
-          </p>
+          <CostRange
+            className="mt-2 block font-reading text-[13px] text-ink-soft"
+            predictedMin={o.predicted_cost_min}
+            predictedMax={o.predicted_cost_max}
+            actual={o.actual_cost}
+            currency={o.currency}
+          />
           {o.option_date && (
             <p className="mt-1 font-reading text-[13px] text-ink-soft">{o.option_date}</p>
           )}

@@ -24,6 +24,8 @@ import {
 } from "@/lib/options/actions";
 import { ImageUpload } from "@/components/ImageUpload";
 import { toDriveImageUrl } from "@/lib/google/image-url";
+import { CostRange } from "@/components/CostRange";
+import type { Currency } from "@/lib/currency/convert";
 import { EditOptionForm } from "./EditOptionForm";
 
 export type OptionImage = {
@@ -37,8 +39,10 @@ export type OptionDetail = {
   name: string;
   description: string | null;
   web_link: string | null;
-  predicted_cost: number | null;
+  predicted_cost_min: number | null;
+  predicted_cost_max: number | null;
   actual_cost: number | null;
+  currency: Currency;
   option_date: string | null;
   contact_name: string | null;
   contact_phone: string | null;
@@ -99,10 +103,13 @@ export function OptionCard({
           </div>
           <div className="p-4">
             <p className="font-serif text-sm font-semibold text-ink">{option.name}</p>
-            <p className="mt-1 font-reading text-[13px] text-ink-soft">
-              £{option.predicted_cost ?? "—"} predicted
-              {option.actual_cost != null ? ` · £${option.actual_cost} actual` : ""}
-            </p>
+            <CostRange
+              className="mt-1 block font-reading text-[13px] text-ink-soft"
+              predictedMin={option.predicted_cost_min}
+              predictedMax={option.predicted_cost_max}
+              actual={option.actual_cost}
+              currency={option.currency}
+            />
           </div>
         </div>
       </DisclosureTrigger>

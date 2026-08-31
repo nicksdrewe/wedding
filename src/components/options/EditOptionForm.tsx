@@ -49,21 +49,37 @@ export function EditOptionForm({
           className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
         />
         <input
-          name="predictedCost"
+          name="predictedCostMin"
           type="number"
           step="0.01"
-          defaultValue={option.predicted_cost ?? ""}
-          placeholder="Predicted £"
-          className="w-32 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+          defaultValue={option.predicted_cost_min ?? ""}
+          placeholder="Predicted min"
+          className="w-28 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+        />
+        <input
+          name="predictedCostMax"
+          type="number"
+          step="0.01"
+          defaultValue={option.predicted_cost_max ?? ""}
+          placeholder="Predicted max"
+          className="w-28 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
         />
         <input
           name="actualCost"
           type="number"
           step="0.01"
           defaultValue={option.actual_cost ?? ""}
-          placeholder="Actual £"
-          className="w-32 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+          placeholder="Actual"
+          className="w-28 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
         />
+        <select
+          name="currency"
+          defaultValue={option.currency}
+          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+        >
+          <option value="GBP">£ GBP</option>
+          <option value="EUR">€ EUR</option>
+        </select>
         <input
           name="optionDate"
           type="date"

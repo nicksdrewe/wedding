@@ -32,6 +32,8 @@ import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import { toDriveImageUrl } from "@/lib/google/image-url";
+import { formatCostRange } from "@/lib/currency/format";
+import type { Currency } from "@/lib/currency/convert";
 
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -44,7 +46,9 @@ L.Icon.Default.mergeOptions({
 export type MapOption = {
   id: string;
   name: string;
-  predicted_cost: number | null;
+  predicted_cost_min: number | null;
+  predicted_cost_max: number | null;
+  currency: Currency;
   latitude: number | null;
   longitude: number | null;
   coverImageUrl: string | null;
@@ -98,7 +102,7 @@ export function OptionsMap({ options }: { options: MapOption[] }) {
                     {option.name}
                   </p>
                   <p className="mt-0.5 font-reading text-xs text-ink-soft">
-                    £{option.predicted_cost ?? "—"} predicted
+                    {formatCostRange(option.predicted_cost_min, option.predicted_cost_max, option.currency)} predicted
                   </p>
                 </div>
               </div>

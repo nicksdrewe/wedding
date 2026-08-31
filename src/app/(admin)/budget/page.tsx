@@ -2,37 +2,52 @@ import { createClient } from "@/lib/supabase/server";
 import { AnimatedNumber } from "@/components/motion-primitives/animated-number";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
+import { getFxRates } from "@/lib/currency/rates";
+import { convertToGBP, type Currency } from "@/lib/currency/convert";
 
 export default async function BudgetPage() {
   const supabase = await createClient();
-  const { data: rows } = await supabase
-    .from("category_pages")
-    .select("id, title, category_costs(predicted_cost, actual_cost)")
-    .order("title");
+  const [{ data: rows }, rates] = await Promise.all([
+    supabase
+      .from("category_pages")
+      .select("id, title, category_costs(predicted_cost_min, predicted_cost_max, actual_cost, currency)")
+      .order("title"),
+    getFxRates(),
+  ]);
 
+  // Everything here is a cross-category SUM, so every constituent is
+  // converted to GBP before being added — the budget page stays GBP-only
+  // regardless of what currency any individual category was entered in
+  // (unlike a single category's own card, which shows its native currency
+  // unconverted since there's nothing to sum there).
   const items = (rows ?? []).map((r) => {
-    const cost = Array.isArray(r.category_costs)
-      ? r.category_costs[0]
-      : r.category_costs;
+    const cost = Array.isArray(r.category_costs) ? r.category_costs[0] : r.category_costs;
+    const currency: Currency = cost?.currency ?? "GBP";
     return {
       title: r.title,
-      predicted: Number(cost?.predicted_cost ?? 0),
-      actual: Number(cost?.actual_cost ?? 0),
+      predictedMin: convertToGBP(Number(cost?.predicted_cost_min ?? 0), currency, rates),
+      predictedMax: convertToGBP(Number(cost?.predicted_cost_max ?? 0), currency, rates),
+      actual: convertToGBP(Number(cost?.actual_cost ?? 0), currency, rates),
     };
   });
 
-  const totalPredicted = items.reduce((sum, i) => sum + i.predicted, 0);
+  const totalPredictedMin = items.reduce((sum, i) => sum + i.predictedMin, 0);
+  const totalPredictedMax = items.reduce((sum, i) => sum + i.predictedMax, 0);
   const totalActual = items.reduce((sum, i) => sum + i.actual, 0);
-  const totalDiff = totalActual - totalPredicted;
+  // "Over" means past the top of the predicted range, "under" means below
+  // the bottom of it — actual landing inside the range is on track, not a
+  // diff worth flagging either way.
+  const totalDiff = totalActual > totalPredictedMax ? totalActual - totalPredictedMax : totalActual < totalPredictedMin ? totalActual - totalPredictedMin : 0;
   const overallOver = totalDiff > 0;
-  const highestPredicted = items.reduce((max, i) => Math.max(max, i.predicted, i.actual), 0);
+  const onTrack = totalDiff === 0;
+  const highestPredicted = items.reduce((max, i) => Math.max(max, i.predictedMax, i.actual), 0);
 
   return (
     <div>
       <PageHeader
         eyebrow="Planning"
         title="Budget Tracker"
-        description="Rolls up automatically from the cost fields on every category page."
+        description="Rolls up automatically from the cost fields on every category page — always shown in GBP, converted live from whatever currency each category was entered in."
       />
 
       {items.length === 0 ? (
@@ -51,7 +66,8 @@ export default async function BudgetPage() {
                 Predicted total
               </p>
               <p className="mt-1.5 font-display text-[26px] tracking-tight tabular-nums">
-                £<AnimatedNumber value={totalPredicted} springOptions={{ bounce: 0 }} />
+                £<AnimatedNumber value={totalPredictedMin} springOptions={{ bounce: 0 }} />
+                {"–"}£<AnimatedNumber value={totalPredictedMax} springOptions={{ bounce: 0 }} />
               </p>
             </div>
             <div className="rounded-[10px] border border-ink/10 bg-white px-5 py-4">
@@ -64,18 +80,24 @@ export default async function BudgetPage() {
             </div>
             <div
               className={`rounded-[10px] border px-5 py-4 ${
-                overallOver ? "border-alert/25 bg-alert/5" : "border-accent/25 bg-accent/5"
+                onTrack ? "border-accent/25 bg-accent/5" : overallOver ? "border-alert/25 bg-alert/5" : "border-accent/25 bg-accent/5"
               }`}
             >
               <p className="font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
-                {overallOver ? "Over budget by" : "Under budget by"}
+                {onTrack ? "Within predicted range" : overallOver ? "Over budget by" : "Under budget by"}
               </p>
               <p
                 className={`mt-1.5 font-display text-[26px] tracking-tight tabular-nums ${
-                  overallOver ? "text-alert" : "text-accent"
+                  onTrack ? "text-accent" : overallOver ? "text-alert" : "text-accent"
                 }`}
               >
-                £<AnimatedNumber value={Math.abs(totalDiff)} springOptions={{ bounce: 0 }} />
+                {onTrack ? (
+                  "On track"
+                ) : (
+                  <>
+                    £<AnimatedNumber value={Math.abs(totalDiff)} springOptions={{ bounce: 0 }} />
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -102,9 +124,10 @@ export default async function BudgetPage() {
               </thead>
               <tbody>
                 {items.map((i) => {
-                  const diff = i.actual - i.predicted;
+                  const diff =
+                    i.actual > i.predictedMax ? i.actual - i.predictedMax : i.actual < i.predictedMin ? i.actual - i.predictedMin : 0;
                   const overBudget = diff > 0;
-                  const predictedPct = highestPredicted > 0 ? (i.predicted / highestPredicted) * 100 : 0;
+                  const predictedPct = highestPredicted > 0 ? (i.predictedMax / highestPredicted) * 100 : 0;
                   const actualPct = highestPredicted > 0 ? (i.actual / highestPredicted) * 100 : 0;
                   return (
                     <tr
@@ -114,7 +137,8 @@ export default async function BudgetPage() {
                       <td className="px-5 py-4 align-top font-semibold">{i.title}</td>
                       <td className="px-5 py-4 align-top">
                         <div>
-                          £<AnimatedNumber value={i.predicted} springOptions={{ bounce: 0 }} />
+                          £<AnimatedNumber value={i.predictedMin} springOptions={{ bounce: 0 }} />
+                          {"–"}£<AnimatedNumber value={i.predictedMax} springOptions={{ bounce: 0 }} />
                         </div>
                         <div className="mt-1.5 h-1 w-24 rounded-full bg-ink/8">
                           <div
@@ -140,7 +164,7 @@ export default async function BudgetPage() {
                         }`}
                       >
                         {diff === 0 ? (
-                          "—"
+                          "On track"
                         ) : (
                           <>
                             {overBudget ? "+" : "−"}£
@@ -156,16 +180,23 @@ export default async function BudgetPage() {
                 <tr className="border-t border-ink/15 bg-cream-deep/60 font-semibold">
                   <td className="px-5 py-3.5">Total</td>
                   <td className="px-5 py-3.5">
-                    £<AnimatedNumber value={totalPredicted} springOptions={{ bounce: 0 }} />
+                    £<AnimatedNumber value={totalPredictedMin} springOptions={{ bounce: 0 }} />
+                    {"–"}£<AnimatedNumber value={totalPredictedMax} springOptions={{ bounce: 0 }} />
                   </td>
                   <td className="px-5 py-3.5">
                     £<AnimatedNumber value={totalActual} springOptions={{ bounce: 0 }} />
                   </td>
                   <td
-                    className={`px-5 py-3.5 text-right ${overallOver ? "text-alert" : "text-accent"}`}
+                    className={`px-5 py-3.5 text-right ${onTrack ? "text-accent" : overallOver ? "text-alert" : "text-accent"}`}
                   >
-                    {overallOver ? "+" : "−"}£
-                    <AnimatedNumber value={Math.abs(totalDiff)} springOptions={{ bounce: 0 }} />
+                    {onTrack ? (
+                      "On track"
+                    ) : (
+                      <>
+                        {overallOver ? "+" : "−"}£
+                        <AnimatedNumber value={Math.abs(totalDiff)} springOptions={{ bounce: 0 }} />
+                      </>
+                    )}
                   </td>
                 </tr>
               </tfoot>

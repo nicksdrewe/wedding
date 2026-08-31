@@ -43,26 +43,35 @@ export async function createStandaloneOptionGroup(formData: FormData) {
   revalidatePath("/project");
 }
 
-const optionSchema = z.object({
-  groupId: z.string().uuid(),
-  name: z.string().min(1),
-  predictedCost: z.coerce.number().nonnegative().optional().nullable(),
-  actualCost: z.coerce.number().nonnegative().optional().nullable(),
-  optionDate: z.string().optional().or(z.literal("")),
-  contactName: z.string().optional().or(z.literal("")),
-  contactPhone: z.string().optional().or(z.literal("")),
-  contactEmail: z.string().email().optional().or(z.literal("")),
-  latitude: z.coerce.number().min(-90).max(90).optional().nullable(),
-  longitude: z.coerce.number().min(-180).max(180).optional().nullable(),
-  revalidate: z.string(),
-});
+const optionSchema = z
+  .object({
+    groupId: z.string().uuid(),
+    name: z.string().min(1),
+    predictedCostMin: z.coerce.number().nonnegative().optional().nullable(),
+    predictedCostMax: z.coerce.number().nonnegative().optional().nullable(),
+    actualCost: z.coerce.number().nonnegative().optional().nullable(),
+    currency: z.enum(["GBP", "EUR"]),
+    optionDate: z.string().optional().or(z.literal("")),
+    contactName: z.string().optional().or(z.literal("")),
+    contactPhone: z.string().optional().or(z.literal("")),
+    contactEmail: z.string().email().optional().or(z.literal("")),
+    latitude: z.coerce.number().min(-90).max(90).optional().nullable(),
+    longitude: z.coerce.number().min(-180).max(180).optional().nullable(),
+    revalidate: z.string(),
+  })
+  .refine(
+    (v) => v.predictedCostMin == null || v.predictedCostMax == null || v.predictedCostMin <= v.predictedCostMax,
+    { message: "Minimum predicted cost can't be higher than the maximum.", path: ["predictedCostMax"] }
+  );
 
 export async function addOption(formData: FormData) {
   const parsed = optionSchema.parse({
     groupId: formData.get("groupId"),
     name: formData.get("name"),
-    predictedCost: formData.get("predictedCost") || null,
+    predictedCostMin: formData.get("predictedCostMin") || null,
+    predictedCostMax: formData.get("predictedCostMax") || null,
     actualCost: formData.get("actualCost") || null,
+    currency: formData.get("currency") || "GBP",
     optionDate: formData.get("optionDate") || "",
     contactName: formData.get("contactName") || "",
     contactPhone: formData.get("contactPhone") || "",
@@ -76,8 +85,10 @@ export async function addOption(formData: FormData) {
   const { error } = await supabase.from("page_options").insert({
     option_group_id: parsed.groupId,
     name: parsed.name,
-    predicted_cost: parsed.predictedCost,
+    predicted_cost_min: parsed.predictedCostMin,
+    predicted_cost_max: parsed.predictedCostMax,
     actual_cost: parsed.actualCost,
+    currency: parsed.currency,
     option_date: parsed.optionDate || null,
     contact_name: parsed.contactName || null,
     contact_phone: parsed.contactPhone || null,
@@ -98,21 +109,28 @@ export async function addOption(formData: FormData) {
   return { error: error?.message ?? null };
 }
 
-const updateOptionSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string().min(1),
-  description: z.string().optional().or(z.literal("")),
-  webLink: z.string().optional().or(z.literal("")),
-  predictedCost: z.coerce.number().nonnegative().optional().nullable(),
-  actualCost: z.coerce.number().nonnegative().optional().nullable(),
-  optionDate: z.string().optional().or(z.literal("")),
-  contactName: z.string().optional().or(z.literal("")),
-  contactPhone: z.string().optional().or(z.literal("")),
-  contactEmail: z.string().email().optional().or(z.literal("")),
-  latitude: z.coerce.number().min(-90).max(90).optional().nullable(),
-  longitude: z.coerce.number().min(-180).max(180).optional().nullable(),
-  revalidate: z.string(),
-});
+const updateOptionSchema = z
+  .object({
+    id: z.string().uuid(),
+    name: z.string().min(1),
+    description: z.string().optional().or(z.literal("")),
+    webLink: z.string().optional().or(z.literal("")),
+    predictedCostMin: z.coerce.number().nonnegative().optional().nullable(),
+    predictedCostMax: z.coerce.number().nonnegative().optional().nullable(),
+    actualCost: z.coerce.number().nonnegative().optional().nullable(),
+    currency: z.enum(["GBP", "EUR"]),
+    optionDate: z.string().optional().or(z.literal("")),
+    contactName: z.string().optional().or(z.literal("")),
+    contactPhone: z.string().optional().or(z.literal("")),
+    contactEmail: z.string().email().optional().or(z.literal("")),
+    latitude: z.coerce.number().min(-90).max(90).optional().nullable(),
+    longitude: z.coerce.number().min(-180).max(180).optional().nullable(),
+    revalidate: z.string(),
+  })
+  .refine(
+    (v) => v.predictedCostMin == null || v.predictedCostMax == null || v.predictedCostMin <= v.predictedCostMax,
+    { message: "Minimum predicted cost can't be higher than the maximum.", path: ["predictedCostMax"] }
+  );
 
 // Full edit of every page_options field, including description and
 // web_link — addOption never exposed those (they were only ever set
@@ -123,8 +141,10 @@ export async function updateOption(formData: FormData) {
     name: formData.get("name"),
     description: formData.get("description") || "",
     webLink: formData.get("webLink") || "",
-    predictedCost: formData.get("predictedCost") || null,
+    predictedCostMin: formData.get("predictedCostMin") || null,
+    predictedCostMax: formData.get("predictedCostMax") || null,
     actualCost: formData.get("actualCost") || null,
+    currency: formData.get("currency") || "GBP",
     optionDate: formData.get("optionDate") || "",
     contactName: formData.get("contactName") || "",
     contactPhone: formData.get("contactPhone") || "",
@@ -141,8 +161,10 @@ export async function updateOption(formData: FormData) {
       name: parsed.name,
       description: parsed.description || null,
       web_link: parsed.webLink || null,
-      predicted_cost: parsed.predictedCost,
+      predicted_cost_min: parsed.predictedCostMin,
+      predicted_cost_max: parsed.predictedCostMax,
       actual_cost: parsed.actualCost,
+      currency: parsed.currency,
       option_date: parsed.optionDate || null,
       contact_name: parsed.contactName || null,
       contact_phone: parsed.contactPhone || null,
@@ -187,7 +209,9 @@ export async function selectWinner(
     .from("page_options")
     .update({ is_winner: true })
     .eq("id", optionId)
-    .select("name, predicted_cost, actual_cost, option_date, contact_name, contact_phone, contact_email")
+    .select(
+      "name, predicted_cost_min, predicted_cost_max, actual_cost, currency, option_date, contact_name, contact_phone, contact_email"
+    )
     .single();
 
   // Only category-linked groups feed the budget/diary/contacts — a
@@ -199,20 +223,29 @@ export async function selectWinner(
       .eq("category_page_id", categoryPageId)
       .maybeSingle();
 
+    // Both predicted range and actual copy across together — these two
+    // call sites (selectWinner/markOptionWinner) previously drifted, one
+    // copying both fields and the other only actual_cost, leaving
+    // category_costs' predicted range stale after a winner was picked
+    // through this path.
     if (existingCost) {
       await supabase
         .from("category_costs")
         .update({
-          predicted_cost: option.predicted_cost,
+          predicted_cost_min: option.predicted_cost_min,
+          predicted_cost_max: option.predicted_cost_max,
           actual_cost: option.actual_cost,
+          currency: option.currency,
           updated_at: new Date().toISOString(),
         })
         .eq("id", existingCost.id);
     } else {
       await supabase.from("category_costs").insert({
         category_page_id: categoryPageId,
-        predicted_cost: option.predicted_cost,
+        predicted_cost_min: option.predicted_cost_min,
+        predicted_cost_max: option.predicted_cost_max,
         actual_cost: option.actual_cost,
+        currency: option.currency,
       });
     }
 
@@ -256,7 +289,7 @@ export async function markOptionWinner(optionId: string) {
 
   const { data: option, error: fetchError } = await supabase
     .from("page_options")
-    .select("id, name, actual_cost, option_date, option_group_id")
+    .select("id, name, predicted_cost_min, predicted_cost_max, actual_cost, currency, option_date, option_group_id")
     .eq("id", optionId)
     .single();
   if (fetchError) return { error: fetchError.message };
@@ -320,14 +353,26 @@ export async function markOptionWinner(optionId: string) {
       .maybeSingle();
     if (costLookupError) return { error: costLookupError.message };
 
+    // Copies the predicted range alongside actual_cost now too — see the
+    // matching comment in selectWinner above; these two call sites must
+    // stay consistent with each other.
     const { error: costError } = existingCost
       ? await supabase
           .from("category_costs")
-          .update({ actual_cost: option.actual_cost, updated_at: new Date().toISOString() })
+          .update({
+            predicted_cost_min: option.predicted_cost_min,
+            predicted_cost_max: option.predicted_cost_max,
+            actual_cost: option.actual_cost,
+            currency: option.currency,
+            updated_at: new Date().toISOString(),
+          })
           .eq("id", existingCost.id)
       : await supabase.from("category_costs").insert({
           category_page_id: categoryPageId,
+          predicted_cost_min: option.predicted_cost_min,
+          predicted_cost_max: option.predicted_cost_max,
           actual_cost: option.actual_cost,
+          currency: option.currency,
         });
     if (costError) return { error: costError.message };
   }

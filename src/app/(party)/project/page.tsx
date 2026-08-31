@@ -41,7 +41,7 @@ export default async function ProjectPage() {
     supabase
       .from("option_groups")
       .select(
-        "id, title, category_page_id, category_pages(title, slug), page_options(id, name, predicted_cost, actual_cost, is_winner)"
+        "id, title, category_page_id, category_pages(title, slug), page_options(id, name, predicted_cost_min, predicted_cost_max, actual_cost, currency, is_winner)"
       )
       .order("created_at", { ascending: false })
       .order("created_at", { ascending: true, referencedTable: "page_options" }),

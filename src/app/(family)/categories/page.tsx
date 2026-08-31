@@ -12,7 +12,7 @@ export default async function CategoriesPage() {
 
   const { data: pages } = await supabase
     .from("category_pages")
-    .select("id, slug, title, category_costs(predicted_cost, actual_cost)")
+    .select("id, slug, title, category_costs(predicted_cost_min, predicted_cost_max, actual_cost, currency)")
     .order("title");
 
   const hasCategories = !!pages && pages.length > 0;
@@ -46,8 +46,10 @@ export default async function CategoriesPage() {
                     id: p.id,
                     slug: p.slug,
                     title: p.title,
-                    predictedCost: cost?.predicted_cost ?? "—",
-                    actualCost: cost?.actual_cost ?? "—",
+                    predictedCostMin: cost?.predicted_cost_min ?? null,
+                    predictedCostMax: cost?.predicted_cost_max ?? null,
+                    actualCost: cost?.actual_cost ?? null,
+                    currency: cost?.currency ?? "GBP",
                   }}
                   isCouple={profile?.role === "couple"}
                 />

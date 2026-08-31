@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { markOptionWinner } from "@/lib/options/actions";
 import { AddOptionForm } from "@/components/options/AddOptionForm";
+import { CostRange } from "@/components/CostRange";
+import type { Currency } from "@/lib/currency/convert";
 import { deleteOptionGroup, updateOptionGroupTitle } from "./actions";
 
 // The skimmed cross-category comparison row. Unlike OptionsGrid (the full
@@ -15,8 +17,10 @@ import { deleteOptionGroup, updateOptionGroupTitle } from "./actions";
 export type CompareOption = {
   id: string;
   name: string;
-  predicted_cost: number | null;
+  predicted_cost_min: number | null;
+  predicted_cost_max: number | null;
   actual_cost: number | null;
+  currency: Currency;
   is_winner: boolean;
 };
 
@@ -169,8 +173,12 @@ export function OptionsCompareGroup({ group }: { group: CompareGroup }) {
                     )}
                   </td>
                   <td className="px-5 py-3 align-middle font-reading text-ink-soft tabular-nums">
-                    £{o.predicted_cost ?? "—"}
-                    {o.actual_cost != null ? ` · £${o.actual_cost} actual` : ""}
+                    <CostRange
+                      predictedMin={o.predicted_cost_min}
+                      predictedMax={o.predicted_cost_max}
+                      actual={o.actual_cost}
+                      currency={o.currency}
+                    />
                   </td>
                   <td className="px-5 py-3 text-right align-middle">
                     {!o.is_winner && (

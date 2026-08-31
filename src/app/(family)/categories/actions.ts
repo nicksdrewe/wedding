@@ -102,17 +102,26 @@ export async function deleteCategoryPage(id: string) {
   return { error: error?.message ?? null };
 }
 
-const costSchema = z.object({
-  categoryPageId: z.string().uuid(),
-  predictedCost: z.coerce.number().nonnegative().optional().nullable(),
-  actualCost: z.coerce.number().nonnegative().optional().nullable(),
-});
+const costSchema = z
+  .object({
+    categoryPageId: z.string().uuid(),
+    predictedCostMin: z.coerce.number().nonnegative().optional().nullable(),
+    predictedCostMax: z.coerce.number().nonnegative().optional().nullable(),
+    actualCost: z.coerce.number().nonnegative().optional().nullable(),
+    currency: z.enum(["GBP", "EUR"]),
+  })
+  .refine(
+    (v) => v.predictedCostMin == null || v.predictedCostMax == null || v.predictedCostMin <= v.predictedCostMax,
+    { message: "Minimum predicted cost can't be higher than the maximum.", path: ["predictedCostMax"] }
+  );
 
 export async function updateCategoryCost(formData: FormData) {
   const parsed = costSchema.parse({
     categoryPageId: formData.get("categoryPageId"),
-    predictedCost: formData.get("predictedCost") || null,
+    predictedCostMin: formData.get("predictedCostMin") || null,
+    predictedCostMax: formData.get("predictedCostMax") || null,
     actualCost: formData.get("actualCost") || null,
+    currency: formData.get("currency") || "GBP",
   });
 
   const supabase = await createClient();
@@ -127,15 +136,19 @@ export async function updateCategoryCost(formData: FormData) {
     ? await supabase
         .from("category_costs")
         .update({
-          predicted_cost: parsed.predictedCost,
+          predicted_cost_min: parsed.predictedCostMin,
+          predicted_cost_max: parsed.predictedCostMax,
           actual_cost: parsed.actualCost,
+          currency: parsed.currency,
           updated_at: new Date().toISOString(),
         })
         .eq("id", existing.id)
     : await supabase.from("category_costs").insert({
         category_page_id: parsed.categoryPageId,
-        predicted_cost: parsed.predictedCost,
+        predicted_cost_min: parsed.predictedCostMin,
+        predicted_cost_max: parsed.predictedCostMax,
         actual_cost: parsed.actualCost,
+        currency: parsed.currency,
       });
 
   revalidatePath("/categories");
