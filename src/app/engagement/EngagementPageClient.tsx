@@ -490,7 +490,18 @@ function GallerySection({ photos, isCouple }: { photos: EngagementPhoto[]; isCou
         </div>
       )}
 
-      <div className="mt-8 columns-2 gap-5 sm:columns-3">
+      {/* A CSS Grid, not a columns-based masonry — the previous
+          `columns-2 sm:columns-3` layout is a well-known source of real
+          mobile Safari rendering bugs (reflow when async content settles,
+          inconsistent break-inside-avoid support), and kept producing
+          live "images out of alignment on mobile" reports even after the
+          actual image-loading failures behind the first report were
+          fixed. Trades true masonry's tight vertical packing (a shorter
+          card next to a taller one in the same row leaves visible
+          whitespace below it) for layout that's simply correct and
+          reflow-free on every browser, which matters more on a page real
+          guests are actively using. */}
+      <div className="mt-8 grid grid-cols-2 gap-5 sm:grid-cols-3">
         {hasRealPhotos
           ? photos.map((photo, i) => (
               <InView
@@ -500,7 +511,6 @@ function GallerySection({ photos, isCouple }: { photos: EngagementPhoto[]; isCou
                 viewOptions={{ margin: "-80px" }}
                 variants={{ hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0 } }}
                 transition={{ duration: 0.6, delay: Math.min(i, 8) * 0.07, ease: EASE }}
-                className="mb-5 break-inside-avoid"
               >
                 <RealPolaroidCard
                   photo={photo}
@@ -522,7 +532,6 @@ function GallerySection({ photos, isCouple }: { photos: EngagementPhoto[]; isCou
                   visible: { opacity: 1, y: 0, rotate: photo.rotate },
                 }}
                 transition={{ duration: 0.6, delay: i * 0.07, ease: EASE }}
-                className="mb-5 break-inside-avoid"
               >
                 <PlaceholderPolaroidCard
                   photo={photo}

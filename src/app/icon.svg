@@ -1,0 +1,18 @@
+<!-- The site favicon (Next.js App Router's icon.svg convention: auto-served
+     with the right link-rel-icon tags, no metadata wiring needed).
+     Static output of generateBotanical(seed 7, stems 1, spread 16) from
+     lib/botanical.ts, the same seed AppShell's own header wordmark uses;
+     stroke width/leaf sizes bumped up from the generator's raw numbers so
+     the mark still reads at 16 to 32px. Colors match the cream/accent
+     tokens in globals.css, hardcoded since this file can't read CSS
+     variables. -->
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <rect width="64" height="64" rx="14" fill="#f4f1ec"/>
+  <g transform="translate(0,-6)" stroke-linecap="round">
+    <path d="M 32 64 Q 32.55 39.95 33.38 15.89" stroke="#4c6b52" stroke-width="3.2" fill="none"/>
+    <ellipse cx="29.57" cy="51.97" rx="7.5" ry="3.6" transform="rotate(0.9 29.57 51.97)" fill="#4c6b52"/>
+    <ellipse cx="31.71" cy="39.95" rx="8.1" ry="3.7" transform="rotate(2.4 31.71 39.95)" fill="#4c6b52"/>
+    <ellipse cx="33.29" cy="27.92" rx="5.0" ry="2.5" transform="rotate(4.6 33.29 27.92)" fill="#4c6b52"/>
+    <ellipse cx="33.38" cy="15.89" rx="3.2" ry="3.7" fill="#4c6b52"/>
+  </g>
+</svg>
