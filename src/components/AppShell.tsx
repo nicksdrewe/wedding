@@ -8,7 +8,6 @@ import {
   LayoutGrid,
   LogOut,
   Mail,
-  PartyPopper,
   Users,
   Wallet,
   type LucideIcon,
@@ -56,19 +55,11 @@ const NAV_LINKS: NavLink[] = [
   { href: "/project", label: "Project", icon: FolderKanban, roles: ["couple"] },
   { href: "/budget", label: "Budget", icon: Wallet, roles: ["couple"] },
   { href: "/comms", label: "Comms", icon: Mail, roles: ["couple"] },
+  // The dedicated "Engagement Party" link this used to carry is gone now
+  // that the events system exists — /diary is the way back to any
+  // event's own page (and, for the couple, its edit form) instead of one
+  // hardcoded nav item per event.
   { href: "/diary", label: "Diary", icon: BookOpen, roles: ["couple", "family", "wedding_party"] },
-  // Leaves the app shell for the public /engagement page (it isn't part of
-  // this route-group system) — same idea as the wordmark's "back to
-  // landing" link. Needed because there was previously no path back to it
-  // at all once signed in: the couple's only way to manage its photos was
-  // manually typing the URL, since edit controls there are gated on being
-  // signed in as the couple but the page itself has no link pointing to it.
-  {
-    href: "/engagement",
-    label: "Engagement Party",
-    icon: PartyPopper,
-    roles: ["couple", "family", "wedding_party"],
-  },
 ];
 
 const ROLE_LABEL: Record<RoleTier, string> = {
