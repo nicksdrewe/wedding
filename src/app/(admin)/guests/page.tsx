@@ -23,8 +23,14 @@ export default async function GuestsPage() {
     await Promise.all([
       supabase
         .from("contacts")
+        // rsvp_token deliberately excluded — it's a per-guest, unauthenticated
+        // capability URL (whoever has it can RSVP as that person, no login
+        // required), and nothing in the guest table UI actually uses it. A
+        // "use client" component's props are serialized into the page's own
+        // HTML, so selecting it here would ship every guest's token to
+        // whoever's viewing this page for no reason.
         .select(
-          "id, full_name, email, phone, role, tags, plus_one_eligible, rsvp_status, rsvp_token, parent_contact_id, rsvps(event_id, attending, plus_one_attending)"
+          "id, full_name, email, phone, role, tags, plus_one_eligible, rsvp_status, parent_contact_id, rsvps(event_id, attending, plus_one_attending)"
         )
         .order("full_name"),
       getActiveInviteLink(),

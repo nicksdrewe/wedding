@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 // Public, unauthenticated self-service RSVP for the engagement party — no
 // personal invite link required, unlike the main wedding's token-gated
@@ -24,14 +25,39 @@ const schema = z.object({
   others: z.array(z.string().trim().min(1).max(200)).max(25).optional(),
 });
 
+// PostgREST's ilike operator treats `*` as an alternate wildcard (so URLs
+// don't need %25-encoded `%`), in addition to Postgres's own `%`/`_`/`\`
+// LIKE metacharacters — escaping only the latter three (as this route
+// originally did) still lets a value containing a literal `*` match more
+// than the exact email typed in. `*` is not valid in a real email address,
+// so this is defensive rather than a live exploit path.
+function escapeIlike(value: string) {
+  return value.replace(/[%_\\*]/g, "\\$&");
+}
+
 export async function POST(request: Request) {
+  // No session to key a rate limit off, so this falls back to the
+  // client's IP — spoofable by anyone motivated enough, but sufficient to
+  // stop a trivial scripted flood, which is the actual threat here.
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const { ok: withinLimit } = await checkRateLimit(`engagement-rsvp:${ip}`, {
+    max: 20,
+    windowSeconds: 60 * 60,
+  });
+  if (!withinLimit) {
+    return NextResponse.json(
+      { error: "Too many attempts — please try again in a little while." },
+      { status: 429 }
+    );
+  }
+
   const body = schema.safeParse(await request.json());
   if (!body.success) {
     return NextResponse.json({ error: body.error.flatten() }, { status: 400 });
   }
   const { fullName, email, attending, others } = body.data;
   const normalizedEmail = email.toLowerCase();
-  const escapedEmail = normalizedEmail.replace(/[%_\\]/g, "\\$&");
+  const escapedEmail = escapeIlike(normalizedEmail);
 
   const supabase = createAdminClient();
 
@@ -48,21 +74,50 @@ export async function POST(request: Request) {
     );
   }
 
-  // Reuse an existing contact by email if they're already on the list (e.g.
-  // a real wedding guest also RSVPing here) rather than creating a
-  // duplicate row.
+  // Reuse an existing contact by email if they're already on the list
+  // (e.g. a real wedding guest also RSVPing here) — BUT only if that
+  // contact hasn't already answered the engagement RSVP. This endpoint is
+  // fully public and unauthenticated: anyone who knows (or guesses) a
+  // guest's email could otherwise submit on their behalf and silently
+  // flip their attending status, or — worse — trigger the group-replace
+  // step further down and permanently delete every plus-one that guest
+  // had already added. Once a contact has a real response recorded, any
+  // further submission under that same email creates a new, clearly
+  // flagged row instead of touching the original — nothing here ever
+  // overwrites or deletes an already-answered contact.
   const { data: existingContact } = await supabase
     .from("contacts")
     .select("id")
     .ilike("email", escapedEmail)
     .maybeSingle();
 
-  let contactId = existingContact?.id as string | undefined;
+  let contactId: string | undefined;
+  let flaggedDuplicate = false;
+
+  if (existingContact) {
+    const { data: existingRsvp } = await supabase
+      .from("rsvps")
+      .select("responded_at")
+      .eq("contact_id", existingContact.id)
+      .eq("event_id", event.id)
+      .maybeSingle();
+
+    if (existingRsvp?.responded_at) {
+      flaggedDuplicate = true;
+    } else {
+      contactId = existingContact.id;
+    }
+  }
 
   if (!contactId) {
     const { data: newContact, error: insertError } = await supabase
       .from("contacts")
-      .insert({ full_name: fullName, email: normalizedEmail, plus_one_eligible: true })
+      .insert({
+        full_name: fullName,
+        email: normalizedEmail,
+        plus_one_eligible: true,
+        tags: flaggedDuplicate ? ["needs review — duplicate email"] : [],
+      })
       .select("id")
       .single();
     if (insertError || !newContact) {
@@ -89,7 +144,11 @@ export async function POST(request: Request) {
   // same contact — resubmitting (e.g. to fix a typo'd name, or to change
   // who's coming) shouldn't accumulate duplicate contacts under the same
   // parent. If they're now declining, this also correctly leaves no
-  // children behind: there's no one coming to log.
+  // children behind: there's no one coming to log. Safe against the
+  // spoofing case above: contactId here is either a fresh row (no
+  // children exist yet) or a contact that had never actually responded —
+  // an already-answered contact's children are never reachable through
+  // this delete, because contactId is never set to their id in that case.
   const { error: deleteChildrenError } = await supabase
     .from("contacts")
     .delete()

@@ -43,7 +43,11 @@ export async function POST(request: Request) {
     const result = await uploadToDrive(buffer, safeName, file.type);
     return NextResponse.json({ url: result.imageUrl, fileId: result.fileId });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Upload failed.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    // Logged server-side for diagnosis, but never returned verbatim — a
+    // Google API error can echo back request details (the refresh token
+    // isn't in it, but folder IDs and internal error shapes are) that a
+    // signed-in-but-untrusted caller has no reason to see.
+    console.error("Drive upload failed:", err);
+    return NextResponse.json({ error: "Upload failed — please try again." }, { status: 500 });
   }
 }

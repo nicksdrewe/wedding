@@ -16,17 +16,24 @@ const PUBLIC_PREFIXES = [
   "/rsvp",
   "/no-access",
   "/engagement",
-  // The reusable invite link (/i/[token], see lib/invite) — by design the
-  // whole point is that a signed-out invitee can follow it straight
-  // through, so it has to be public the same way "/" itself is.
-  "/i",
   "/api/rsvp",
   "/api/engagement-rsvp",
   "/api/auth/request-code",
 ];
 
+// The reusable invite link (/i/[token], see lib/invite) — checked
+// separately from PUBLIC_PREFIXES's plain startsWith matching, which for
+// a single-character segment like "/i" would silently make ANY future
+// route starting with that letter public too (e.g. "/ideas", "/invoices").
+// Matching the full "/i/" segment (or the bare "/i" with nothing after)
+// keeps this scoped to exactly the one route it's meant for.
+function isInviteLinkPath(pathname: string) {
+  return pathname === "/i" || pathname.startsWith("/i/");
+}
+
 function isPublic(pathname: string) {
   if (pathname === "/") return true;
+  if (isInviteLinkPath(pathname)) return true;
   return PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
 }
 

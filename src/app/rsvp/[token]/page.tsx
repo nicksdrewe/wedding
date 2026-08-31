@@ -32,6 +32,7 @@ export default function RsvpTokenPage({
   const [notFound, setNotFound] = useState(false);
   const [savingEventId, setSavingEventId] = useState<string | null>(null);
   const [savedEventId, setSavedEventId] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<{ eventId: string; message: string } | null>(null);
 
   useEffect(() => {
     fetch(`/api/rsvp/${token}`)
@@ -53,6 +54,7 @@ export default function RsvpTokenPage({
   async function submitRsvp(eventId: string, formEl: HTMLFormElement, attending: boolean) {
     setSavingEventId(eventId);
     setSavedEventId(null);
+    setSubmitError(null);
     const formData = new FormData(formEl);
     const payload = {
       eventId,
@@ -62,12 +64,21 @@ export default function RsvpTokenPage({
       dietaryRequirements: String(formData.get("dietaryRequirements") ?? ""),
       notes: String(formData.get("notes") ?? ""),
     };
-    const res = await fetch(`/api/rsvp/${token}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (res.ok) {
+    try {
+      const res = await fetch(`/api/rsvp/${token}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        const message =
+          typeof body?.error === "string"
+            ? body.error
+            : "We couldn't save that — please try again.";
+        setSubmitError({ eventId, message });
+        return;
+      }
       setResponses((prev) => ({
         ...prev,
         [eventId]: {
@@ -80,8 +91,13 @@ export default function RsvpTokenPage({
         },
       }));
       setSavedEventId(eventId);
+    } catch {
+      // Network failure — fetch itself rejected rather than resolving with
+      // a non-ok response, e.g. a dropped connection mid-submit.
+      setSubmitError({ eventId, message: "Couldn't reach the server — check your connection and try again." });
+    } finally {
+      setSavingEventId(null);
     }
-    setSavingEventId(null);
   }
 
   if (loading) {
@@ -147,6 +163,7 @@ export default function RsvpTokenPage({
               existing={responses[event.id]}
               saving={savingEventId === event.id}
               saved={savedEventId === event.id}
+              error={submitError?.eventId === event.id ? submitError.message : null}
               delayMs={i * 80}
               onSubmit={(el, attending) => submitRsvp(event.id, el, attending)}
             />
@@ -163,6 +180,7 @@ function EventCard({
   existing,
   saving,
   saved,
+  error,
   delayMs,
   onSubmit,
 }: {
@@ -171,6 +189,7 @@ function EventCard({
   existing: RsvpRow | undefined;
   saving: boolean;
   saved: boolean;
+  error: string | null;
   delayMs: number;
   onSubmit: (form: HTMLFormElement, attending: boolean) => void;
 }) {
@@ -234,6 +253,7 @@ function EventCard({
             type="text"
             name="plusOneName"
             placeholder="Plus one's name"
+            maxLength={200}
             defaultValue={existing?.plus_one_name ?? ""}
             className="w-full rounded-full border border-ink/20 bg-white px-4.5 py-3 font-reading text-sm outline-none focus:border-accent"
           />
@@ -254,6 +274,7 @@ function EventCard({
             <textarea
               name="dietaryRequirements"
               placeholder="Dietary requirements"
+              maxLength={1000}
               defaultValue={existing?.dietary_requirements ?? ""}
               className="w-full rounded-2xl border border-ink/20 bg-white px-4.5 py-3 font-reading text-sm outline-none focus:border-accent"
               rows={2}
@@ -261,6 +282,7 @@ function EventCard({
             <textarea
               name="notes"
               placeholder="Anything else we should know?"
+              maxLength={1000}
               defaultValue={existing?.notes ?? ""}
               className="w-full rounded-2xl border border-ink/20 bg-white px-4.5 py-3 font-reading text-sm outline-none focus:border-accent"
               rows={2}
@@ -284,6 +306,7 @@ function EventCard({
           </span>
         )}
       </div>
+      {error && <p className="mt-2 font-reading text-xs text-alert">{error}</p>}
     </form>
   );
 }
