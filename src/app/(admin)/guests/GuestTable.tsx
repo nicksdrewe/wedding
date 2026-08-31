@@ -28,10 +28,16 @@ const RSVP_OPTIONS = [
 export function GuestTable({
   contacts,
   events,
+  showWeddingRsvp,
   isCouple,
 }: {
   contacts: GuestTableContact[];
   events: GuestListEvent[];
+  // Whether the Wedding event actually has RSVPs turned on (see
+  // 0021_wedding_event.sql and guests/page.tsx) — the wedding's column
+  // shouldn't read as live before the couple has a real event to point
+  // it at, same principle as every dynamic event column in `events`.
+  showWeddingRsvp: boolean;
   isCouple: boolean;
 }) {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -126,14 +132,16 @@ export function GuestTable({
           <option value="yes">Eligible</option>
           <option value="no">Not eligible</option>
         </select>
-        <select value={weddingRsvp} onChange={(e) => setWeddingRsvp(e.target.value)} className={SELECT_CLASS}>
-          <option value="">Wedding RSVP: any</option>
-          {RSVP_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+        {showWeddingRsvp && (
+          <select value={weddingRsvp} onChange={(e) => setWeddingRsvp(e.target.value)} className={SELECT_CLASS}>
+            <option value="">Wedding RSVP: any</option>
+            {RSVP_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        )}
         {events.map((e) => (
           <select
             key={e.id}
@@ -192,9 +200,11 @@ export function GuestTable({
                 <th className="px-5 py-3 text-center text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
                   Plus one
                 </th>
-                <th className="px-5 py-3 text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
-                  Wedding RSVP
-                </th>
+                {showWeddingRsvp && (
+                  <th className="px-5 py-3 text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
+                    Wedding RSVP
+                  </th>
+                )}
                 {events.map((e) => (
                   <th key={e.id} className="px-5 py-3 text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
                     {e.name} RSVP
@@ -215,7 +225,7 @@ export function GuestTable({
                     transition={{ duration: 0.3, delay: Math.min(i, 12) * 0.03 }}
                     className="group transition-colors duration-150 hover:bg-cream-deep/40"
                   >
-                    <EditableGuestRow contact={c} isCouple={isCouple} events={events} />
+                    <EditableGuestRow contact={c} isCouple={isCouple} events={events} showWeddingRsvp={showWeddingRsvp} />
                   </InView>
                   {(childrenByParent.get(c.id) ?? []).map((child) => (
                     <InView
@@ -226,7 +236,7 @@ export function GuestTable({
                       transition={{ duration: 0.3, delay: Math.min(i, 12) * 0.03 }}
                       className="group bg-cream-deep/20 transition-colors duration-150 hover:bg-cream-deep/40"
                     >
-                      <EditableGuestRow contact={child} isCouple={isCouple} isChild events={events} />
+                      <EditableGuestRow contact={child} isCouple={isCouple} isChild events={events} showWeddingRsvp={showWeddingRsvp} />
                     </InView>
                   ))}
                 </React.Fragment>
@@ -240,7 +250,7 @@ export function GuestTable({
                   transition={{ duration: 0.3, delay: Math.min(i, 12) * 0.03 }}
                   className="group transition-colors duration-150 hover:bg-cream-deep/40"
                 >
-                  <EditableGuestRow contact={c} isCouple={isCouple} events={events} />
+                  <EditableGuestRow contact={c} isCouple={isCouple} events={events} showWeddingRsvp={showWeddingRsvp} />
                 </InView>
               ))}
             </tbody>

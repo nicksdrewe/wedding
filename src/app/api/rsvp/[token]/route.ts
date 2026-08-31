@@ -23,9 +23,16 @@ export async function GET(
     return NextResponse.json({ error: "Invitation not found" }, { status: 404 });
   }
 
+  // rsvp_enabled off (the default for a newly created event — see
+  // 0017_events_system.sql) means the couple hasn't actually turned RSVPs
+  // on for it yet, same flag the events system's own /events/[slug] page
+  // checks. Without this filter, a guest's personal link would show an
+  // RSVP card for an event with no real date/venue info the moment its
+  // row exists at all, before the couple's ready for anyone to respond.
   const { data: events } = await supabase
     .from("events")
     .select("id, name, starts_at, location")
+    .eq("rsvp_enabled", true)
     .order("starts_at", { ascending: true });
 
   const { data: rsvps } = await supabase

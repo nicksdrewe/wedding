@@ -41,15 +41,19 @@ export default async function GuestsPage() {
       .select("id, name")
       .eq("show_guest_list_column", true)
       .order("starts_at", { nullsFirst: false }),
-    // The wedding's own RSVP always gets a column, separately from the
-    // events-system toggle above — it's a different data source
+    // The wedding's own RSVP column/card is a different data source
     // (contacts.rsvp_status, written by the personal invite-link flow at
-    // api/rsvp/[token]) that exists independently of whether a "Wedding"
-    // event row has even been created yet.
-    supabase.from("events").select("id").eq("name", "Wedding").maybeSingle(),
+    // api/rsvp/[token]) from the events-system toggle above, but it
+    // should follow the exact same principle: don't show it as if it's
+    // live until the couple has actually turned RSVPs on for the Wedding
+    // event (see 0021_wedding_event.sql, created with rsvp_enabled off by
+    // default) — otherwise this reads as an active RSVP nobody can
+    // actually respond to yet.
+    supabase.from("events").select("id, rsvp_enabled").eq("name", "Wedding").maybeSingle(),
   ]);
 
   const events = columnEvents ?? [];
+  const showWeddingRsvp = weddingEvent?.rsvp_enabled ?? false;
 
   function rsvpStatusFor(
     rsvps: { event_id: string; attending: boolean | null }[] | null,
@@ -127,20 +131,22 @@ export default async function GuestsPage() {
             </p>
           </div>
         ))}
-        <div className="rounded-[10px] border border-ink/10 bg-white px-5 py-4">
-          <p className="font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
-            Wedding — confirmed (incl. +1s)
-          </p>
-          <p className="mt-1.5 font-display text-[26px] tracking-tight tabular-nums">
-            <AnimatedNumber
-              value={(contacts ?? []).reduce(
-                (sum, c) => sum + countConfirmed(weddingEvent?.id, c.rsvps, { includePlusOne: true }),
-                0
-              )}
-              springOptions={{ bounce: 0 }}
-            />
-          </p>
-        </div>
+        {showWeddingRsvp && (
+          <div className="rounded-[10px] border border-ink/10 bg-white px-5 py-4">
+            <p className="font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
+              Wedding — confirmed (incl. +1s)
+            </p>
+            <p className="mt-1.5 font-display text-[26px] tracking-tight tabular-nums">
+              <AnimatedNumber
+                value={(contacts ?? []).reduce(
+                  (sum, c) => sum + countConfirmed(weddingEvent?.id, c.rsvps, { includePlusOne: true }),
+                  0
+                )}
+                springOptions={{ bounce: 0 }}
+              />
+            </p>
+          </div>
+        )}
       </div>
 
       <InviteLinkCard initialToken={activeInviteToken} />
@@ -148,7 +154,12 @@ export default async function GuestsPage() {
       <AddContactForm />
 
       {hasContacts ? (
-        <GuestTable contacts={guestTableContacts} events={events} isCouple={isCouple} />
+        <GuestTable
+          contacts={guestTableContacts}
+          events={events}
+          showWeddingRsvp={showWeddingRsvp}
+          isCouple={isCouple}
+        />
       ) : (
         <EmptyState
           className="mt-10"

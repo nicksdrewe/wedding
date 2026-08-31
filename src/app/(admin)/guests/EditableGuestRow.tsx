@@ -26,6 +26,7 @@ export function EditableGuestRow({
   isCouple,
   isChild = false,
   events,
+  showWeddingRsvp,
 }: {
   contact: Contact;
   isCouple: boolean;
@@ -38,6 +39,10 @@ export function EditableGuestRow({
   // 0017_events_system.sql) — drives one RSVP column + one edit-form
   // select per event, instead of a fixed "engagement" one.
   events: GuestListEvent[];
+  // Whether the Wedding event actually has RSVPs turned on (see
+  // 0021_wedding_event.sql) — the wedding's column shouldn't read as
+  // live before the couple has a real event to point it at.
+  showWeddingRsvp: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [addingChild, setAddingChild] = useState(false);
@@ -53,7 +58,7 @@ export function EditableGuestRow({
     });
   }
 
-  const colCount = 7 + events.length;
+  const colCount = (showWeddingRsvp ? 7 : 6) + events.length;
 
   if (editing) {
     return (
@@ -61,6 +66,7 @@ export function EditableGuestRow({
         <GuestEditForm
           contact={contact}
           events={events}
+          showWeddingRsvp={showWeddingRsvp}
           onCancel={() => setEditing(false)}
           onSaved={() => setEditing(false)}
         />
@@ -143,14 +149,16 @@ export function EditableGuestRow({
           <span className="text-ink-soft/30">—</span>
         )}
       </td>
-      <td className="px-5 py-3.5">
-        <span
-          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium tracking-[0.02em] ${rsvp.className}`}
-        >
-          <RsvpIcon className="h-3.5 w-3.5" strokeWidth={2} />
-          {rsvp.label}
-        </span>
-      </td>
+      {showWeddingRsvp && (
+        <td className="px-5 py-3.5">
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium tracking-[0.02em] ${rsvp.className}`}
+          >
+            <RsvpIcon className="h-3.5 w-3.5" strokeWidth={2} />
+            {rsvp.label}
+          </span>
+        </td>
+      )}
       {events.map((e) => {
         const status = contact.eventRsvpStatuses[e.id] ?? "pending";
         const style = RSVP_STYLE[status] ?? RSVP_STYLE.pending;
@@ -213,11 +221,13 @@ export function EditableGuestRow({
 function GuestEditForm({
   contact,
   events,
+  showWeddingRsvp,
   onCancel,
   onSaved,
 }: {
   contact: Contact;
   events: GuestListEvent[];
+  showWeddingRsvp: boolean;
   onCancel: () => void;
   onSaved: () => void;
 }) {
@@ -311,20 +321,28 @@ function GuestEditForm({
             className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
           />
         </div>
-        <div className="flex flex-col gap-1">
-          <label className="font-serif text-[11px] font-medium tracking-[0.04em] text-ink-soft uppercase">
-            Wedding RSVP
-          </label>
-          <select
-            name="rsvpStatus"
-            defaultValue={contact.rsvp_status}
-            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
-          >
-            <option value="pending">Pending</option>
-            <option value="attending">Attending</option>
-            <option value="declined">Declined</option>
-          </select>
-        </div>
+        {showWeddingRsvp ? (
+          <div className="flex flex-col gap-1">
+            <label className="font-serif text-[11px] font-medium tracking-[0.04em] text-ink-soft uppercase">
+              Wedding RSVP
+            </label>
+            <select
+              name="rsvpStatus"
+              defaultValue={contact.rsvp_status}
+              className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+            >
+              <option value="pending">Pending</option>
+              <option value="attending">Attending</option>
+              <option value="declined">Declined</option>
+            </select>
+          </div>
+        ) : (
+          // Wedding RSVPs aren't turned on yet — the field still has to
+          // travel with the form (updateContact requires it), just as a
+          // passthrough of the existing value rather than something
+          // editable here.
+          <input type="hidden" name="rsvpStatus" value={contact.rsvp_status} />
+        )}
         {events.map((e) => (
           <div key={e.id} className="flex flex-col gap-1">
             <label className="font-serif text-[11px] font-medium tracking-[0.04em] text-ink-soft uppercase">
