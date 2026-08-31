@@ -94,7 +94,7 @@ export function CategoryCard({
         </p>
       </Link>
       {isCouple && (
-        <div className="absolute top-3 right-3 flex shrink-0 gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+        <div className="absolute top-3 right-3 flex shrink-0 gap-2 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100">
           <button
             type="button"
             onClick={() => setEditing(true)}

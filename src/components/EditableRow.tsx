@@ -45,7 +45,7 @@ export function EditableRow<T extends { id: string }>({
       {renderView(item)}
       {isCouple && (
         <div className="flex shrink-0 flex-col items-end gap-1">
-          <div className="flex shrink-0 gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+          <div className="flex shrink-0 gap-2 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100">
             <button
               type="button"
               onClick={() => setEditing(true)}

@@ -125,7 +125,7 @@ export function IdeaCard({
       <div className="flex items-start justify-between gap-3">
         <p className="font-serif text-sm font-semibold">{title}</p>
         {canEdit && (
-          <div className="flex shrink-0 gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+          <div className="flex shrink-0 gap-2 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100">
             <button
               type="button"
               onClick={() => setEditing(true)}

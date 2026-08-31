@@ -280,7 +280,7 @@ function RealPolaroidCard({
             onClick={handleRemove}
             disabled={removing}
             aria-label="Remove photo"
-            className="absolute top-1.5 right-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-ink/70 text-cream opacity-0 transition-opacity group-hover:opacity-100 disabled:opacity-100"
+            className="absolute top-1.5 right-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-ink/70 text-cream transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:disabled:opacity-100"
           >
             {removing ? <Loader2 className="h-3 w-3 animate-spin" strokeWidth={2.5} /> : <X className="h-3 w-3" strokeWidth={2.5} />}
           </button>

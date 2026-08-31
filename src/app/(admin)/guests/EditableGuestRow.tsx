@@ -159,7 +159,12 @@ export function EditableGuestRow({
       </td>
       <td className="px-5 py-3.5 text-right">
         {isCouple && (
-          <div className="flex shrink-0 justify-end gap-3 opacity-0 transition-opacity group-hover:opacity-100">
+          // Hover-revealed only on devices that actually have hover — a
+          // touch screen has no equivalent of "the cursor happens to be
+          // resting over this row", so gating these buttons behind
+          // group-hover unconditionally left them permanently invisible
+          // on mobile despite the column space being reserved for them.
+          <div className="flex shrink-0 justify-end gap-3 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100">
             {/* Only on top-level rows — a plus-one's plus-one isn't a
                 shape the engagement RSVP form itself ever produces, and
                 the DB has no need to support arbitrarily deep nesting. */}

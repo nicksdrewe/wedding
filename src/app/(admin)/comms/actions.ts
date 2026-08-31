@@ -114,3 +114,17 @@ export async function sendToRecipient(messageId: string, contactId: string) {
   if (upsertError) return { error: upsertError.message };
   return { error: null };
 }
+
+// Removes a message and its full send log (comms_recipients cascades via
+// its FK — see 0015_comms.sql) — for clearing out a test send, or a
+// message that's no longer relevant. Doesn't touch the emails already
+// delivered to inboxes, only this app's own record of having sent them.
+export async function deleteMessage(messageId: string) {
+  const parsed = z.string().uuid().parse(messageId);
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("comms_messages").delete().eq("id", parsed);
+
+  revalidatePath("/comms");
+  return { error: error?.message ?? null };
+}

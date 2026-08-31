@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Check, ChevronDown, ChevronUp, Loader2, Mail, Send, Users } from "lucide-react";
-import { createMessage, sendToRecipient } from "./actions";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Check, ChevronDown, ChevronUp, Loader2, Mail, Send, Trash2, Users } from "lucide-react";
+import { createMessage, deleteMessage, sendToRecipient } from "./actions";
 
 export type CommsContact = {
   id: string;
@@ -14,6 +15,14 @@ export type CommsContact = {
   weddingStatus: "pending" | "attending" | "declined";
 };
 
+export type MessageRecipient = {
+  name: string;
+  email: string;
+  status: string;
+  sentAt: string | null;
+  error: string | null;
+};
+
 export type MessageHistoryItem = {
   id: string;
   subject: string;
@@ -21,6 +30,7 @@ export type MessageHistoryItem = {
   total: number;
   sent: number;
   failed: number;
+  recipients: MessageRecipient[];
 };
 
 const SELECT_CLASS =
@@ -46,6 +56,20 @@ export function CommsComposer({
   contacts: CommsContact[];
   history: MessageHistoryItem[];
 }) {
+  const router = useRouter();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [, startDeleteTransition] = useTransition();
+
+  function handleDeleteMessage(id: string) {
+    if (!window.confirm("Delete this message and its send log? This can't be undone.")) return;
+    setDeletingId(id);
+    startDeleteTransition(async () => {
+      await deleteMessage(id);
+      setDeletingId(null);
+      router.refresh();
+    });
+  }
+
   const [role, setRole] = useState("");
   const [tag, setTag] = useState("");
   const [engagementStatus, setEngagementStatus] = useState("");
@@ -144,6 +168,7 @@ export function CommsComposer({
     setSelected(new Set());
     setSubject("");
     setBody("");
+    router.refresh();
   }
 
   return (
@@ -302,14 +327,20 @@ export function CommsComposer({
                   <p className="font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
                     Preview
                   </p>
-                  {/* Sandboxed with every permission withheld — this only
-                      needs to render the couple's own pasted markup for a
-                      visual check, never execute scripts or reach outside
-                      itself. */}
+                  {/* allow-same-origin only, not allow-scripts — this is
+                      the couple's own pasted content previewed only to
+                      themselves (not shown to anyone else, ever), so the
+                      real risk here is "does it render at all", not
+                      cross-user attack surface. A fully opaque sandbox
+                      (sandbox="") was reported showing nothing at all;
+                      that config forces a unique opaque origin for the
+                      frame, which some browsers restrict resource loading
+                      under more aggressively than the spec strictly
+                      requires. Scripts stay blocked either way. */}
                   <iframe
                     title="Email preview"
                     srcDoc={body}
-                    sandbox=""
+                    sandbox="allow-same-origin"
                     className="mt-2 h-72 w-full rounded-[10px] border border-ink/20 bg-white"
                   />
                 </div>
@@ -364,28 +395,74 @@ export function CommsComposer({
               const open = historyOpenId === m.id;
               return (
                 <div key={m.id} className="py-3">
-                  <button
-                    type="button"
-                    onClick={() => setHistoryOpenId(open ? null : m.id)}
-                    className="flex w-full items-start justify-between gap-3 text-left"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate font-serif text-sm text-ink">{m.subject}</p>
-                      <p className="mt-0.5 font-reading text-xs text-ink-soft/70">
-                        {new Date(m.createdAt).toLocaleDateString(undefined, {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}{" "}
-                        · {m.sent} sent{m.failed > 0 ? `, ${m.failed} failed` : ""} of {m.total}
-                      </p>
+                  <div className="flex items-start justify-between gap-2">
+                    {/* Not nested inside a shared <button> with the delete
+                        control below — a <button> can't legally contain
+                        another interactive control. */}
+                    <button
+                      type="button"
+                      onClick={() => setHistoryOpenId(open ? null : m.id)}
+                      className="flex min-w-0 flex-1 items-start justify-between gap-3 text-left"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate font-serif text-sm text-ink">{m.subject}</p>
+                        <p className="mt-0.5 font-reading text-xs text-ink-soft/70">
+                          {new Date(m.createdAt).toLocaleDateString(undefined, {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}{" "}
+                          · {m.sent} sent{m.failed > 0 ? `, ${m.failed} failed` : ""} of {m.total}
+                        </p>
+                      </div>
+                      {open ? (
+                        <ChevronUp className="h-4 w-4 shrink-0 text-ink-soft/50" strokeWidth={2} />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 shrink-0 text-ink-soft/50" strokeWidth={2} />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteMessage(m.id)}
+                      disabled={deletingId === m.id}
+                      aria-label="Delete message"
+                      className="shrink-0 rounded-full p-1.5 text-ink-soft/50 transition-colors duration-150 hover:bg-alert/10 hover:text-alert disabled:opacity-50"
+                    >
+                      {deletingId === m.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2} />
+                      ) : (
+                        <Trash2 className="h-4 w-4" strokeWidth={2} />
+                      )}
+                    </button>
+                  </div>
+
+                  {open && (
+                    <div className="mt-3 space-y-1.5 border-t border-ink/8 pt-3">
+                      {m.recipients.length === 0 ? (
+                        <p className="font-reading text-xs text-ink-soft italic">No recipients recorded.</p>
+                      ) : (
+                        m.recipients.map((r) => (
+                          <div key={r.email} className="flex items-center justify-between gap-2">
+                            <span className="min-w-0 truncate font-reading text-xs text-ink" title={r.email}>
+                              {r.name}
+                            </span>
+                            <span
+                              className={`shrink-0 rounded-full px-2 py-0.5 font-serif text-[10px] tracking-wide uppercase ${
+                                r.status === "sent"
+                                  ? "bg-accent/12 text-accent"
+                                  : r.status === "failed"
+                                    ? "bg-alert/12 text-alert"
+                                    : "bg-cream-deep text-ink-soft"
+                              }`}
+                              title={r.error ?? undefined}
+                            >
+                              {r.status}
+                            </span>
+                          </div>
+                        ))
+                      )}
                     </div>
-                    {open ? (
-                      <ChevronUp className="h-4 w-4 shrink-0 text-ink-soft/50" strokeWidth={2} />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 shrink-0 text-ink-soft/50" strokeWidth={2} />
-                    )}
-                  </button>
+                  )}
                 </div>
               );
             })}

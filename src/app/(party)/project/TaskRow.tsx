@@ -111,7 +111,7 @@ export function TaskRow({
       </span>
       {ownerName && <span className="text-[11px] text-ink-soft">{ownerName}</span>}
       {dueDate && <span className="text-[11px] text-ink-soft">{dueDate}</span>}
-      <div className="flex shrink-0 gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+      <div className="flex shrink-0 gap-2 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100">
         <button
           type="button"
           onClick={() => setEditing(true)}

@@ -204,7 +204,7 @@ function OptionDetailPanel({
                   onClick={() => handleRemoveImage(img.id)}
                   disabled={removingId === img.id}
                   aria-label="Remove image"
-                  className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-ink/70 text-cream opacity-0 transition-opacity group-hover:opacity-100 disabled:opacity-100"
+                  className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-ink/70 text-cream transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:disabled:opacity-100"
                 >
                   {removingId === img.id ? (
                     <Loader2 className="h-3 w-3 animate-spin" strokeWidth={2.5} />

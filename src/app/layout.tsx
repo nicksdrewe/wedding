@@ -38,6 +38,15 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#f4f1ec",
+  width: "device-width",
+  initialScale: 1,
+  // Without an explicit minimum, mobile Safari/Chrome let a pinch-out
+  // gesture zoom BELOW the page's own 1:1 layout scale, shrinking every
+  // page's content smaller and smaller with no floor — reported live on
+  // real devices. Deliberately not pairing this with maximumScale/
+  // userScalable:false: capping zoom-IN is a real accessibility harm for
+  // low-vision visitors and isn't what was reported here.
+  minimumScale: 1,
   // Without this, Chrome/Edge's "force dark mode for websites" feature can
   // auto-recolor the whole page using its own heuristics whenever the OS
   // is in dark mode — even though every color here is already explicitly

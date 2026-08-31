@@ -16,9 +16,11 @@ export default async function CommsPage() {
       supabase.from("events").select("id").eq("name", "Wedding").maybeSingle(),
       supabase
         .from("comms_messages")
-        .select("id, subject, created_at, comms_recipients(status)")
+        .select("id, subject, created_at, comms_recipients(contact_id, email, status, sent_at, error)")
         .order("created_at", { ascending: false }),
     ]);
+
+  const nameByContactId = new Map((contacts ?? []).map((c) => [c.id, c.full_name]));
 
   function rsvpStatusFor(
     rsvps: { event_id: string; attending: boolean | null }[] | null,
@@ -54,6 +56,13 @@ export default async function CommsPage() {
       total: recipients.length,
       sent: recipients.filter((r) => r.status === "sent").length,
       failed: recipients.filter((r) => r.status === "failed").length,
+      recipients: recipients.map((r) => ({
+        name: nameByContactId.get(r.contact_id) ?? r.email,
+        email: r.email,
+        status: r.status,
+        sentAt: r.sent_at,
+        error: r.error,
+      })),
     };
   });
 
