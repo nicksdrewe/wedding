@@ -1,7 +1,7 @@
 import { ScrollFlowerHero, type HeroCta } from "@/components/ScrollFlowerHero";
 import { SiteGate } from "@/components/SiteGate";
 import { getAuthState, HOME_FOR_ROLE } from "@/lib/auth/roles";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // Reads the session so a signed-in visitor is never shown the anonymous
 // call-to-action — previously this page looked identical either way, which
@@ -27,7 +27,13 @@ export default async function LandingPage() {
   // previously a hardcoded "RSVP to the engagement party" / /engagement
   // link baked into the hero itself. No event flagged just means no
   // primary CTA renders; the hub-login link still does.
-  const supabase = await createClient();
+  //
+  // Admin client, not the session-aware one: this page is the anonymous
+  // landing page, and events' RLS ("read events") requires auth.uid() is
+  // not null — a signed-out visitor got zero rows back here, silently
+  // hiding the CTA for exactly the audience it's meant for. Only
+  // non-sensitive landing copy is selected below, so bypassing RLS is safe.
+  const supabase = createAdminClient();
   const { data: landingEvent } = await supabase
     .from("events")
     .select("slug, landing_cta_copy, landing_cta_eyebrow, landing_cta_heading, landing_cta_body")
