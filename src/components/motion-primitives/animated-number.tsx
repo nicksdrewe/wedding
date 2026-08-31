@@ -21,7 +21,10 @@ export function AnimatedNumber({
     as as keyof React.JSX.IntrinsicElements
   ) as React.ComponentType<{ className?: string; children?: React.ReactNode }>;
 
-  const spring = useSpring(value, springOptions);
+  // Starts at 0 regardless of the initial value so the very first render
+  // counts up rather than appearing pre-filled — subsequent value changes
+  // then animate from wherever the spring already sits, not a reset to 0.
+  const spring = useSpring(0, { duration: 2000, ...springOptions });
   const display = useTransform(spring, (current) =>
     Math.round(current).toLocaleString()
   );
