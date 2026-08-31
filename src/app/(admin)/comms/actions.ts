@@ -11,10 +11,11 @@ import { sendEmail } from "@/lib/email/resend";
 const createMessageSchema = z.object({
   subject: z.string().trim().min(1).max(200),
   body: z.string().trim().min(1).max(20000),
+  bodyType: z.enum(["text", "html"]),
 });
 
-export async function createMessage(subject: string, body: string) {
-  const parsed = createMessageSchema.parse({ subject, body });
+export async function createMessage(subject: string, body: string, bodyType: "text" | "html") {
+  const parsed = createMessageSchema.parse({ subject, body, bodyType });
   const supabase = await createClient();
 
   const {
@@ -23,7 +24,12 @@ export async function createMessage(subject: string, body: string) {
 
   const { data, error } = await supabase
     .from("comms_messages")
-    .insert({ subject: parsed.subject, body: parsed.body, created_by: user?.id ?? null })
+    .insert({
+      subject: parsed.subject,
+      body: parsed.body,
+      body_type: parsed.bodyType,
+      created_by: user?.id ?? null,
+    })
     .select("id")
     .single();
 
@@ -73,7 +79,7 @@ export async function sendToRecipient(messageId: string, contactId: string) {
   const supabase = await createClient();
 
   const [{ data: message, error: messageError }, { data: contact, error: contactError }] = await Promise.all([
-    supabase.from("comms_messages").select("subject, body").eq("id", parsed.messageId).maybeSingle(),
+    supabase.from("comms_messages").select("subject, body, body_type").eq("id", parsed.messageId).maybeSingle(),
     supabase.from("contacts").select("full_name, email").eq("id", parsed.contactId).maybeSingle(),
   ]);
 
@@ -81,7 +87,13 @@ export async function sendToRecipient(messageId: string, contactId: string) {
   if (contactError || !contact) return { error: "Guest not found." };
   if (!contact.email) return { error: "No email on file for this guest." };
 
-  const html = toHtml(renderBody(message.body, contact.full_name));
+  const rendered = renderBody(message.body, contact.full_name);
+  // "html" bodies (e.g. pasted from an external builder like Stripo) are
+  // sent through as-is — they already carry their own markup/structure,
+  // so running them through toHtml()'s escape-and-paragraph-wrap step
+  // would both break their layout and show the couple's own tags as
+  // literal text in the recipient's inbox.
+  const html = message.body_type === "html" ? rendered : toHtml(rendered);
   const { error: sendError } = await sendEmail({ to: contact.email, subject: message.subject, html });
 
   const { error: upsertError } = await supabase.from("comms_recipients").upsert(

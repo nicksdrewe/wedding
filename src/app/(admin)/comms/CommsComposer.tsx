@@ -55,6 +55,12 @@ export function CommsComposer({
 
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
+  // "text": what you type is escaped and paragraph-wrapped server-side
+  // (see actions.ts's toHtml). "html": the body is sent through exactly
+  // as pasted — for code exported from an external email builder (Stripo
+  // and similar), which already carries its own layout/markup that
+  // escaping would both break and render as literal visible tags.
+  const [bodyMode, setBodyMode] = useState<"text" | "html">("text");
   const [sendState, setSendState] = useState<SendState>({ phase: "idle" });
   const [historyOpenId, setHistoryOpenId] = useState<string | null>(null);
 
@@ -106,7 +112,7 @@ export function CommsComposer({
   async function handleSend() {
     if (!canSend) return;
     const recipientIds = [...selected];
-    const { messageId, error: createError } = await createMessage(subject.trim(), body);
+    const { messageId, error: createError } = await createMessage(subject.trim(), body, bodyMode);
     if (createError || !messageId) {
       setSendState({ phase: "done", sent: 0, failed: recipientIds.length, failedNames: ["Couldn't create the message — try again."] });
       return;
@@ -231,10 +237,33 @@ export function CommsComposer({
 
         {/* Compose */}
         <div className="mt-6 rounded-[10px] border border-ink/10 bg-white/60 p-5">
-          <p className="flex items-center gap-1.5 font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
-            <Mail className="h-3.5 w-3.5" strokeWidth={2} />
-            Message
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="flex items-center gap-1.5 font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
+              <Mail className="h-3.5 w-3.5" strokeWidth={2} />
+              Message
+            </p>
+            <div className="flex gap-0.5 rounded-full bg-cream-deep p-1">
+              <button
+                type="button"
+                onClick={() => setBodyMode("text")}
+                className={`rounded-full px-3 py-1 font-serif text-[11px] tracking-wide transition ${
+                  bodyMode === "text" ? "bg-ink text-cream" : "text-ink-soft"
+                }`}
+              >
+                Write
+              </button>
+              <button
+                type="button"
+                onClick={() => setBodyMode("html")}
+                className={`rounded-full px-3 py-1 font-serif text-[11px] tracking-wide transition ${
+                  bodyMode === "html" ? "bg-ink text-cream" : "text-ink-soft"
+                }`}
+              >
+                Paste HTML
+              </button>
+            </div>
+          </div>
+
           <input
             type="text"
             placeholder="Subject"
@@ -243,14 +272,50 @@ export function CommsComposer({
             maxLength={200}
             className="mt-3 w-full rounded-full border border-ink/20 bg-cream px-4 py-2.5 text-sm text-ink outline-none placeholder:text-ink-soft/50 focus:border-accent"
           />
-          <textarea
-            placeholder={"Write your message…\n\nUse {{name}} anywhere you want it replaced with each guest's first name."}
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            maxLength={20000}
-            rows={10}
-            className="mt-3 w-full rounded-[10px] border border-ink/20 bg-cream px-4 py-3 font-reading text-sm text-ink outline-none placeholder:text-ink-soft/50 focus:border-accent"
-          />
+
+          {bodyMode === "text" ? (
+            <textarea
+              placeholder={"Write your message…\n\nUse {{name}} anywhere you want it replaced with each guest's first name."}
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              maxLength={20000}
+              rows={10}
+              className="mt-3 w-full rounded-[10px] border border-ink/20 bg-cream px-4 py-3 font-reading text-sm text-ink outline-none placeholder:text-ink-soft/50 focus:border-accent"
+            />
+          ) : (
+            <>
+              <p className="mt-3 font-reading text-xs text-ink-soft/70 italic">
+                Paste the HTML code exported from your email builder (e.g. Stripo) below — it&rsquo;s sent exactly
+                as pasted, no escaping. {"{{name}}"} still works anywhere inside it.
+              </p>
+              <textarea
+                placeholder="<html>…paste your exported email code here…</html>"
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                maxLength={20000}
+                rows={8}
+                spellCheck={false}
+                className="mt-2 w-full rounded-[10px] border border-ink/20 bg-cream px-4 py-3 font-mono text-xs text-ink outline-none placeholder:text-ink-soft/50 focus:border-accent"
+              />
+              {body.trim() && (
+                <div className="mt-3">
+                  <p className="font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
+                    Preview
+                  </p>
+                  {/* Sandboxed with every permission withheld — this only
+                      needs to render the couple's own pasted markup for a
+                      visual check, never execute scripts or reach outside
+                      itself. */}
+                  <iframe
+                    title="Email preview"
+                    srcDoc={body}
+                    sandbox=""
+                    className="mt-2 h-72 w-full rounded-[10px] border border-ink/20 bg-white"
+                  />
+                </div>
+              )}
+            </>
+          )}
 
           <button
             type="button"
