@@ -68,8 +68,14 @@ create policy "manage option cost items" on option_cost_items for all using (
 -- Linking moves from the whole option (0024_linked_cost_items.sql) down
 -- to a single cost line — the couple's actual example links just the
 -- "wedding breakfast" line into Catering, not the entire venue option.
--- No production data to migrate (this table shipped moments before this
--- redesign), so this is a clean repoint rather than a data migration.
+-- Any existing link points at a whole page_options row, which has no
+-- automatic equivalent line item to redirect to under the new model (a
+-- link isn't just a foreign key value, it's "which specific cost" — that
+-- has to be re-chosen by hand once the item exists). Cleared here rather
+-- than migrated; re-adding a link via the new UI takes seconds and this
+-- never touched the underlying cost data itself, only the "also show
+-- under X" relationship.
+delete from cost_item_links;
 alter table cost_item_links drop constraint cost_item_links_source_page_option_id_fkey;
 alter table cost_item_links rename column source_page_option_id to source_cost_item_id;
 alter table cost_item_links add constraint cost_item_links_source_cost_item_id_fkey
