@@ -24,9 +24,10 @@ import {
 } from "@/lib/options/actions";
 import { ImageUpload } from "@/components/ImageUpload";
 import { toDriveImageUrl } from "@/lib/google/image-url";
-import { CostRange } from "@/components/CostRange";
+import { formatCostRange, formatCurrency } from "@/lib/currency/format";
 import type { Currency } from "@/lib/currency/convert";
-import { linkCostItem, unlinkCostItem } from "@/lib/costs/links";
+import { computeOptionTotals } from "@/lib/options/totals";
+import { CostItemsPanel, type CostItemRow, type LinkableCategory, type CostItemLinkInfo } from "./CostItemsPanel";
 import { EditOptionForm } from "./EditOptionForm";
 
 export type OptionImage = {
@@ -50,28 +51,30 @@ export type OptionDetail = {
   contact_email: string | null;
   latitude: number | null;
   longitude: number | null;
+  nights: number | null;
+  sleeps: number | null;
   is_winner: boolean;
   images: OptionImage[];
 };
-
-export type LinkableCategory = { id: string; title: string };
-export type CostItemLink = { id: string; categoryTitle: string };
 
 export function OptionCard({
   option,
   isCouple,
   revalidate,
+  costItems = [],
   linkableCategories = [],
-  existingLinks = [],
+  linksByItem = {},
 }: {
   option: OptionDetail;
   isCouple: boolean;
   revalidate: string;
+  costItems?: CostItemRow[];
   linkableCategories?: LinkableCategory[];
-  existingLinks?: CostItemLink[];
+  linksByItem?: Record<string, CostItemLinkInfo[]>;
 }) {
   const [open, setOpen] = useState(false);
   const cover = option.images[0];
+  const totals = computeOptionTotals(option, costItems);
 
   return (
     <Disclosure
@@ -111,13 +114,22 @@ export function OptionCard({
           </div>
           <div className="p-4">
             <p className="font-serif text-sm font-semibold text-ink">{option.name}</p>
-            <CostRange
-              className="mt-1 block font-reading text-[13px] text-ink-soft"
-              predictedMin={option.predicted_cost_min}
-              predictedMax={option.predicted_cost_max}
-              actual={option.actual_cost}
-              currency={option.currency}
-            />
+            <p className="mt-1 font-reading text-[13px] text-ink-soft">
+              {formatCostRange(totals.headlineMin, totals.headlineMax, option.currency)} predicted
+              {totals.headlineActual != null ? ` · ${formatCurrency(totals.headlineActual, option.currency)} actual` : ""}
+            </p>
+            {totals.additionalSum > 0 && (
+              <p className="mt-0.5 font-reading text-[12px] text-ink-soft/70">
+                + {formatCurrency(totals.additionalSum, option.currency)} additional costs
+              </p>
+            )}
+            {(option.nights != null || option.sleeps != null) && (
+              <p className="mt-0.5 font-reading text-[12px] text-ink-soft/70">
+                {option.nights != null ? `${option.nights} night${option.nights === 1 ? "" : "s"}` : ""}
+                {option.nights != null && option.sleeps != null ? " · " : ""}
+                {option.sleeps != null ? `sleeps ${option.sleeps}` : ""}
+              </p>
+            )}
           </div>
         </div>
       </DisclosureTrigger>
@@ -126,8 +138,10 @@ export function OptionCard({
           option={option}
           isCouple={isCouple}
           revalidate={revalidate}
+          costItems={costItems}
           linkableCategories={linkableCategories}
-          existingLinks={existingLinks}
+          linksByItem={linksByItem}
+          totals={totals}
         />
       </DisclosureContent>
     </Disclosure>
@@ -138,14 +152,18 @@ function OptionDetailPanel({
   option,
   isCouple,
   revalidate,
+  costItems,
   linkableCategories,
-  existingLinks,
+  linksByItem,
+  totals,
 }: {
   option: OptionDetail;
   isCouple: boolean;
   revalidate: string;
+  costItems: CostItemRow[];
   linkableCategories: LinkableCategory[];
-  existingLinks: CostItemLink[];
+  linksByItem: Record<string, CostItemLinkInfo[]>;
+  totals: ReturnType<typeof computeOptionTotals>;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState("");
@@ -156,9 +174,6 @@ function OptionDetailPanel({
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [, startRemoveTransition] = useTransition();
   const [deletePending, startDeleteTransition] = useTransition();
-  const [linkCategoryId, setLinkCategoryId] = useState("");
-  const [linkPending, startLinkTransition] = useTransition();
-  const [unlinkingId, setUnlinkingId] = useState<string | null>(null);
 
   function handleMarkWinner() {
     setError(null);
@@ -216,32 +231,6 @@ function OptionDetailPanel({
   }
 
   const hasContact = option.contact_name || option.contact_phone || option.contact_email;
-
-  function handleLink() {
-    if (!linkCategoryId) return;
-    setError(null);
-    const formData = new FormData();
-    formData.set("sourcePageOptionId", option.id);
-    formData.set("targetCategoryPageId", linkCategoryId);
-    startLinkTransition(async () => {
-      const result = await linkCostItem(formData);
-      if (result?.error) {
-        setError(result.error);
-        return;
-      }
-      setLinkCategoryId("");
-    });
-  }
-
-  function handleUnlink(linkId: string) {
-    setError(null);
-    setUnlinkingId(linkId);
-    startLinkTransition(async () => {
-      const result = await unlinkCostItem(linkId);
-      if (result?.error) setError(result.error);
-      setUnlinkingId(null);
-    });
-  }
 
   return (
     <div className="border-t border-ink/10 p-5">
@@ -380,54 +369,24 @@ function OptionDetailPanel({
           </div>
         )}
 
-        {linkableCategories.length > 0 && (
-          <div>
-            <p className="font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft/70 uppercase">
-              Also show this cost under
-            </p>
-            {existingLinks.length > 0 && (
-              <ul className="mt-1 flex flex-col gap-1">
-                {existingLinks.map((link) => (
-                  <li key={link.id} className="flex items-center gap-2 text-ink">
-                    {link.categoryTitle}
-                    <button
-                      type="button"
-                      onClick={() => handleUnlink(link.id)}
-                      disabled={unlinkingId === link.id}
-                      className="font-serif text-[11px] tracking-[0.06em] text-alert/80 uppercase hover:text-alert disabled:opacity-60"
-                    >
-                      {unlinkingId === link.id ? "Removing…" : "Unlink"}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <div className="mt-1.5 flex items-center gap-2">
-              <select
-                value={linkCategoryId}
-                onChange={(e) => setLinkCategoryId(e.target.value)}
-                className="rounded-full border border-ink/20 bg-cream px-3.5 py-1.5 text-xs text-ink-soft outline-none focus:border-accent"
-              >
-                <option value="">Choose a category…</option>
-                {linkableCategories
-                  .filter((c) => !existingLinks.some((l) => l.categoryTitle === c.title))
-                  .map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.title}
-                    </option>
-                  ))}
-              </select>
-              <button
-                type="button"
-                onClick={handleLink}
-                disabled={linkPending || !linkCategoryId}
-                className="rounded-full border border-ink/20 px-3.5 py-1.5 font-serif text-xs text-ink-soft transition hover:border-ink/40 disabled:opacity-60"
-              >
-                Link
-              </button>
-            </div>
-          </div>
-        )}
+        <div>
+          <p className="font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft/70 uppercase">
+            Cost breakdown
+          </p>
+          <p className="mt-1 mb-2 text-ink">
+            {formatCostRange(totals.totalMin, totals.totalMax, option.currency)} true total
+            {totals.totalActual != null ? ` · ${formatCurrency(totals.totalActual, option.currency)} actual` : ""}
+          </p>
+          <CostItemsPanel
+            pageOptionId={option.id}
+            revalidate={revalidate}
+            isCouple={isCouple}
+            items={costItems}
+            currency={option.currency}
+            linkableCategories={linkableCategories}
+            linksByItem={linksByItem}
+          />
+        </div>
       </div>
 
       {isCouple && (

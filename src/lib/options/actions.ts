@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
+import { computeOptionTotals } from "./totals";
 
 // Options mode: the same mechanism drives comparisons both on category pages
 // (Venue, Flowers...) and standalone inside Project Management (stag do
@@ -57,6 +58,8 @@ const optionSchema = z
     contactEmail: z.string().email().optional().or(z.literal("")),
     latitude: z.coerce.number().min(-90).max(90).optional().nullable(),
     longitude: z.coerce.number().min(-180).max(180).optional().nullable(),
+    nights: z.coerce.number().int().nonnegative().optional().nullable(),
+    sleeps: z.coerce.number().int().nonnegative().optional().nullable(),
     revalidate: z.string(),
   })
   .refine(
@@ -78,6 +81,8 @@ export async function addOption(formData: FormData) {
     contactEmail: formData.get("contactEmail") || "",
     latitude: formData.get("latitude") || null,
     longitude: formData.get("longitude") || null,
+    nights: formData.get("nights") || null,
+    sleeps: formData.get("sleeps") || null,
     revalidate: formData.get("revalidate"),
   });
 
@@ -95,6 +100,8 @@ export async function addOption(formData: FormData) {
     contact_email: parsed.contactEmail || null,
     latitude: parsed.latitude,
     longitude: parsed.longitude,
+    nights: parsed.nights,
+    sleeps: parsed.sleeps,
   });
 
   // Revalidate every surface that reads page_options, not just whichever
@@ -125,6 +132,8 @@ const updateOptionSchema = z
     contactEmail: z.string().email().optional().or(z.literal("")),
     latitude: z.coerce.number().min(-90).max(90).optional().nullable(),
     longitude: z.coerce.number().min(-180).max(180).optional().nullable(),
+    nights: z.coerce.number().int().nonnegative().optional().nullable(),
+    sleeps: z.coerce.number().int().nonnegative().optional().nullable(),
     revalidate: z.string(),
   })
   .refine(
@@ -151,6 +160,8 @@ export async function updateOption(formData: FormData) {
     contactEmail: formData.get("contactEmail") || "",
     latitude: formData.get("latitude") || null,
     longitude: formData.get("longitude") || null,
+    nights: formData.get("nights") || null,
+    sleeps: formData.get("sleeps") || null,
     revalidate: formData.get("revalidate"),
   });
 
@@ -171,6 +182,8 @@ export async function updateOption(formData: FormData) {
       contact_email: parsed.contactEmail || null,
       latitude: parsed.latitude,
       longitude: parsed.longitude,
+      nights: parsed.nights,
+      sleeps: parsed.sleeps,
     })
     .eq("id", parsed.id);
 
@@ -217,6 +230,18 @@ export async function selectWinner(
   // Only category-linked groups feed the budget/diary/contacts — a
   // standalone (Project Management) group's winner is informational only.
   if (categoryPageId && option) {
+    const { data: costItems } = await supabase
+      .from("option_cost_items")
+      .select("amount, kind")
+      .eq("page_option_id", optionId);
+    // The category's budget total is the option's TRUE cost — base plus
+    // every additional line, minus any income (guest recoup) — not just
+    // its own headline figure. See lib/options/totals.ts; this must stay
+    // the one shared calculation selectWinner/markOptionWinner/the option
+    // card all use, or the number on the card would stop matching what
+    // actually lands on the Budget page.
+    const totals = computeOptionTotals(option, costItems ?? []);
+
     const { data: existingCost } = await supabase
       .from("category_costs")
       .select("id")
@@ -232,9 +257,9 @@ export async function selectWinner(
       await supabase
         .from("category_costs")
         .update({
-          predicted_cost_min: option.predicted_cost_min,
-          predicted_cost_max: option.predicted_cost_max,
-          actual_cost: option.actual_cost,
+          predicted_cost_min: totals.totalMin,
+          predicted_cost_max: totals.totalMax,
+          actual_cost: totals.totalActual,
           currency: option.currency,
           updated_at: new Date().toISOString(),
         })
@@ -242,9 +267,9 @@ export async function selectWinner(
     } else {
       await supabase.from("category_costs").insert({
         category_page_id: categoryPageId,
-        predicted_cost_min: option.predicted_cost_min,
-        predicted_cost_max: option.predicted_cost_max,
-        actual_cost: option.actual_cost,
+        predicted_cost_min: totals.totalMin,
+        predicted_cost_max: totals.totalMax,
+        actual_cost: totals.totalActual,
         currency: option.currency,
       });
     }
@@ -346,6 +371,16 @@ export async function markOptionWinner(optionId: string) {
       if (diaryError) return { error: diaryError.message };
     }
 
+    const { data: costItems, error: itemsError } = await supabase
+      .from("option_cost_items")
+      .select("amount, kind")
+      .eq("page_option_id", optionId);
+    if (itemsError) return { error: itemsError.message };
+    // Same shared calculation as selectWinner — see the comment there and
+    // lib/options/totals.ts. The category total is the option's TRUE cost
+    // (base + additional lines − income), not just its own headline figure.
+    const totals = computeOptionTotals(option, costItems ?? []);
+
     const { data: existingCost, error: costLookupError } = await supabase
       .from("category_costs")
       .select("id")
@@ -353,25 +388,22 @@ export async function markOptionWinner(optionId: string) {
       .maybeSingle();
     if (costLookupError) return { error: costLookupError.message };
 
-    // Copies the predicted range alongside actual_cost now too — see the
-    // matching comment in selectWinner above; these two call sites must
-    // stay consistent with each other.
     const { error: costError } = existingCost
       ? await supabase
           .from("category_costs")
           .update({
-            predicted_cost_min: option.predicted_cost_min,
-            predicted_cost_max: option.predicted_cost_max,
-            actual_cost: option.actual_cost,
+            predicted_cost_min: totals.totalMin,
+            predicted_cost_max: totals.totalMax,
+            actual_cost: totals.totalActual,
             currency: option.currency,
             updated_at: new Date().toISOString(),
           })
           .eq("id", existingCost.id)
       : await supabase.from("category_costs").insert({
           category_page_id: categoryPageId,
-          predicted_cost_min: option.predicted_cost_min,
-          predicted_cost_max: option.predicted_cost_max,
-          actual_cost: option.actual_cost,
+          predicted_cost_min: totals.totalMin,
+          predicted_cost_max: totals.totalMax,
+          actual_cost: totals.totalActual,
           currency: option.currency,
         });
     if (costError) return { error: costError.message };

@@ -106,6 +106,22 @@ export function AddOptionForm({
         placeholder="Longitude"
         className="w-28 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
       />
+      <input
+        name="nights"
+        type="number"
+        min={0}
+        step={1}
+        placeholder="Nights"
+        className="w-24 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+      />
+      <input
+        name="sleeps"
+        type="number"
+        min={0}
+        step={1}
+        placeholder="Sleeps"
+        className="w-24 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+      />
       <button
         type="submit"
         disabled={pending}

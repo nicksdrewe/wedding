@@ -3,15 +3,15 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { unlinkCostItem } from "@/lib/costs/links";
-import { CostRange } from "@/components/CostRange";
+import { formatCurrency } from "@/lib/currency/format";
 import { toDriveImageUrl } from "@/lib/google/image-url";
 import type { getLinkedCostItemsForCategory } from "@/lib/costs/links";
 
 type LinkedItem = Awaited<ReturnType<typeof getLinkedCostItemsForCategory>>[number];
 
-// Read + unlink only — editing the underlying item (name, cost, images)
-// happens at its source category, not here, so there's only ever one edit
-// surface for a given page_options row.
+// Read + unlink only — editing the underlying line item (name, amount,
+// which option it belongs to) happens at its source category, not here,
+// so there's only ever one edit surface for a given cost line.
 export function LinkedCostItems({ items, isCouple }: { items: LinkedItem[]; isCouple: boolean }) {
   const [unlinkingId, setUnlinkingId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
@@ -30,7 +30,9 @@ export function LinkedCostItems({ items, isCouple }: { items: LinkedItem[]; isCo
   return (
     <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((link) => {
-        const option = Array.isArray(link.page_options) ? link.page_options[0] : link.page_options;
+        const costItem = Array.isArray(link.option_cost_items) ? link.option_cost_items[0] : link.option_cost_items;
+        if (!costItem) return null;
+        const option = Array.isArray(costItem.page_options) ? costItem.page_options[0] : costItem.page_options;
         if (!option) return null;
         const group = Array.isArray(option.option_groups) ? option.option_groups[0] : option.option_groups;
         const sourceCategory = group
@@ -57,13 +59,10 @@ export function LinkedCostItems({ items, isCouple }: { items: LinkedItem[]; isCo
             </div>
             <div className="p-4">
               <p className="font-serif text-sm font-semibold text-ink">{option.name}</p>
-              <CostRange
-                className="mt-1 block font-reading text-[13px] text-ink-soft"
-                predictedMin={option.predicted_cost_min}
-                predictedMax={option.predicted_cost_max}
-                actual={option.actual_cost}
-                currency={option.currency}
-              />
+              <p className="mt-0.5 font-reading text-xs text-ink-soft/70">{costItem.name}</p>
+              <p className="mt-1 font-reading text-[13px] text-ink-soft">
+                {formatCurrency(costItem.amount, option.currency)}
+              </p>
               {sourceCategory && (
                 <Link
                   href={`/categories/${sourceCategory.slug}`}

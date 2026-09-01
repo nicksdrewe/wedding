@@ -131,6 +131,24 @@ export function EditOptionForm({
           placeholder="Longitude"
           className="w-32 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
         />
+        <input
+          name="nights"
+          type="number"
+          min={0}
+          step={1}
+          defaultValue={option.nights ?? ""}
+          placeholder="Nights"
+          className="w-24 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+        />
+        <input
+          name="sleeps"
+          type="number"
+          min={0}
+          step={1}
+          defaultValue={option.sleeps ?? ""}
+          placeholder="Sleeps"
+          className="w-24 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+        />
       </div>
 
       <input
