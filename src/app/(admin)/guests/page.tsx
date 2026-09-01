@@ -1,13 +1,20 @@
+import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { createClient } from "@/lib/supabase/server";
 import { AnimatedNumber } from "@/components/motion-primitives/animated-number";
 import { getActiveInviteLink } from "@/lib/invite/actions";
+import { getCurrentProfile } from "@/lib/auth/roles";
+import { getEffectivePermission } from "@/lib/permissions/actions";
 import { AddContactForm } from "./AddContactForm";
 import { GuestTable, type GuestTableContact } from "./GuestTable";
 import { InviteLinkButton } from "./InviteLinkCard";
 
 export default async function GuestsPage() {
+  const profile = await getCurrentProfile();
+  const permission = await getEffectivePermission("guests", profile);
+  if (!permission.pageAccess) redirect("/no-access");
+
   const supabase = await createClient();
   // contacts.rsvp_status only ever reflects the WEDDING rsvp (see
   // api/rsvp/[token]/route.ts, the only writer of that column, on its own
@@ -29,7 +36,7 @@ export default async function GuestsPage() {
       // HTML, so selecting it here would ship every guest's token to
       // whoever's viewing this page for no reason.
       .select(
-        "id, full_name, email, phone, role, tags, plus_one_limit, rsvp_status, parent_contact_id, rsvps(event_id, attending, plus_one_attending)"
+        "id, full_name, email, phone, role, tags, plus_one_limit, rsvp_status, parent_contact_id, guest_note, rsvps(event_id, attending, plus_one_attending)"
       )
       .order("full_name"),
     getActiveInviteLink(),
@@ -102,11 +109,12 @@ export default async function GuestsPage() {
     eventRsvpStatuses: Object.fromEntries(events.map((e) => [e.id, rsvpStatusFor(c.rsvps, e.id)])),
   }));
 
-  // This whole route is already gated to the couple role in the (admin)
-  // layout (redirects everyone else to /no-access), so edit/delete controls
-  // are always shown here — the isCouple prop just keeps the component in
-  // line with the same pattern used on family-visible surfaces.
-  const isCouple = true;
+  // Family now reaches this page too (page_access=true, edit_access=false
+  // per 0028's seeded permissions) — the isCouple prop name is unchanged
+  // (GuestTable/EditableGuestRow already accept it), but what it's fed is
+  // now the resolved edit_access rather than an assumption that reaching
+  // this route means couple.
+  const isCouple = permission.editAccess;
 
   return (
     <div>
@@ -152,7 +160,7 @@ export default async function GuestsPage() {
         )}
       </div>
 
-      <AddContactForm />
+      {isCouple && <AddContactForm />}
 
       {hasContacts ? (
         <GuestTable

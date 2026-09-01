@@ -89,7 +89,12 @@ export default async function CategoryDetailPage({
     getLinkedCostItemsForCategory(page.id),
   ]);
 
-  const isCouple = profile?.role === "couple";
+  // Edit UI on this page is now driven by the resolved edit_access for
+  // this exact category page (couple always true; family true/false per
+  // 0028's seeded permissions — currently false everywhere on categories)
+  // rather than a hardcoded role check, reusing the same permission
+  // lookup already made above for the pageAccess guard.
+  const isCouple = permission.editAccess;
 
   return (
     <div className="max-w-3xl">

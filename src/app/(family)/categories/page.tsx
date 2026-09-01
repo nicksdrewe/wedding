@@ -1,5 +1,7 @@
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
+import { getEffectivePermission } from "@/lib/permissions/actions";
 import { InView } from "@/components/motion-primitives/in-view";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
@@ -8,6 +10,14 @@ import { CategoryCard } from "./CategoryCard";
 
 export default async function CategoriesPage() {
   const profile = await getCurrentProfile();
+  // This list page is already reachable by family via the (family) layout
+  // (unchanged) — edit UI (new-category form, per-card edit/delete) is
+  // gated by the resolved edit_access for "categories" instead of a
+  // hardcoded role check, so it follows the same couple-configurable rule
+  // as the category detail pages.
+  const permission = await getEffectivePermission("categories", profile);
+  if (!permission.pageAccess) redirect("/no-access");
+  const isCouple = permission.editAccess;
   const supabase = await createClient();
 
   const { data: pages } = await supabase
@@ -25,7 +35,7 @@ export default async function CategoriesPage() {
         infoText="Venue, outfits, flowers, catering — everything with a cost, a contact, or a date lives here."
       />
 
-      {profile?.role === "couple" && <NewCategoryForm />}
+      {isCouple && <NewCategoryForm />}
 
       {hasCategories ? (
         <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
@@ -51,7 +61,7 @@ export default async function CategoriesPage() {
                     actualCost: cost?.actual_cost ?? null,
                     currency: cost?.currency ?? "GBP",
                   }}
-                  isCouple={profile?.role === "couple"}
+                  isCouple={isCouple}
                 />
               </InView>
             );

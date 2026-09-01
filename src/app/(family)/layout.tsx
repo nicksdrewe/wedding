@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getAuthState } from "@/lib/auth/roles";
+import { getAuthState, getCurrentContactTags } from "@/lib/auth/roles";
 import { AppShell } from "@/components/AppShell";
 
 export default async function FamilyLayout({
@@ -13,9 +13,12 @@ export default async function FamilyLayout({
   // back to /login, or they loop.
   if (state.status === "anonymous") redirect("/login?next=/categories");
   if (state.status === "no-profile") redirect("/no-access");
-  if (state.profile.role !== "couple" && state.profile.role !== "family") {
-    redirect("/no-access");
-  }
+  // Every role reaches this route group now (Diary needs to be reachable
+  // by guest/wedding_party too, per the account-capabilities brief) — the
+  // fine-grained "which pages under here can this role actually see"
+  // check happens per-page via getEffectivePermission, same pattern as
+  // (admin)/(party) below it.
 
-  return <AppShell profile={state.profile}>{children}</AppShell>;
+  const tags = await getCurrentContactTags(state.profile);
+  return <AppShell profile={state.profile} tags={tags}>{children}</AppShell>;
 }

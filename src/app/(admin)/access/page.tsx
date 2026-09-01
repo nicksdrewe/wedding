@@ -1,8 +1,17 @@
+import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
+import { getCurrentProfile } from "@/lib/auth/roles";
 import { listPageRegistry, listPagePermissions, listKnownTags } from "@/lib/permissions/actions";
 import { AccessMatrixForm } from "./AccessMatrixForm";
 
 export default async function AccessPage() {
+  // The (admin) layout now admits couple OR family (see 0028), but access
+  // management must stay couple-only — this explicit check is the
+  // defense-in-depth backstop for that, independent of the shared layout
+  // guard.
+  const profile = await getCurrentProfile();
+  if (profile?.role !== "couple") redirect("/no-access");
+
   const [registry, permissions, knownTags] = await Promise.all([
     listPageRegistry(),
     listPagePermissions(),

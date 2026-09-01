@@ -1,9 +1,17 @@
+import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentProfile } from "@/lib/auth/roles";
 import { CommsComposer, type CommsContact } from "./CommsComposer";
 
 export default async function CommsPage() {
+  // The (admin) layout now admits couple OR family (see 0028), but comms
+  // must stay couple-only — this explicit check is the defense-in-depth
+  // backstop for that, independent of the shared layout guard.
+  const profile = await getCurrentProfile();
+  if (profile?.role !== "couple") redirect("/no-access");
+
   const supabase = await createClient();
 
   const [{ data: contacts }, { data: rsvpEvents }, { data: messages }] = await Promise.all([

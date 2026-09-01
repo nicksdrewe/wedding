@@ -18,6 +18,11 @@ export type Contact = {
   // none.
   plus_one_limit: number;
   rsvp_status: string;
+  // Self-service note a guest can leave on their own contact row (see
+  // 0027_guest_self_service_and_role_editing.sql) — surfaced here as a
+  // small indicator dot so the couple/family know to open the row rather
+  // than shown inline in full (keeps the table compact).
+  guest_note: string | null;
   eventRsvpStatuses: Record<string, "pending" | "attending" | "declined">;
 };
 
@@ -105,6 +110,13 @@ export function EditableGuestRow({
           />
         )}
         {contact.full_name}
+        {contact.guest_note && (
+          <span
+            aria-hidden="true"
+            title="Has a note"
+            className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-accent align-middle"
+          />
+        )}
       </td>
       <td className="px-5 py-3.5 text-ink-soft">
         <div className="flex flex-col gap-1">

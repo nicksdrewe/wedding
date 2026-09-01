@@ -1,45 +1,46 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Images } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
 import { getEffectivePermission } from "@/lib/permissions/actions";
+import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
-import { IdeaForm } from "./IdeaForm";
-import { IdeaCard } from "./IdeaCard";
-import { TaskForm } from "./TaskForm";
-import { TaskRow } from "./TaskRow";
-import { NewOptionGroupForm } from "./NewOptionGroupForm";
-import { ProjectTabs } from "./ProjectTabs";
-import { OptionsCompareGroup, type CompareGroup } from "./OptionsCompareGroup";
+import { IdeaCard } from "../IdeaCard";
+import { TaskRow } from "../TaskRow";
+import { OptionsCompareGroup, type CompareGroup } from "../OptionsCompareGroup";
+import { GenderedIdeaForm } from "./GenderedIdeaForm";
+import { GenderedTaskForm } from "./GenderedTaskForm";
+import { GenderedOptionGroupForm } from "./GenderedOptionGroupForm";
 
-export default async function ProjectPage() {
+// Near-duplicate of ../page.tsx (Project Management), scoped to
+// visible_tag='bridesmaid' instead of tier='wedding_party' — see
+// 0028_gendered_pages_and_family_access.sql. Ideas/tasks/standalone option
+// groups all gained a nullable visible_tag column there; RLS grants access
+// to a tagged row via fn_has_visible_tag, which also cross-grants
+// maid_of_honour onto this page. Page-level visibility (this guard) and
+// edit gating both come from page_permissions via getEffectivePermission,
+// seeded for page_key 'project:bridesmaids' in 0027.
+
+export default async function BridesmaidsProjectPage() {
   const supabase = await createClient();
   const profile = await getCurrentProfile();
-  // The (party) layout now admits couple, wedding_party, AND family — this
-  // page_access check is what actually blocks a PLAIN wedding_party member
-  // (page_access=false on "project" per 0028's seeded permissions) while
-  // still letting best_man/maid_of_honour and family through.
-  const permission = await getEffectivePermission("project", profile);
-  if (!permission.pageAccess) redirect("/no-access");
   const isCouple = profile?.role === "couple";
-  // IdeaForm/TaskForm/NewOptionGroupForm are creation forms — family gets
-  // read-only boards here (edit_access=false on "project" for family, per
-  // 0028), so their visibility follows edit_access rather than "anyone who
-  // reached this page can post".
-  const canEdit = permission.editAccess;
+
+  const permission = await getEffectivePermission("project:bridesmaids", profile);
+  if (!permission.pageAccess) redirect("/no-access");
 
   const [{ data: ideas }, { data: tasks }, { data: contacts }, { data: optionGroups }] = await Promise.all([
     supabase
       .from("idea_boards")
       .select("id, title, body, tags, created_at, created_by, idea_board_images(id, image_url, sort_order)")
-      .eq("tier", "wedding_party")
+      .eq("visible_tag", "bridesmaid")
       .order("created_at", { ascending: false })
       .order("sort_order", { referencedTable: "idea_board_images", ascending: true }),
     supabase
       .from("tasks")
       .select("id, title, notes, status, due_date, owner_contact_id, contacts(full_name)")
+      .eq("visible_tag", "bridesmaid")
       .order("status")
       .order("due_date", { ascending: true, nullsFirst: false }),
     supabase
@@ -47,15 +48,13 @@ export default async function ProjectPage() {
       .select("id, full_name")
       .in("role", ["couple", "wedding_party"])
       .order("full_name"),
-    // Every comparison running anywhere — category-linked (Venue, Flowers...)
-    // and standalone (stag/hen...) alike — skimmed to title + cost here.
-    // Full detail (description, images) lives on the category board; this
-    // is the fast pick-a-winner surface across all of them at once.
     supabase
       .from("option_groups")
       .select(
         "id, title, category_page_id, category_pages(title, slug), page_options(id, name, predicted_cost_min, predicted_cost_max, actual_cost, currency, is_winner)"
       )
+      .eq("visible_tag", "bridesmaid")
+      .is("category_page_id", null)
       .order("created_at", { ascending: false })
       .order("created_at", { ascending: true, referencedTable: "page_options" }),
   ]);
@@ -74,24 +73,24 @@ export default async function ProjectPage() {
 
   return (
     <div>
+      <Link
+        href="/project"
+        className="inline-flex items-center gap-1.5 font-serif text-xs tracking-wide text-ink-soft transition hover:text-accent"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+        Project
+      </Link>
+
       <PageHeader
         eyebrow="Planning"
-        title="Project Management"
-        infoText="Ideas, plans, and who's doing what — plus expense splitting."
+        title="Bridesmaids"
+        infoText="Ideas, plans, and comparisons just for the bridesmaids."
       />
-
-      <ProjectTabs active="project" />
 
       <div className="mt-9 grid grid-cols-1 gap-10 md:grid-cols-2">
         <section>
-          <Link
-            href="/project/ideas"
-            className="group inline-flex items-center gap-1.5 font-serif text-[15px] font-semibold tracking-wide transition-colors hover:text-accent"
-          >
-            Idea board
-            <Images className="h-3.5 w-3.5 text-ink-soft/50 transition-colors group-hover:text-accent" strokeWidth={2} aria-hidden="true" />
-          </Link>
-          {canEdit && <IdeaForm />}
+          <h2 className="font-serif text-[15px] font-semibold tracking-wide">Idea board</h2>
+          {permission.editAccess && <GenderedIdeaForm visibleTag="bridesmaid" />}
           <ul className="mt-4 flex flex-col gap-2.5">
             {(ideas ?? []).map((idea) => (
               <IdeaCard
@@ -101,7 +100,7 @@ export default async function ProjectPage() {
                 body={idea.body}
                 tags={idea.tags ?? []}
                 images={idea.idea_board_images ?? []}
-                canEdit={isCouple || idea.created_by === profile?.id}
+                canEdit={permission.editAccess && (isCouple || idea.created_by === profile?.id)}
               />
             ))}
           </ul>
@@ -109,14 +108,14 @@ export default async function ProjectPage() {
             <EmptyState
               className="mt-4"
               title="No ideas yet"
-              hint="Add the first one above."
+              hint={permission.editAccess ? "Add the first one above." : undefined}
             />
           )}
         </section>
 
         <section>
           <h2 className="font-serif text-[15px] font-semibold tracking-wide">Tasks</h2>
-          {canEdit && <TaskForm contacts={contacts ?? []} />}
+          {permission.editAccess && <GenderedTaskForm visibleTag="bridesmaid" contacts={contacts ?? []} />}
           <ul className="mt-4 flex flex-col gap-2">
             {(tasks ?? []).map((t) => {
               const owner = Array.isArray(t.contacts) ? t.contacts[0] : t.contacts;
@@ -143,10 +142,10 @@ export default async function ProjectPage() {
       <section className="mt-12">
         <h2 className="font-serif text-[15px] font-semibold tracking-wide">Compare options</h2>
         <p className="mt-2 font-reading text-sm text-ink-soft italic">
-          Every comparison running, across every category plus stag/hen
-          extras — skimmed to title and cost so you can pick fast.
+          Comparisons started here — hen do venue, outfits, and anything
+          else just for the bridesmaids.
         </p>
-        {canEdit && <NewOptionGroupForm />}
+        {permission.editAccess && <GenderedOptionGroupForm visibleTag="bridesmaid" />}
 
         <div className="mt-5 flex flex-col gap-5">
           {compareGroups.map((g) => (
@@ -156,7 +155,7 @@ export default async function ProjectPage() {
             <EmptyState
               className="mt-2"
               title="Nothing being compared yet"
-              hint="Start a comparison above, or from a category page."
+              hint={permission.editAccess ? "Start a comparison above." : undefined}
             />
           )}
         </div>

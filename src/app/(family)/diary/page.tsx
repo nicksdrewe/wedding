@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Calendar, Check, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
+import { getEffectivePermission } from "@/lib/permissions/actions";
 import { InView } from "@/components/motion-primitives/in-view";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
@@ -14,6 +15,14 @@ export default async function DiaryPage() {
   const supabase = await createClient();
   const profile = await getCurrentProfile();
   const isCouple = profile?.role === "couple";
+  // Milestones (diary_entries sourced from category decisions) are the
+  // "nodes pulled through from other tabs" that guests and plain
+  // wedding_party members shouldn't see here — only events should. Using
+  // pageAccess on "categories" as a proxy for "does this viewer have
+  // broad planning visibility": true for couple/family/best_man/
+  // maid_of_honour, false for guest/plain wedding_party per 0028's seeded
+  // permissions.
+  const showMilestones = (await getEffectivePermission("categories", profile)).pageAccess;
 
   const [{ data: events }, { data: entries }] = await Promise.all([
     supabase
@@ -54,7 +63,7 @@ export default async function DiaryPage() {
     };
   });
 
-  const timeline = [...eventItems, ...milestoneItems].sort(
+  const timeline = [...eventItems, ...(showMilestones ? milestoneItems : [])].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   );
 

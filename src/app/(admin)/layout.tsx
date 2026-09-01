@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getAuthState } from "@/lib/auth/roles";
+import { getAuthState, getCurrentContactTags } from "@/lib/auth/roles";
 import { AppShell } from "@/components/AppShell";
 
 export default async function AdminLayout({
@@ -15,7 +15,14 @@ export default async function AdminLayout({
   // and looping forever.
   if (state.status === "anonymous") redirect("/login?next=/guests");
   if (state.status === "no-profile") redirect("/no-access");
-  if (state.profile.role !== "couple") redirect("/no-access");
+  // Family now has read-only reach into /guests and /budget (see 0028), so
+  // the layout itself is relaxed to admit couple OR family. That's
+  // deliberately as far as this loosens: /comms and /access must stay
+  // couple-only, so each of those pages carries its own explicit
+  // couple-only redirect as a backstop rather than relying on this shared
+  // guard to keep them locked down.
+  if (state.profile.role !== "couple" && state.profile.role !== "family") redirect("/no-access");
 
-  return <AppShell profile={state.profile}>{children}</AppShell>;
+  const tags = await getCurrentContactTags(state.profile);
+  return <AppShell profile={state.profile} tags={tags}>{children}</AppShell>;
 }

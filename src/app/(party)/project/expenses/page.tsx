@@ -1,4 +1,7 @@
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentProfile } from "@/lib/auth/roles";
+import { getEffectivePermission } from "@/lib/permissions/actions";
 import { AnimatedNumber } from "@/components/motion-primitives/animated-number";
 import { InView } from "@/components/motion-primitives/in-view";
 import { PageHeader } from "@/components/PageHeader";
@@ -8,6 +11,18 @@ import { ExpenseCard } from "./ExpenseCard";
 import { ProjectTabs } from "../ProjectTabs";
 
 export default async function ExpensesPage() {
+  const profile = await getCurrentProfile();
+  const permission = await getEffectivePermission("project:expenses", profile);
+  if (!permission.pageAccess) redirect("/no-access");
+  // Family gets edit_access=true on THIS page specifically (the one
+  // deliberate exception in the couple's brief: family can add expenses
+  // even though everything else is read-only for them) — the add-expense
+  // form follows this flag. Editing/deleting an existing expense or
+  // settling a split is a narrower permission still, gated separately
+  // below by role rather than this general edit_access.
+  const canAddExpense = permission.editAccess;
+  const canManageExpenses = profile?.role === "couple" || profile?.role === "wedding_party";
+
   const supabase = await createClient();
 
   const [{ data: contacts }, { data: expenses }, { data: splits }] = await Promise.all([
@@ -56,9 +71,11 @@ export default async function ExpensesPage() {
 
       <ProjectTabs active="expenses" />
 
-      <div className="mt-9">
-        <ExpenseForm contacts={contacts ?? []} />
-      </div>
+      {canAddExpense && (
+        <div className="mt-9">
+          <ExpenseForm contacts={contacts ?? []} />
+        </div>
+      )}
 
       <section className="mt-10">
         <h2 className="font-serif text-[15px] font-semibold tracking-wide">Balances</h2>
@@ -120,6 +137,7 @@ export default async function ExpensesPage() {
                 payerName={payer?.full_name ?? null}
                 contacts={contacts ?? []}
                 splits={mySplits}
+                canManage={canManageExpenses}
               />
             );
           })}

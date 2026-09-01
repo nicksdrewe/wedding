@@ -8,6 +8,9 @@ import {
   LayoutGrid,
   LogOut,
   Mail,
+  PartyPopper,
+  Sparkles,
+  User,
   Users,
   Wallet,
   type LucideIcon,
@@ -20,46 +23,92 @@ import { canAccess, type Profile, type RoleTier } from "@/lib/auth/role-types";
 // for every signed-in page. One instance of this, mounted by each route
 // group's layout.tsx with the server-resolved profile, is what keeps
 // nav-link visibility from ever drifting out of sync with the real route
-// guards: both read the same role, and link visibility here is driven by
-// the same canAccess() helper the layouts use to gate the routes.
+// guards: both read the same role (and, since the account-capabilities
+// rollout, the same contact tags) as the pages themselves.
 //
-// NOTE for the agents wiring this up: the `roles` below encode the design
-// brief's stated visibility table (couple -> all five; family/wedding_party
-// -> Categories, Guests [view-only], Diary; guest -> nothing). That table
-// is broader in a couple of places than the *current* redirects in
-// (family)/(admin)/(party)/layout.tsx (e.g. /guests today redirects
-// non-couple roles to /no-access, and /project admits wedding_party but
-// isn't in family/wedding_party's list here). Reconcile those guards
-// against this table when wiring pages, or trim this table to match the
-// guards — don't let the two silently diverge.
+// This is a convenience mirror of the real access model
+// (src/lib/permissions/actions.ts's getEffectivePermission, backed by
+// page_permissions/RLS) for nav-link VISIBILITY only — AppShell is a
+// client component and can't call the server-only resolver, so it
+// re-derives roughly the same role/tag logic here. It is NOT the
+// enforcement layer: a link not showing here doesn't block the route, and
+// a link showing here doesn't grant access either — every page still does
+// its own getEffectivePermission/RLS check regardless of what nav renders.
+// Keep this table in sync with the seeded page_permissions rows
+// (0027/0028 migrations) rather than trusting it as a source of truth.
 
 type NavLink = {
   href: string;
   label: string;
   icon: LucideIcon;
   roles: RoleTier[];
+  // Contact tags that also unlock this link regardless of role — e.g.
+  // best_man/maid_of_honour seeing the broad planning links even though
+  // plain wedding_party no longer does.
+  tags?: string[];
   // Roles that can see this link but only in a read-only capacity — the
-  // spec's "Guests (read-only badge)" note for family/wedding_party.
+  // spec's "Guests (read-only badge)" note for family.
   viewOnlyRoles?: RoleTier[];
 };
 
 const NAV_LINKS: NavLink[] = [
-  { href: "/categories", label: "Categories", icon: LayoutGrid, roles: ["couple", "family", "wedding_party"] },
+  {
+    href: "/categories",
+    label: "Categories",
+    icon: LayoutGrid,
+    roles: ["couple", "family"],
+    tags: ["best_man", "maid_of_honour"],
+  },
   {
     href: "/guests",
     label: "Guests",
     icon: Users,
-    roles: ["couple", "family", "wedding_party"],
-    viewOnlyRoles: ["family", "wedding_party"],
+    roles: ["couple", "family"],
+    tags: ["best_man", "maid_of_honour"],
+    viewOnlyRoles: ["family"],
   },
-  { href: "/project", label: "Project", icon: FolderKanban, roles: ["couple"] },
-  { href: "/budget", label: "Budget", icon: Wallet, roles: ["couple"] },
+  {
+    href: "/project",
+    label: "Project",
+    icon: FolderKanban,
+    roles: ["couple", "family"],
+    tags: ["best_man", "maid_of_honour"],
+  },
+  {
+    href: "/budget",
+    label: "Budget",
+    icon: Wallet,
+    roles: ["couple", "family"],
+    tags: ["best_man", "maid_of_honour"],
+  },
   { href: "/comms", label: "Comms", icon: Mail, roles: ["couple"] },
   // The dedicated "Engagement Party" link this used to carry is gone now
   // that the events system exists — /diary is the way back to any
   // event's own page (and, for the couple, its edit form) instead of one
-  // hardcoded nav item per event.
-  { href: "/diary", label: "Diary", icon: BookOpen, roles: ["couple", "family", "wedding_party"] },
+  // hardcoded nav item per event. Every role reaches Diary — it's the one
+  // page every account tier (down to a plain guest) gets, per the
+  // account-capabilities brief.
+  { href: "/diary", label: "Diary", icon: BookOpen, roles: ["couple", "family", "wedding_party", "guest"] },
+  // "Edit my page" — the guest/wedding_party self-service surface. Couple
+  // and family don't need this in nav (they're not personally RSVPing).
+  { href: "/account", label: "My Details", icon: User, roles: ["guest", "wedding_party"] },
+  // Gendered wedding-party boards — only their own tag (plus the elevated
+  // best_man/maid_of_honour cross-grant) sees each one; the couple sees
+  // both.
+  {
+    href: "/project/bridesmaids",
+    label: "Bridesmaids",
+    icon: Sparkles,
+    roles: ["couple"],
+    tags: ["bridesmaid", "maid_of_honour"],
+  },
+  {
+    href: "/project/groomsmen",
+    label: "Groomsmen",
+    icon: PartyPopper,
+    roles: ["couple"],
+    tags: ["groomsman", "best_man"],
+  },
 ];
 
 const ROLE_LABEL: Record<RoleTier, string> = {
@@ -84,12 +133,19 @@ export type AppShellProps = {
    *  / getAuthState() (src/lib/auth/roles.ts), which they already need for
    *  their own route guard. */
   profile: Profile;
+  /** The signed-in user's own contact tags (best_man, bridesmaid, etc.) —
+   *  from getCurrentContactTags(profile) (src/lib/auth/roles.ts). Optional
+   *  because most callers that only need role-gated links can omit it;
+   *  defaults to none. */
+  tags?: string[];
   children: React.ReactNode;
 };
 
-export function AppShell({ profile, children }: AppShellProps) {
+export function AppShell({ profile, tags = [], children }: AppShellProps) {
   const pathname = usePathname();
-  const links = NAV_LINKS.filter((link) => canAccess(profile.role, link.roles));
+  const links = NAV_LINKS.filter(
+    (link) => canAccess(profile.role, link.roles) || link.tags?.some((t) => tags.includes(t))
+  );
   const name = firstName(profile.full_name);
 
   return (

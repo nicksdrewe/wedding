@@ -39,3 +39,17 @@ export async function getCurrentProfile(): Promise<Profile | null> {
   const state = await getAuthState();
   return state.status === "ok" ? state.profile : null;
 }
+
+// The signed-in user's own contact tags (best_man, bridesmaid, etc.) —
+// used purely for nav-link visibility (AppShell), which is a client
+// component and can't call the permissions resolver itself. This is a
+// convenience lookup, not a security boundary: the actual page/data/edit
+// access for anything tag-gated is still enforced by
+// getEffectivePermission (page-level) and RLS (data-level) regardless of
+// what nav links happen to render.
+export async function getCurrentContactTags(profile: Profile | null): Promise<string[]> {
+  if (!profile?.contact_id) return [];
+  const supabase = await createClient();
+  const { data } = await supabase.from("contacts").select("tags").eq("id", profile.contact_id).maybeSingle();
+  return data?.tags ?? [];
+}

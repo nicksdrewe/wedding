@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ArrowLeft, ImageOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentProfile } from "@/lib/auth/roles";
+import { getEffectivePermission } from "@/lib/permissions/actions";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { InView } from "@/components/motion-primitives/in-view";
@@ -23,6 +26,17 @@ type BoardIdea = {
 };
 
 export default async function IdeaBoardPage() {
+  // Blocks a PLAIN wedding_party member specifically — the (party) layout
+  // admits couple/wedding_party/family broadly, so this page_access check
+  // (page_access=false on "project:ideas" for plain wedding_party, per
+  // 0028) is what actually enforces the narrower rule here. This board is
+  // read-only for everyone who reaches it (no idea-creation form lives on
+  // this page — that's on /project itself, gated there by edit_access), so
+  // there's no edit-affordance to additionally gate.
+  const profile = await getCurrentProfile();
+  const permission = await getEffectivePermission("project:ideas", profile);
+  if (!permission.pageAccess) redirect("/no-access");
+
   const supabase = await createClient();
 
   // Same source query as /project (tier: "wedding_party", RLS-gated), just

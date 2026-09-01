@@ -13,6 +13,7 @@ export function ExpenseCard({
   payerName,
   contacts,
   splits,
+  canManage,
 }: {
   id: string;
   description: string;
@@ -21,6 +22,12 @@ export function ExpenseCard({
   payerName: string | null;
   contacts: { id: string; full_name: string }[];
   splits: { id: string; amount: number; settled: boolean; name: string | undefined }[];
+  // Edit/delete an existing expense, or settle a split — narrower than
+  // being able to log a new one (family can add expenses per 0028, but
+  // not touch existing ones). RLS enforces this for real (0028's "family
+  // reads/adds expenses" policies grant no UPDATE/DELETE), so this is
+  // belt-and-braces UI hiding, not the actual security boundary.
+  canManage: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -120,23 +127,25 @@ export function ExpenseCard({
           <span className="font-serif text-sm">
             £<AnimatedNumber value={amount} springOptions={{ bounce: 0 }} />
           </span>
-          <div className="flex gap-2 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100">
-            <button
-              type="button"
-              onClick={() => setEditing(true)}
-              className="font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-accent"
-            >
-              Edit
-            </button>
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={pending}
-              className="font-serif text-[11px] tracking-[0.06em] text-alert/80 uppercase hover:text-alert"
-            >
-              Delete
-            </button>
-          </div>
+          {canManage && (
+            <div className="flex gap-2 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100">
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-accent"
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={pending}
+                className="font-serif text-[11px] tracking-[0.06em] text-alert/80 uppercase hover:text-alert"
+              >
+                Delete
+              </button>
+            </div>
+          )}
         </div>
       </div>
       <p className="mt-1.5 font-reading text-[13px] text-ink-soft">
@@ -149,7 +158,7 @@ export function ExpenseCard({
               {s.name} — £<AnimatedNumber value={s.amount} springOptions={{ bounce: 0 }} />{" "}
               {s.settled ? "(settled)" : ""}
             </span>
-            {!s.settled && <SettleButton splitId={s.id} />}
+            {!s.settled && canManage && <SettleButton splitId={s.id} />}
           </li>
         ))}
       </ul>
