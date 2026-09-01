@@ -93,43 +93,46 @@ function CostItemRowView({
 
   return (
     <div className="rounded-[8px] border border-ink/10 bg-cream-deep/30 px-3.5 py-2.5">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span
-            className={`rounded-full px-2 py-0.5 font-serif text-[10px] tracking-[0.06em] uppercase ${
-              item.kind === "income" ? "bg-accent/15 text-accent" : "bg-ink/8 text-ink-soft"
-            }`}
-          >
-            {item.kind === "income" ? "Income" : "Cost"}
+      {/* Name/badge/qty on their own wrapping line, amount + actions on
+          their own line below — two side-by-side flex clusters that both
+          also try to wrap (the previous layout) fight each other for
+          space and overlap on narrow cards; stacking always, rather than
+          only past a breakpoint, is what actually fixes it at any width. */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span
+          className={`shrink-0 rounded-full px-2 py-0.5 font-serif text-[10px] tracking-[0.06em] uppercase ${
+            item.kind === "income" ? "bg-accent/15 text-accent" : "bg-ink/8 text-ink-soft"
+          }`}
+        >
+          {item.kind === "income" ? "Income" : "Cost"}
+        </span>
+        <span className="font-serif text-sm text-ink">{item.name}</span>
+        {item.quantity != null && item.rate != null && (
+          <span className="font-reading text-xs text-ink-soft/70">
+            ({item.quantity} × {formatCurrency(item.rate, currency)})
           </span>
-          <span className="font-serif text-sm text-ink">{item.name}</span>
-          {item.quantity != null && item.rate != null && (
-            <span className="font-reading text-xs text-ink-soft/70">
-              ({item.quantity} × {formatCurrency(item.rate, currency)})
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <span className={`font-reading text-sm tabular-nums ${item.kind === "income" ? "text-accent" : "text-ink"}`}>
-            {item.kind === "income" ? "−" : "+"}
-            {formatCurrency(item.amount, currency)}
-          </span>
-          {isCouple && (
-            <>
-              <button type="button" onClick={() => setEditing(true)} className="font-serif text-[11px] text-ink-soft uppercase hover:text-accent">
-                Edit
-              </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={deletePending}
-                className="font-serif text-[11px] text-alert/80 uppercase hover:text-alert disabled:opacity-60"
-              >
-                {deletePending ? "…" : "Delete"}
-              </button>
-            </>
-          )}
-        </div>
+        )}
+      </div>
+      <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        <span className={`font-reading text-sm tabular-nums ${item.kind === "income" ? "text-accent" : "text-ink"}`}>
+          {item.kind === "income" ? "−" : "+"}
+          {formatCurrency(item.amount, currency)}
+        </span>
+        {isCouple && (
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={() => setEditing(true)} className="font-serif text-[11px] text-ink-soft uppercase hover:text-accent">
+              Edit
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deletePending}
+              className="font-serif text-[11px] text-alert/80 uppercase hover:text-alert disabled:opacity-60"
+            >
+              {deletePending ? "…" : "Delete"}
+            </button>
+          </div>
+        )}
       </div>
 
       {isCouple && linkableCategories.length > 0 && (
