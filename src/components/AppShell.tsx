@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useRef, useState } from "react";
 import {
   BookOpen,
+  ChevronDown,
   FolderKanban,
   LayoutGrid,
   LogOut,
@@ -18,6 +20,7 @@ import {
 import { Botanical } from "@/components/Botanical";
 import { AnimatedBackground } from "@/components/motion-primitives/animated-background";
 import { canAccess, type Profile, type RoleTier } from "@/lib/auth/role-types";
+import useClickOutside from "@/hooks/useClickOutside";
 
 // App Shell Design Spec §1 — the shared top nav (+ mobile bottom tab bar)
 // for every signed-in page. One instance of this, mounted by each route
@@ -49,6 +52,10 @@ type NavLink = {
   // Roles that can see this link but only in a read-only capacity — the
   // spec's "Guests (read-only badge)" note for family.
   viewOnlyRoles?: RoleTier[];
+  // Desktop-only grouping into a dropdown menu (e.g. "Planning", "People")
+  // — the mobile bottom tab bar always renders every visible link flat,
+  // regardless of this field, since a nested menu doesn't fit that space.
+  group?: string;
 };
 
 const NAV_LINKS: NavLink[] = [
@@ -58,6 +65,34 @@ const NAV_LINKS: NavLink[] = [
     icon: LayoutGrid,
     roles: ["couple", "family"],
     tags: ["best_man", "maid_of_honour"],
+    group: "Planning",
+  },
+  {
+    href: "/project",
+    label: "Project",
+    icon: FolderKanban,
+    roles: ["couple", "family"],
+    tags: ["best_man", "maid_of_honour"],
+    group: "Planning",
+  },
+  // Gendered wedding-party boards — only their own tag (plus the elevated
+  // best_man/maid_of_honour cross-grant) sees each one; the couple sees
+  // both.
+  {
+    href: "/project/bridesmaids",
+    label: "Bridesmaids",
+    icon: Sparkles,
+    roles: ["couple"],
+    tags: ["bridesmaid", "maid_of_honour"],
+    group: "Planning",
+  },
+  {
+    href: "/project/groomsmen",
+    label: "Groomsmen",
+    icon: PartyPopper,
+    roles: ["couple"],
+    tags: ["groomsman", "best_man"],
+    group: "Planning",
   },
   {
     href: "/guests",
@@ -66,14 +101,9 @@ const NAV_LINKS: NavLink[] = [
     roles: ["couple", "family"],
     tags: ["best_man", "maid_of_honour"],
     viewOnlyRoles: ["family"],
+    group: "People",
   },
-  {
-    href: "/project",
-    label: "Project",
-    icon: FolderKanban,
-    roles: ["couple", "family"],
-    tags: ["best_man", "maid_of_honour"],
-  },
+  { href: "/comms", label: "Comms", icon: Mail, roles: ["couple"], group: "People" },
   {
     href: "/budget",
     label: "Budget",
@@ -81,7 +111,6 @@ const NAV_LINKS: NavLink[] = [
     roles: ["couple", "family"],
     tags: ["best_man", "maid_of_honour"],
   },
-  { href: "/comms", label: "Comms", icon: Mail, roles: ["couple"] },
   // The dedicated "Engagement Party" link this used to carry is gone now
   // that the events system exists — /diary is the way back to any
   // event's own page (and, for the couple, its edit form) instead of one
@@ -92,24 +121,11 @@ const NAV_LINKS: NavLink[] = [
   // "Edit my page" — the guest/wedding_party self-service surface. Couple
   // and family don't need this in nav (they're not personally RSVPing).
   { href: "/account", label: "My Details", icon: User, roles: ["guest", "wedding_party"] },
-  // Gendered wedding-party boards — only their own tag (plus the elevated
-  // best_man/maid_of_honour cross-grant) sees each one; the couple sees
-  // both.
-  {
-    href: "/project/bridesmaids",
-    label: "Bridesmaids",
-    icon: Sparkles,
-    roles: ["couple"],
-    tags: ["bridesmaid", "maid_of_honour"],
-  },
-  {
-    href: "/project/groomsmen",
-    label: "Groomsmen",
-    icon: PartyPopper,
-    roles: ["couple"],
-    tags: ["groomsman", "best_man"],
-  },
 ];
+
+// Desktop nav order: grouped dropdowns first (Planning, then People, each
+// in NAV_LINKS' own order), then every ungrouped link in NAV_LINKS order.
+const GROUP_ORDER = ["Planning", "People"];
 
 const ROLE_LABEL: Record<RoleTier, string> = {
   couple: "Couple",
@@ -125,6 +141,88 @@ function isActiveHref(pathname: string, href: string) {
 function firstName(fullName: string | null) {
   if (!fullName) return null;
   return fullName.trim().split(/\s+/)[0] ?? null;
+}
+
+// Groups the already role/tag-filtered links into desktop nav items: a
+// dropdown per group (only for groups with at least one visible link,
+// GROUP_ORDER first, any others alphabetically after), then every
+// ungrouped link in its original NAV_LINKS order.
+function buildDesktopItems(links: NavLink[]) {
+  const byGroup = new Map<string, NavLink[]>();
+  const ungrouped: NavLink[] = [];
+  for (const link of links) {
+    if (link.group) {
+      const list = byGroup.get(link.group) ?? [];
+      list.push(link);
+      byGroup.set(link.group, list);
+    } else {
+      ungrouped.push(link);
+    }
+  }
+  const groupNames = [
+    ...GROUP_ORDER.filter((g) => byGroup.has(g)),
+    ...[...byGroup.keys()].filter((g) => !GROUP_ORDER.includes(g)),
+  ];
+  return {
+    groups: groupNames.map((name) => ({ name, links: byGroup.get(name)! })),
+    ungrouped,
+  };
+}
+
+// A dropdown nav item — trigger styled like a plain nav pill, opens a
+// small menu of the group's links below it. Plain local open/close state
+// + useClickOutside (same hook MorphingPopover uses) rather than that
+// component itself: this needs a simple anchored panel, not a shared-
+// layoutId morph animation.
+function NavGroupDropdown({
+  name,
+  links,
+  pathname,
+}: {
+  name: string;
+  links: NavLink[];
+  pathname: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useClickOutside(ref, () => setOpen(false));
+  const active = links.some((l) => isActiveHref(pathname, l.href));
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        data-id={name}
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className={`flex items-center gap-1 rounded-full px-3 py-2 font-serif text-[13px] font-medium tracking-[0.02em] transition-colors duration-150 ${
+          active ? "text-accent" : "text-ink-soft hover:text-ink"
+        }`}
+      >
+        {name}
+        <ChevronDown className={`h-3 w-3 transition-transform duration-150 ${open ? "rotate-180" : ""}`} strokeWidth={2.5} />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 z-50 mt-1.5 min-w-[160px] rounded-[10px] border border-ink/10 bg-cream p-1.5 shadow-lg">
+          {links.map((link) => {
+            const linkActive = isActiveHref(pathname, link.href);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setOpen(false)}
+                className={`block rounded-[8px] px-3 py-2 font-serif text-[13px] font-medium tracking-[0.02em] transition-colors duration-150 ${
+                  linkActive ? "bg-accent/10 text-accent" : "text-ink-soft hover:bg-cream-deep hover:text-ink"
+                }`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export type AppShellProps = {
@@ -146,6 +244,7 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
   const links = NAV_LINKS.filter(
     (link) => canAccess(profile.role, link.roles) || link.tags?.some((t) => tags.includes(t))
   );
+  const { groups, ungrouped } = buildDesktopItems(links);
   const name = firstName(profile.full_name);
 
   return (
@@ -170,12 +269,21 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
           {/* Center-left: role-filtered nav, hidden below md in favour of
               the bottom tab bar. */}
           <nav className="hidden items-center gap-1 md:flex">
+            {/* Grouped dropdowns (Planning, People) render outside
+                AnimatedBackground — it clones each direct child and
+                overwrites its own children with the hover-highlight
+                wrapper, which only works for a plain label like a Link's
+                text, not a component that renders its own conditional
+                dropdown panel. */}
+            {groups.map((group) => (
+              <NavGroupDropdown key={group.name} name={group.name} links={group.links} pathname={pathname} />
+            ))}
             <AnimatedBackground
               className="rounded-full bg-accent/10"
               transition={{ duration: 0.15 }}
               enableHover
             >
-              {links.map((link) => {
+              {ungrouped.map((link) => {
                 const active = isActiveHref(pathname, link.href);
                 return (
                   <Link
