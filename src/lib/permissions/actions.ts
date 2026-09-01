@@ -21,6 +21,7 @@ export type PagePermissionRow = {
   principal_value: string;
   page_access: boolean;
   data_access: boolean;
+  edit_access: boolean;
 };
 
 export async function listPageRegistry(): Promise<PageRegistryRow[]> {
@@ -36,7 +37,7 @@ export async function listPagePermissions(): Promise<PagePermissionRow[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("page_permissions")
-    .select("id, page_key, principal_type, principal_value, page_access, data_access")
+    .select("id, page_key, principal_type, principal_value, page_access, data_access, edit_access")
     .order("page_key");
   return data ?? [];
 }
@@ -59,6 +60,7 @@ const upsertSchema = z.object({
   principalValue: z.string().min(1),
   pageAccess: z.boolean(),
   dataAccess: z.boolean(),
+  editAccess: z.boolean(),
 });
 
 export async function upsertPagePermission(formData: FormData) {
@@ -68,6 +70,7 @@ export async function upsertPagePermission(formData: FormData) {
     principalValue: formData.get("principalValue"),
     pageAccess: formData.get("pageAccess") === "on",
     dataAccess: formData.get("dataAccess") === "on",
+    editAccess: formData.get("editAccess") === "on",
   });
 
   const supabase = await createClient();
@@ -78,6 +81,7 @@ export async function upsertPagePermission(formData: FormData) {
       principal_value: parsed.principalValue,
       page_access: parsed.pageAccess,
       data_access: parsed.dataAccess,
+      edit_access: parsed.editAccess,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "page_key,principal_type,principal_value" }
@@ -96,7 +100,7 @@ export async function deletePagePermission(id: string) {
   return { error: error?.message ?? null };
 }
 
-export type EffectivePermission = { pageAccess: boolean; dataAccess: boolean };
+export type EffectivePermission = { pageAccess: boolean; dataAccess: boolean; editAccess: boolean };
 
 // Mirrors fn_resolve_data_access (0025_page_permissions.sql) in JS, for the
 // page_access axis — which is deliberately NOT RLS-enforced (it's a
@@ -111,8 +115,8 @@ export type EffectivePermission = { pageAccess: boolean; dataAccess: boolean };
 // everyone's behalf, since it's answering "what CAN this profile see",
 // not showing them the raw permissions table.
 export async function getEffectivePermission(pageKey: string, profile: Profile | null): Promise<EffectivePermission> {
-  const allow: EffectivePermission = { pageAccess: true, dataAccess: true };
-  if (!profile) return { pageAccess: false, dataAccess: false };
+  const allow: EffectivePermission = { pageAccess: true, dataAccess: true, editAccess: true };
+  if (!profile) return { pageAccess: false, dataAccess: false, editAccess: false };
   if (profile.role === "couple") return allow;
 
   const supabase = createAdminClient();
@@ -134,7 +138,7 @@ export async function getEffectivePermission(pageKey: string, profile: Profile |
   for (const key of keysToTry) {
     const { data: rows } = await supabase
       .from("page_permissions")
-      .select("principal_type, principal_value, page_access, data_access")
+      .select("principal_type, principal_value, page_access, data_access, edit_access")
       .eq("page_key", key);
     if (!rows || rows.length === 0) continue;
 
@@ -143,12 +147,13 @@ export async function getEffectivePermission(pageKey: string, profile: Profile |
       return {
         pageAccess: !tagRows.some((r) => !r.page_access),
         dataAccess: !tagRows.some((r) => !r.data_access),
+        editAccess: !tagRows.some((r) => !r.edit_access),
       };
     }
 
     const roleRow = rows.find((r) => r.principal_type === "role" && r.principal_value === profile.role);
     if (roleRow) {
-      return { pageAccess: roleRow.page_access, dataAccess: roleRow.data_access };
+      return { pageAccess: roleRow.page_access, dataAccess: roleRow.data_access, editAccess: roleRow.edit_access };
     }
   }
 

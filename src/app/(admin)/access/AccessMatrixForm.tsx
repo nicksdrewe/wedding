@@ -19,6 +19,42 @@ const ROLES: { value: RoleTier; label: string }[] = [
   { value: "guest", label: "Guest" },
 ];
 
+type Access = { pageAccess: boolean; dataAccess: boolean; editAccess: boolean };
+
+function AccessCheckboxes({ access, onChange }: { access: Access; onChange: (next: Access) => void }) {
+  return (
+    <>
+      <label className="flex items-center gap-1.5 font-reading text-xs text-ink-soft">
+        <input
+          type="checkbox"
+          checked={access.pageAccess}
+          onChange={(e) => onChange({ ...access, pageAccess: e.target.checked })}
+          className="accent-accent"
+        />
+        Page access
+      </label>
+      <label className="flex items-center gap-1.5 font-reading text-xs text-ink-soft">
+        <input
+          type="checkbox"
+          checked={access.dataAccess}
+          onChange={(e) => onChange({ ...access, dataAccess: e.target.checked })}
+          className="accent-accent"
+        />
+        Itemized data
+      </label>
+      <label className="flex items-center gap-1.5 font-reading text-xs text-ink-soft">
+        <input
+          type="checkbox"
+          checked={access.editAccess}
+          onChange={(e) => onChange({ ...access, editAccess: e.target.checked })}
+          className="accent-accent"
+        />
+        Can edit
+      </label>
+    </>
+  );
+}
+
 function RoleCell({
   pageKey,
   role,
@@ -28,49 +64,31 @@ function RoleCell({
   role: RoleTier;
   existing: PagePermissionRow | undefined;
 }) {
-  const [pageAccess, setPageAccess] = useState(existing?.page_access ?? true);
-  const [dataAccess, setDataAccess] = useState(existing?.data_access ?? true);
+  const [access, setAccess] = useState<Access>({
+    pageAccess: existing?.page_access ?? true,
+    dataAccess: existing?.data_access ?? true,
+    editAccess: existing?.edit_access ?? true,
+  });
   const [, startTransition] = useTransition();
 
-  function save(next: { pageAccess: boolean; dataAccess: boolean }) {
+  function save(next: Access) {
+    setAccess(next);
     const formData = new FormData();
     formData.set("pageKey", pageKey);
     formData.set("principalType", "role");
     formData.set("principalValue", role);
     if (next.pageAccess) formData.set("pageAccess", "on");
     if (next.dataAccess) formData.set("dataAccess", "on");
+    if (next.editAccess) formData.set("editAccess", "on");
     startTransition(() => {
       upsertPagePermission(formData);
     });
   }
 
   return (
-    <div className="flex items-center gap-4 rounded-[8px] border border-ink/10 bg-cream-deep/30 px-3.5 py-2.5">
+    <div className="flex flex-wrap items-center gap-4 rounded-[8px] border border-ink/10 bg-cream-deep/30 px-3.5 py-2.5">
       <span className="w-28 shrink-0 font-serif text-[13px] text-ink">{ROLES.find((r) => r.value === role)?.label}</span>
-      <label className="flex items-center gap-1.5 font-reading text-xs text-ink-soft">
-        <input
-          type="checkbox"
-          checked={pageAccess}
-          onChange={(e) => {
-            setPageAccess(e.target.checked);
-            save({ pageAccess: e.target.checked, dataAccess });
-          }}
-          className="accent-accent"
-        />
-        Page access
-      </label>
-      <label className="flex items-center gap-1.5 font-reading text-xs text-ink-soft">
-        <input
-          type="checkbox"
-          checked={dataAccess}
-          onChange={(e) => {
-            setDataAccess(e.target.checked);
-            save({ pageAccess, dataAccess: e.target.checked });
-          }}
-          className="accent-accent"
-        />
-        Itemized data
-      </label>
+      <AccessCheckboxes access={access} onChange={save} />
     </div>
   );
 }
@@ -82,49 +100,31 @@ function TagRow({
   link: PagePermissionRow;
   onRemoved: (id: string) => void;
 }) {
-  const [pageAccess, setPageAccess] = useState(link.page_access);
-  const [dataAccess, setDataAccess] = useState(link.data_access);
+  const [access, setAccess] = useState<Access>({
+    pageAccess: link.page_access,
+    dataAccess: link.data_access,
+    editAccess: link.edit_access,
+  });
   const [pending, startTransition] = useTransition();
 
-  function save(next: { pageAccess: boolean; dataAccess: boolean }) {
+  function save(next: Access) {
+    setAccess(next);
     const formData = new FormData();
     formData.set("pageKey", link.page_key);
     formData.set("principalType", "tag");
     formData.set("principalValue", link.principal_value);
     if (next.pageAccess) formData.set("pageAccess", "on");
     if (next.dataAccess) formData.set("dataAccess", "on");
+    if (next.editAccess) formData.set("editAccess", "on");
     startTransition(() => {
       upsertPagePermission(formData);
     });
   }
 
   return (
-    <div className="flex items-center gap-4 rounded-[8px] border border-accent/20 bg-accent/[0.04] px-3.5 py-2.5">
+    <div className="flex flex-wrap items-center gap-4 rounded-[8px] border border-accent/20 bg-accent/[0.04] px-3.5 py-2.5">
       <span className="w-28 shrink-0 truncate font-serif text-[13px] text-ink">#{link.principal_value}</span>
-      <label className="flex items-center gap-1.5 font-reading text-xs text-ink-soft">
-        <input
-          type="checkbox"
-          checked={pageAccess}
-          onChange={(e) => {
-            setPageAccess(e.target.checked);
-            save({ pageAccess: e.target.checked, dataAccess });
-          }}
-          className="accent-accent"
-        />
-        Page access
-      </label>
-      <label className="flex items-center gap-1.5 font-reading text-xs text-ink-soft">
-        <input
-          type="checkbox"
-          checked={dataAccess}
-          onChange={(e) => {
-            setDataAccess(e.target.checked);
-            save({ pageAccess, dataAccess: e.target.checked });
-          }}
-          className="accent-accent"
-        />
-        Itemized data
-      </label>
+      <AccessCheckboxes access={access} onChange={save} />
       <button
         type="button"
         disabled={pending}
@@ -162,11 +162,20 @@ function PageSection({
     formData.set("principalValue", tag);
     formData.set("pageAccess", "on");
     formData.set("dataAccess", "on");
+    formData.set("editAccess", "on");
     startTransition(async () => {
       await upsertPagePermission(formData);
       setTagLinks((prev) => [
         ...prev.filter((l) => l.principal_value !== tag),
-        { id: `${page.page_key}:${tag}`, page_key: page.page_key, principal_type: "tag", principal_value: tag, page_access: true, data_access: true },
+        {
+          id: `${page.page_key}:${tag}`,
+          page_key: page.page_key,
+          principal_type: "tag",
+          principal_value: tag,
+          page_access: true,
+          data_access: true,
+          edit_access: true,
+        },
       ]);
       setNewTag("");
     });
@@ -196,7 +205,7 @@ function PageSection({
           list={`tags-${page.page_key}`}
           value={newTag}
           onChange={(e) => setNewTag(e.target.value)}
-          placeholder="Add a tag override, e.g. best man"
+          placeholder="Add a tag override, e.g. best_man"
           className="rounded-full border border-ink/20 bg-cream px-4 py-1.5 font-reading text-xs outline-none focus:border-accent"
         />
         <datalist id={`tags-${page.page_key}`}>
