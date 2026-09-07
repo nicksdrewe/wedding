@@ -27,6 +27,7 @@ import { toDriveImageUrl } from "@/lib/google/image-url";
 import { formatCostRange, formatCurrency } from "@/lib/currency/format";
 import type { Currency } from "@/lib/currency/convert";
 import { computeOptionTotals } from "@/lib/options/totals";
+import { normalizeExternalUrl } from "@/lib/url";
 import { CostItemsPanel, type CostItemRow, type LinkableCategory, type CostItemLinkInfo } from "./CostItemsPanel";
 import { EditOptionForm } from "./EditOptionForm";
 
@@ -324,7 +325,7 @@ function OptionDetailPanel({
           </p>
           {option.web_link ? (
             <a
-              href={option.web_link}
+              href={normalizeExternalUrl(option.web_link)}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-1 inline-flex items-center gap-1 text-accent underline underline-offset-2"

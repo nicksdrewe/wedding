@@ -37,6 +37,17 @@ function tagsToArray(tags: string | undefined) {
     .filter(Boolean);
 }
 
+// A field failing validation (e.g. a malformed email that slipped past the
+// browser's own type="email" check) used to throw straight out of
+// schema.parse() with nothing catching it — server actions surface an
+// uncaught throw as Next.js's generic client-side error, not the calm
+// inline message these forms are built to show. Every action below uses
+// safeParse and this helper instead, so a bad field always comes back as
+// { error } like every other failure mode already does.
+function firstIssueMessage(error: z.ZodError): string {
+  return error.issues[0]?.message || "That didn't look right — check the fields and try again.";
+}
+
 // Shared by updateContact (manually correcting a response) and
 // addChildContact (marking a manually-added plus one as attending) — any
 // event's RSVP has no dedicated column on contacts the way the wedding
@@ -61,13 +72,15 @@ async function upsertEventRsvp(
 }
 
 export async function addContact(formData: FormData) {
-  const parsed = contactSchema.parse({
+  const result = contactSchema.safeParse({
     fullName: formData.get("fullName"),
     email: formData.get("email") || "",
     phone: formData.get("phone") || "",
     role: formData.get("role"),
     plusOneLimit: formData.get("plusOneLimit") || "0",
   });
+  if (!result.success) return { error: firstIssueMessage(result.error) };
+  const parsed = result.data;
 
   const supabase = await createClient();
   const { error } = await supabase.from("contacts").insert({
@@ -83,7 +96,7 @@ export async function addContact(formData: FormData) {
 }
 
 export async function updateContact(formData: FormData) {
-  const parsed = updateContactSchema.parse({
+  const result = updateContactSchema.safeParse({
     id: formData.get("id"),
     fullName: formData.get("fullName"),
     email: formData.get("email") || "",
@@ -94,6 +107,8 @@ export async function updateContact(formData: FormData) {
     rsvpStatus: formData.get("rsvpStatus"),
     eventRsvpStatuses: formData.get("eventRsvpStatuses") ?? "{}",
   });
+  if (!result.success) return { error: firstIssueMessage(result.error) };
+  const parsed = result.data;
 
   let eventStatuses: Record<string, string>;
   try {
@@ -145,12 +160,14 @@ const addChildSchema = z.object({
 // plus-one shows correctly in that event's guest-list column immediately
 // rather than sitting on "pending" until someone re-submits the form.
 export async function addChildContact(formData: FormData) {
-  const parsed = addChildSchema.parse({
+  const result = addChildSchema.safeParse({
     parentContactId: formData.get("parentContactId"),
     fullName: formData.get("fullName"),
     email: formData.get("email") || "",
     phone: formData.get("phone") || "",
   });
+  if (!result.success) return { error: firstIssueMessage(result.error) };
+  const parsed = result.data;
 
   const supabase = await createClient();
 
@@ -183,9 +200,10 @@ export async function addChildContact(formData: FormData) {
 }
 
 export async function deleteContact(id: string) {
-  const parsed = z.string().uuid().parse(id);
+  const parsed = z.string().uuid().safeParse(id);
+  if (!parsed.success) return { error: "Invalid contact." };
   const supabase = await createClient();
-  const { error } = await supabase.from("contacts").delete().eq("id", parsed);
+  const { error } = await supabase.from("contacts").delete().eq("id", parsed.data);
 
   revalidatePath("/guests");
   return { error: error?.message ?? null };
