@@ -21,6 +21,9 @@ const PUBLIC_PREFIXES = [
   // generic events system (see 0017_events_system.sql) it redirects into.
   "/engagement",
   "/events",
+  // Public gifts page linked from the landing hero — the wedding-fund ask,
+  // no data behind it, so no session needed.
+  "/gifts",
   "/api/rsvp",
   "/api/events",
   "/api/auth/request-code",

@@ -68,6 +68,28 @@ body {
   50% { transform: scale(1.22); }
 }
 
+/* Gifts page ambience — slow, low-amplitude so it reads as breathing, not
+   animating. sway pivots from the stem's base (origin-bottom), swayTop from
+   the root of the hanging one (origin-top). */
+@keyframes sway {
+  0%, 100% { transform: rotate(-2.2deg); }
+  50% { transform: rotate(2.6deg); }
+}
+@keyframes swayTop {
+  0%, 100% { transform: rotate(2deg); }
+  50% { transform: rotate(-2.4deg); }
+}
+@keyframes riseFade {
+  0% { transform: translateY(0) translateX(0); opacity: 0; }
+  12% { opacity: 0.7; }
+  85% { opacity: 0.5; }
+  100% { transform: translateY(-105vh) translateX(18px); opacity: 0; }
+}
+@keyframes softBreathe {
+  0%, 100% { box-shadow: 0 30px 90px rgba(0,0,0,0.45), 0 0 0 0 rgba(124,148,130,0); }
+  50% { box-shadow: 0 30px 90px rgba(0,0,0,0.45), 0 0 60px 0 rgba(124,148,130,0.16); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
