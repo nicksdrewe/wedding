@@ -111,15 +111,33 @@ export async function deleteFromDrive(fileId: string): Promise<void> {
 export async function getDriveFileBuffer(
   fileId: string
 ): Promise<{ buffer: Buffer; mimeType: string }> {
-  const drive = getDriveClient();
+  try {
+    const drive = getDriveClient();
 
-  const [{ data: meta }, mediaRes] = await Promise.all([
-    drive.files.get({ fileId, fields: "mimeType" }),
-    drive.files.get({ fileId, alt: "media" }, { responseType: "arraybuffer" }),
-  ]);
+    const [{ data: meta }, mediaRes] = await Promise.all([
+      drive.files.get({ fileId, fields: "mimeType" }),
+      drive.files.get({ fileId, alt: "media" }, { responseType: "arraybuffer" }),
+    ]);
 
-  return {
-    buffer: Buffer.from(mediaRes.data as ArrayBuffer),
-    mimeType: meta.mimeType ?? "application/octet-stream",
-  };
+    return {
+      buffer: Buffer.from(mediaRes.data as ArrayBuffer),
+      mimeType: meta.mimeType ?? "application/octet-stream",
+    };
+  } catch (err) {
+    // The OAuth refresh token can expire or be revoked (Google does this
+    // after 7 days while the consent screen is in "Testing" — surfacing as
+    // invalid_grant), which used to break EVERY photo on the site even
+    // though each file is publicly readable (see uploadToDrive). Serving
+    // through Google's public endpoint instead keeps photos working; this
+    // runs server-side and the result is cached immutably by the route, so
+    // the rate-limiting that made hotlinking unreliable from browsers
+    // doesn't apply here. Uploads/deletes still need a valid token.
+    console.error(`Drive API fetch failed for ${fileId}, falling back to public URL:`, err);
+    const res = await fetch(`https://lh3.googleusercontent.com/d/${fileId}=w1600`);
+    if (!res.ok) throw new Error(`Public Drive fetch failed: ${res.status}`);
+    return {
+      buffer: Buffer.from(await res.arrayBuffer()),
+      mimeType: res.headers.get("content-type") ?? "image/jpeg",
+    };
+  }
 }

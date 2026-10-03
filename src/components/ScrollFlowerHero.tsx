@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronDown, Gift, X } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import gsap from "gsap";
@@ -877,19 +877,11 @@ function HubLoginTrigger() {
   );
 }
 
-// Outlined ghost pill — visibly a button, but quieter than the primary RSVP
-// so it never competes with it. Shown to every visitor, signed in or not.
+// Same size as the RSVP button so it's clearly a primary way onward, but
+// the light glass surface keeps it visually secondary to the dark RSVP pill.
+// Shown to every visitor, signed in or not.
 function GiftsLink() {
-  return (
-    <Link
-      href="/gifts"
-      className="inline-flex items-center gap-2 rounded-full border border-cream/35 px-6 py-2.5 font-serif text-sm font-medium text-cream backdrop-blur-sm transition-[transform,background,border-color] duration-300 ease-[cubic-bezier(.22,1,.36,1)] hover:-translate-y-0.5 hover:border-cream/70 hover:bg-cream/10"
-      style={{ textShadow: "0 1px 8px rgba(0,0,0,0.5)" }}
-    >
-      <Gift className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-      Gifts
-    </Link>
-  );
+  return <GlassButton href="/gifts">Gifts</GlassButton>;
 }
 
 function GlassButton({ href, children }: { href: string; children: React.ReactNode }) {
