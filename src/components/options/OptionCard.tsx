@@ -46,6 +46,10 @@ export type OptionDetail = {
   predicted_cost_max: number | null;
   actual_cost: number | null;
   currency: Currency;
+  // True when RLS withheld this option's prices from the viewer (see
+  // lib/options/costs.ts) — every cost display and cost input below is then
+  // omitted entirely.
+  costs_hidden: boolean;
   option_date: string | null;
   contact_name: string | null;
   contact_phone: string | null;
@@ -115,11 +119,13 @@ export function OptionCard({
           </div>
           <div className="p-4">
             <p className="font-serif text-sm font-semibold text-ink">{option.name}</p>
-            <p className="mt-1 font-reading text-[13px] text-ink-soft">
-              {formatCostRange(totals.headlineMin, totals.headlineMax, option.currency)} predicted
-              {totals.headlineActual != null ? ` · ${formatCurrency(totals.headlineActual, option.currency)} actual` : ""}
-            </p>
-            {totals.additionalSum > 0 && (
+            {!option.costs_hidden && (
+              <p className="mt-1 font-reading text-[13px] text-ink-soft">
+                {formatCostRange(totals.headlineMin, totals.headlineMax, option.currency)} predicted
+                {totals.headlineActual != null ? ` · ${formatCurrency(totals.headlineActual, option.currency)} actual` : ""}
+              </p>
+            )}
+            {!option.costs_hidden && totals.additionalSum > 0 && (
               <p className="mt-0.5 font-reading text-[12px] text-ink-soft/70">
                 + {formatCurrency(totals.additionalSum, option.currency)} additional costs
               </p>
@@ -370,6 +376,7 @@ function OptionDetailPanel({
           </div>
         )}
 
+        {!option.costs_hidden && (
         <div>
           <p className="font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft/70 uppercase">
             Cost breakdown
@@ -388,6 +395,7 @@ function OptionDetailPanel({
             linksByItem={linksByItem}
           />
         </div>
+        )}
       </div>
 
       {isCouple && (

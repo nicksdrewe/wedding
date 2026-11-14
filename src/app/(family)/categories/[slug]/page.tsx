@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { CostRange } from "@/components/CostRange";
 import { getLinkedCostItemsForCategory } from "@/lib/costs/links";
+import { OPTION_COSTS_EMBED, readOptionCosts } from "@/lib/options/costs";
 import { LinkedCostItems } from "./LinkedCostItems";
 import { CostForm } from "./CostForm";
 import { ContactForm } from "./ContactForm";
@@ -52,21 +53,25 @@ export default async function CategoryDetailPage({
         await supabase
           .from("page_options")
           .select(
-            "id, name, predicted_cost_min, predicted_cost_max, currency, latitude, longitude, page_option_images(image_url, sort_order)"
+            `id, name, latitude, longitude, page_option_images(image_url, sort_order), ${OPTION_COSTS_EMBED}`
           )
           .eq("option_group_id", optionGroup.id)
           .order("sort_order", { referencedTable: "page_option_images", ascending: true })
       ).data ?? []
-      ).map((o) => ({
+      ).map((o) => {
+        const costs = readOptionCosts(o);
+        return {
         id: o.id,
         name: o.name,
-        predicted_cost_min: o.predicted_cost_min,
-        predicted_cost_max: o.predicted_cost_max,
-        currency: o.currency,
+        predicted_cost_min: costs.predicted_cost_min,
+        predicted_cost_max: costs.predicted_cost_max,
+        currency: costs.currency,
+        costs_hidden: costs.costs_hidden,
         latitude: o.latitude,
         longitude: o.longitude,
         coverImageUrl: o.page_option_images?.[0]?.image_url ?? null,
-      }))
+        };
+      })
     : [];
   const hasPinnedOptions = mapOptions.some((o) => o.latitude != null && o.longitude != null);
 
@@ -95,6 +100,13 @@ export default async function CategoryDetailPage({
   // rather than a hardcoded role check, reusing the same permission
   // lookup already made above for the pageAccess guard.
   const isCouple = permission.editAccess;
+  // Prices are their own permission (0031_cost_access.sql): someone can see
+  // this category's options, dates and contacts with every cost left out.
+  // RLS already withholds the numbers; this just keeps the empty sections
+  // from rendering. Editing the category's headline cost stays couple-only
+  // (category_costs' write policy), independent of edit_access.
+  const canSeeCosts = permission.costAccess;
+  const canEditCategoryCost = profile?.role === "couple";
 
   return (
     <div className="max-w-3xl">
@@ -113,8 +125,7 @@ export default async function CategoryDetailPage({
         </div>
         {optionGroup && !permission.dataAccess ? (
           <p className="mt-1.5 font-reading text-[13px] text-ink-soft">
-            Itemized options aren&rsquo;t shown for your account — the
-            totals below still reflect the live numbers.
+            Itemized options aren&rsquo;t shown for your account.
           </p>
         ) : optionGroup ? (
           <>
@@ -136,6 +147,7 @@ export default async function CategoryDetailPage({
                 categoryPageId={page.id}
                 revalidate={`/categories/${page.slug}`}
                 isCouple={isCouple}
+                costAccess={canSeeCosts}
               />
             </div>
           </>
@@ -147,9 +159,10 @@ export default async function CategoryDetailPage({
         )}
       </section>
 
+      {canSeeCosts && (
       <section className="mt-6 rounded-[10px] border border-ink/10 bg-white p-6">
         <h2 className="font-serif text-[15px] font-semibold">Costs</h2>
-        {isCouple ? (
+        {canEditCategoryCost ? (
           <div className="mt-2">
             <CostForm
               categoryPageId={page.id}
@@ -169,8 +182,9 @@ export default async function CategoryDetailPage({
           />
         )}
       </section>
+      )}
 
-      {linkedCostItems.length > 0 && (
+      {canSeeCosts && linkedCostItems.length > 0 && (
         <section className="mt-6 rounded-[10px] border border-ink/10 bg-white p-6">
           <h2 className="font-serif text-[15px] font-semibold">Linked costs</h2>
           <p className="mt-1.5 font-reading text-[13px] text-ink-soft">

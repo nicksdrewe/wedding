@@ -44,6 +44,48 @@ export async function createStandaloneOptionGroup(formData: FormData) {
   revalidatePath("/project");
 }
 
+type OptionCostInput = {
+  predictedCostMin?: number | null;
+  predictedCostMax?: number | null;
+  actualCost?: number | null;
+  currency: "GBP" | "EUR";
+};
+
+// Prices live in page_option_costs, not on page_options (0031_cost_access
+// .sql). The row already exists — a trigger creates it with the option — so
+// this is always an UPDATE, and RLS only lets it through for someone allowed
+// to see AND edit this option's prices. Zero rows back means exactly that it
+// was refused, which is reported rather than swallowed.
+async function writeOptionCosts(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  optionId: string,
+  costs: OptionCostInput
+): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("page_option_costs")
+    .update({
+      predicted_cost_min: costs.predictedCostMin ?? null,
+      predicted_cost_max: costs.predictedCostMax ?? null,
+      actual_cost: costs.actualCost ?? null,
+      currency: costs.currency,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("page_option_id", optionId)
+    .select("page_option_id");
+  if (error) return error.message;
+  if (!data || data.length === 0) {
+    return "The option was saved, but its costs couldn't be — you may not have access to prices here.";
+  }
+  return null;
+}
+
+// Forms only render cost inputs for someone allowed to see prices, and mark
+// that with this field. Without it the action must leave existing prices
+// alone — otherwise a save by someone who can't see them would blank them.
+function hasCostFields(formData: FormData) {
+  return formData.get("hasCostFields") === "1";
+}
+
 const optionSchema = z
   .object({
     groupId: z.string().uuid(),
@@ -87,22 +129,27 @@ export async function addOption(formData: FormData) {
   });
 
   const supabase = await createClient();
-  const { error } = await supabase.from("page_options").insert({
-    option_group_id: parsed.groupId,
-    name: parsed.name,
-    predicted_cost_min: parsed.predictedCostMin,
-    predicted_cost_max: parsed.predictedCostMax,
-    actual_cost: parsed.actualCost,
-    currency: parsed.currency,
-    option_date: parsed.optionDate || null,
-    contact_name: parsed.contactName || null,
-    contact_phone: parsed.contactPhone || null,
-    contact_email: parsed.contactEmail || null,
-    latitude: parsed.latitude,
-    longitude: parsed.longitude,
-    nights: parsed.nights,
-    sleeps: parsed.sleeps,
-  });
+  const { data: created, error: insertError } = await supabase
+    .from("page_options")
+    .insert({
+      option_group_id: parsed.groupId,
+      name: parsed.name,
+      option_date: parsed.optionDate || null,
+      contact_name: parsed.contactName || null,
+      contact_phone: parsed.contactPhone || null,
+      contact_email: parsed.contactEmail || null,
+      latitude: parsed.latitude,
+      longitude: parsed.longitude,
+      nights: parsed.nights,
+      sleeps: parsed.sleeps,
+    })
+    .select("id")
+    .single();
+
+  let error: string | null = insertError?.message ?? null;
+  if (!error && created && hasCostFields(formData)) {
+    error = await writeOptionCosts(supabase, created.id, parsed);
+  }
 
   // Revalidate every surface that reads page_options, not just whichever
   // page the form happened to be rendered on — an option added from the
@@ -113,7 +160,7 @@ export async function addOption(formData: FormData) {
   revalidatePath("/categories");
   revalidatePath("/project");
 
-  return { error: error?.message ?? null };
+  return { error };
 }
 
 const updateOptionSchema = z
@@ -166,16 +213,12 @@ export async function updateOption(formData: FormData) {
   });
 
   const supabase = await createClient();
-  const { error } = await supabase
+  const { error: updateError } = await supabase
     .from("page_options")
     .update({
       name: parsed.name,
       description: parsed.description || null,
       web_link: parsed.webLink || null,
-      predicted_cost_min: parsed.predictedCostMin,
-      predicted_cost_max: parsed.predictedCostMax,
-      actual_cost: parsed.actualCost,
-      currency: parsed.currency,
       option_date: parsed.optionDate || null,
       contact_name: parsed.contactName || null,
       contact_phone: parsed.contactPhone || null,
@@ -187,11 +230,17 @@ export async function updateOption(formData: FormData) {
     })
     .eq("id", parsed.id);
 
+  let error: string | null = updateError?.message ?? null;
+  if (!error && hasCostFields(formData)) {
+    error = await writeOptionCosts(supabase, parsed.id, parsed);
+  }
+
   revalidatePath(parsed.revalidate);
   revalidatePath("/categories");
+  revalidatePath("/budget");
   revalidatePath("/project");
 
-  return { error: error?.message ?? null };
+  return { error };
 }
 
 // Deletes the whole option (page_option_images cascade with it per 0006 —
@@ -222,56 +271,63 @@ export async function selectWinner(
     .from("page_options")
     .update({ is_winner: true })
     .eq("id", optionId)
-    .select(
-      "name, predicted_cost_min, predicted_cost_max, actual_cost, currency, option_date, contact_name, contact_phone, contact_email"
-    )
+    .select("name, option_date, contact_name, contact_phone, contact_email")
     .single();
 
   // Only category-linked groups feed the budget/diary/contacts — a
   // standalone (Project Management) group's winner is informational only.
   if (categoryPageId && option) {
-    const { data: costItems } = await supabase
-      .from("option_cost_items")
-      .select("amount, kind")
-      .eq("page_option_id", optionId);
+    const [{ data: costItems }, { data: costs }] = await Promise.all([
+      supabase.from("option_cost_items").select("amount, kind").eq("page_option_id", optionId),
+      supabase
+        .from("page_option_costs")
+        .select("predicted_cost_min, predicted_cost_max, actual_cost, currency")
+        .eq("page_option_id", optionId)
+        .maybeSingle(),
+    ]);
     // The category's budget total is the option's TRUE cost — base plus
     // every additional line, minus any income (guest recoup) — not just
     // its own headline figure. See lib/options/totals.ts; this must stay
     // the one shared calculation selectWinner/markOptionWinner/the option
     // card all use, or the number on the card would stop matching what
     // actually lands on the Budget page.
-    const totals = computeOptionTotals(option, costItems ?? []);
+    // No cost row back means this user can't see the option's prices — the
+    // category total is then left exactly as it was rather than being
+    // overwritten with blanks.
+    if (costs) {
+      const totals = computeOptionTotals(costs, costItems ?? []);
 
-    const { data: existingCost } = await supabase
-      .from("category_costs")
-      .select("id")
-      .eq("category_page_id", categoryPageId)
-      .maybeSingle();
+      const { data: existingCost } = await supabase
+        .from("category_costs")
+        .select("id")
+        .eq("category_page_id", categoryPageId)
+        .maybeSingle();
 
     // Both predicted range and actual copy across together — these two
     // call sites (selectWinner/markOptionWinner) previously drifted, one
     // copying both fields and the other only actual_cost, leaving
     // category_costs' predicted range stale after a winner was picked
     // through this path.
-    if (existingCost) {
-      await supabase
-        .from("category_costs")
-        .update({
+      if (existingCost) {
+        await supabase
+          .from("category_costs")
+          .update({
+            predicted_cost_min: totals.totalMin,
+            predicted_cost_max: totals.totalMax,
+            actual_cost: totals.totalActual,
+            currency: costs.currency,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existingCost.id);
+      } else {
+        await supabase.from("category_costs").insert({
+          category_page_id: categoryPageId,
           predicted_cost_min: totals.totalMin,
           predicted_cost_max: totals.totalMax,
           actual_cost: totals.totalActual,
-          currency: option.currency,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", existingCost.id);
-    } else {
-      await supabase.from("category_costs").insert({
-        category_page_id: categoryPageId,
-        predicted_cost_min: totals.totalMin,
-        predicted_cost_max: totals.totalMax,
-        actual_cost: totals.totalActual,
-        currency: option.currency,
-      });
+          currency: costs.currency,
+        });
+      }
     }
 
     if (option.option_date) {
@@ -314,7 +370,7 @@ export async function markOptionWinner(optionId: string) {
 
   const { data: option, error: fetchError } = await supabase
     .from("page_options")
-    .select("id, name, predicted_cost_min, predicted_cost_max, actual_cost, currency, option_date, option_group_id")
+    .select("id, name, option_date, option_group_id")
     .eq("id", optionId)
     .single();
   if (fetchError) return { error: fetchError.message };
@@ -376,37 +432,49 @@ export async function markOptionWinner(optionId: string) {
       .select("amount, kind")
       .eq("page_option_id", optionId);
     if (itemsError) return { error: itemsError.message };
-    // Same shared calculation as selectWinner — see the comment there and
-    // lib/options/totals.ts. The category total is the option's TRUE cost
-    // (base + additional lines − income), not just its own headline figure.
-    const totals = computeOptionTotals(option, costItems ?? []);
 
-    const { data: existingCost, error: costLookupError } = await supabase
-      .from("category_costs")
-      .select("id")
-      .eq("category_page_id", categoryPageId)
+    const { data: costs, error: costsError } = await supabase
+      .from("page_option_costs")
+      .select("predicted_cost_min, predicted_cost_max, actual_cost, currency")
+      .eq("page_option_id", optionId)
       .maybeSingle();
-    if (costLookupError) return { error: costLookupError.message };
+    if (costsError) return { error: costsError.message };
 
-    const { error: costError } = existingCost
-      ? await supabase
-          .from("category_costs")
-          .update({
+    // No cost row back means this user can't see the option's prices — the
+    // category total is left as it was rather than overwritten with blanks.
+    if (costs) {
+      // Same shared calculation as selectWinner — see the comment there and
+      // lib/options/totals.ts. The category total is the option's TRUE cost
+      // (base + additional lines − income), not just its own headline figure.
+      const totals = computeOptionTotals(costs, costItems ?? []);
+
+      const { data: existingCost, error: costLookupError } = await supabase
+        .from("category_costs")
+        .select("id")
+        .eq("category_page_id", categoryPageId)
+        .maybeSingle();
+      if (costLookupError) return { error: costLookupError.message };
+
+      const { error: costError } = existingCost
+        ? await supabase
+            .from("category_costs")
+            .update({
+              predicted_cost_min: totals.totalMin,
+              predicted_cost_max: totals.totalMax,
+              actual_cost: totals.totalActual,
+              currency: costs.currency,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", existingCost.id)
+        : await supabase.from("category_costs").insert({
+            category_page_id: categoryPageId,
             predicted_cost_min: totals.totalMin,
             predicted_cost_max: totals.totalMax,
             actual_cost: totals.totalActual,
-            currency: option.currency,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", existingCost.id)
-      : await supabase.from("category_costs").insert({
-          category_page_id: categoryPageId,
-          predicted_cost_min: totals.totalMin,
-          predicted_cost_max: totals.totalMax,
-          actual_cost: totals.totalActual,
-          currency: option.currency,
-        });
-    if (costError) return { error: costError.message };
+            currency: costs.currency,
+          });
+      if (costError) return { error: costError.message };
+    }
   }
 
   revalidatePath("/categories");

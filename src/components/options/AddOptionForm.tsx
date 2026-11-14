@@ -6,9 +6,14 @@ import { addOption } from "@/lib/options/actions";
 export function AddOptionForm({
   groupId,
   revalidate,
+  showCosts = true,
 }: {
   groupId: string;
   revalidate: string;
+  // False for someone who can add options but isn't allowed to see prices
+  // here (cost_access, 0031_cost_access.sql) — the cost inputs are then left
+  // out entirely and addOption doesn't touch the option's costs.
+  showCosts?: boolean;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, startTransition] = useTransition();
@@ -38,6 +43,9 @@ export function AddOptionForm({
         placeholder="Option name"
         className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
       />
+      {showCosts && (
+        <>
+      <input type="hidden" name="hasCostFields" value="1" />
       <input
         name="predictedCostMin"
         type="number"
@@ -67,6 +75,8 @@ export function AddOptionForm({
         <option value="GBP">£ GBP</option>
         <option value="EUR">€ EUR</option>
       </select>
+        </>
+      )}
       <input
         name="optionDate"
         type="date"

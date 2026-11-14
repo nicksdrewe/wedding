@@ -69,7 +69,8 @@ export async function getLinkedCostItemsForCategory(categoryPageId: string) {
        option_cost_items!cost_item_links_source_cost_item_id_fkey (
          id, name, amount, kind,
          page_options (
-           id, name, currency,
+           id, name,
+           page_option_costs (currency),
            option_groups (category_page_id, category_pages (title, slug)),
            page_option_images (image_url, sort_order)
          )

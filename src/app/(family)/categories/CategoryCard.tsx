@@ -14,6 +14,8 @@ type CategoryPage = {
   predictedCostMax: number | null;
   actualCost: number | null;
   currency: Currency;
+  // False when this viewer isn't allowed to see this category's prices.
+  showCost: boolean;
 };
 
 const DELETE_CONFIRM =
@@ -93,13 +95,15 @@ export function CategoryCard({
         <h2 className="font-serif text-[15px] font-semibold text-ink transition-colors duration-150 group-hover:text-accent">
           {category.title}
         </h2>
-        <CostRange
-          className="mt-1.5 block font-reading text-[13px] text-ink-soft"
-          predictedMin={category.predictedCostMin}
-          predictedMax={category.predictedCostMax}
-          actual={category.actualCost}
-          currency={category.currency}
-        />
+        {category.showCost && (
+          <CostRange
+            className="mt-1.5 block font-reading text-[13px] text-ink-soft"
+            predictedMin={category.predictedCostMin}
+            predictedMax={category.predictedCostMax}
+            actual={category.actualCost}
+            currency={category.currency}
+          />
+        )}
       </Link>
       {isCouple && (
         <div className="absolute top-3 right-3 flex shrink-0 gap-2 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100">

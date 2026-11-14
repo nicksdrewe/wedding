@@ -4,6 +4,7 @@ import { Images } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
 import { getEffectivePermission } from "@/lib/permissions/actions";
+import { OPTION_COSTS_EMBED, readOptionCosts } from "@/lib/options/costs";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { IdeaForm } from "./IdeaForm";
@@ -54,21 +55,37 @@ export default async function ProjectPage() {
     supabase
       .from("option_groups")
       .select(
-        "id, title, category_page_id, category_pages(title, slug), page_options(id, name, predicted_cost_min, predicted_cost_max, actual_cost, currency, is_winner)"
+        `id, title, category_page_id, visible_tag, category_pages(title, slug), page_options(id, name, is_winner, ${OPTION_COSTS_EMBED})`
       )
       .order("created_at", { ascending: false })
       .order("created_at", { ascending: true, referencedTable: "page_options" }),
   ]);
 
+  // A standalone comparison's prices follow the board it belongs to: the
+  // groomsmen/bridesmaids board for a tagged group, otherwise this page.
+  // (Category-linked groups add options on their own category page.)
+  const [groomsmenPermission, bridesmaidsPermission] = await Promise.all([
+    getEffectivePermission("project:groomsmen", profile),
+    getEffectivePermission("project:bridesmaids", profile),
+  ]);
+  const costAccessForTag = (visibleTag: string | null) =>
+    visibleTag === "groomsman"
+      ? groomsmenPermission.costAccess
+      : visibleTag === "bridesmaid"
+        ? bridesmaidsPermission.costAccess
+        : permission.costAccess;
+
   const compareGroups: CompareGroup[] = (optionGroups ?? []).map((g) => {
     const category = Array.isArray(g.category_pages) ? g.category_pages[0] : g.category_pages;
-    const options = Array.isArray(g.page_options) ? g.page_options : g.page_options ? [g.page_options] : [];
+    const rawOptions = Array.isArray(g.page_options) ? g.page_options : g.page_options ? [g.page_options] : [];
+    const options = rawOptions.map((o) => ({ id: o.id, name: o.name, is_winner: o.is_winner, ...readOptionCosts(o) }));
     return {
       id: g.id,
       title: g.title,
       categoryTitle: category?.title ?? null,
       categorySlug: category?.slug ?? null,
       options,
+      showCosts: costAccessForTag(g.visible_tag ?? null),
     };
   });
 

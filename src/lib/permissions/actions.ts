@@ -23,6 +23,7 @@ export type PagePermissionRow = {
   page_access: boolean;
   data_access: boolean;
   edit_access: boolean;
+  cost_access: boolean;
 };
 
 export async function listPageRegistry(): Promise<PageRegistryRow[]> {
@@ -38,7 +39,7 @@ export async function listPagePermissions(): Promise<PagePermissionRow[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("page_permissions")
-    .select("id, page_key, principal_type, principal_value, page_access, data_access, edit_access")
+    .select("id, page_key, principal_type, principal_value, page_access, data_access, edit_access, cost_access")
     .order("page_key");
   return data ?? [];
 }
@@ -65,6 +66,7 @@ const upsertSchema = z.object({
   pageAccess: z.boolean(),
   dataAccess: z.boolean(),
   editAccess: z.boolean(),
+  costAccess: z.boolean(),
 });
 
 export async function upsertPagePermission(formData: FormData) {
@@ -75,6 +77,7 @@ export async function upsertPagePermission(formData: FormData) {
     pageAccess: formData.get("pageAccess") === "on",
     dataAccess: formData.get("dataAccess") === "on",
     editAccess: formData.get("editAccess") === "on",
+    costAccess: formData.get("costAccess") === "on",
   });
 
   const supabase = await createClient();
@@ -90,6 +93,7 @@ export async function upsertPagePermission(formData: FormData) {
       page_access: parsed.pageAccess,
       data_access: parsed.dataAccess,
       edit_access: parsed.editAccess,
+      cost_access: parsed.costAccess,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "page_key,principal_type,principal_value" }
@@ -108,7 +112,16 @@ export async function deletePagePermission(id: string) {
   return { error: error?.message ?? null };
 }
 
-export type EffectivePermission = { pageAccess: boolean; dataAccess: boolean; editAccess: boolean };
+export type EffectivePermission = {
+  pageAccess: boolean;
+  dataAccess: boolean;
+  editAccess: boolean;
+  // May see (and, where they can edit, change) prices on this page — see
+  // 0031_cost_access.sql. This return value only drives what the UI offers;
+  // the prices themselves are withheld by RLS via fn_resolve_cost_access,
+  // which this mirrors rule-for-rule.
+  costAccess: boolean;
+};
 
 // Mirrors fn_resolve_data_access (0025_page_permissions.sql) in JS, for the
 // page_access axis — which is deliberately NOT RLS-enforced (it's a
@@ -123,9 +136,8 @@ export type EffectivePermission = { pageAccess: boolean; dataAccess: boolean; ed
 // everyone's behalf, since it's answering "what CAN this profile see",
 // not showing them the raw permissions table.
 export async function getEffectivePermission(pageKey: string, profile: Profile | null): Promise<EffectivePermission> {
-  const allow: EffectivePermission = { pageAccess: true, dataAccess: true, editAccess: true };
-  if (!profile) return { pageAccess: false, dataAccess: false, editAccess: false };
-  if (profile.role === "couple") return allow;
+  if (!profile) return { pageAccess: false, dataAccess: false, editAccess: false, costAccess: false };
+  if (profile.role === "couple") return { pageAccess: true, dataAccess: true, editAccess: true, costAccess: true };
 
   const supabase = createAdminClient();
 
@@ -141,12 +153,17 @@ export async function getEffectivePermission(pageKey: string, profile: Profile |
     .eq("page_key", pageKey)
     .maybeSingle();
 
-  const keysToTry = [pageKey, registryRow?.parent_page_key].filter((k): k is string => !!k);
+  // Same parent fallback as fn_resolve_cost_access: a category/project
+  // sub-page with no registry row still inherits its parent's rules.
+  const parentKey =
+    registryRow?.parent_page_key ??
+    (pageKey.startsWith("categories:") ? "categories" : pageKey.startsWith("project:") ? "project" : null);
+  const keysToTry = [pageKey, parentKey].filter((k): k is string => !!k);
 
   for (const key of keysToTry) {
     const { data: rows } = await supabase
       .from("page_permissions")
-      .select("principal_type, principal_value, page_access, data_access, edit_access")
+      .select("principal_type, principal_value, page_access, data_access, edit_access, cost_access")
       .eq("page_key", key);
     if (!rows || rows.length === 0) continue;
 
@@ -156,14 +173,23 @@ export async function getEffectivePermission(pageKey: string, profile: Profile |
         pageAccess: !tagRows.some((r) => !r.page_access),
         dataAccess: !tagRows.some((r) => !r.data_access),
         editAccess: !tagRows.some((r) => !r.edit_access),
+        costAccess: !tagRows.some((r) => !r.cost_access),
       };
     }
 
     const roleRow = rows.find((r) => r.principal_type === "role" && r.principal_value === profile.role);
     if (roleRow) {
-      return { pageAccess: roleRow.page_access, dataAccess: roleRow.data_access, editAccess: roleRow.edit_access };
+      return {
+        pageAccess: roleRow.page_access,
+        dataAccess: roleRow.data_access,
+        editAccess: roleRow.edit_access,
+        costAccess: roleRow.cost_access,
+      };
     }
   }
 
-  return allow;
+  // No rule at all: everything else keeps its long-standing "allowed"
+  // default, but prices fall back to the pre-existing baseline only (family),
+  // never to wedding party or guests.
+  return { pageAccess: true, dataAccess: true, editAccess: true, costAccess: profile.role === "family" };
 }

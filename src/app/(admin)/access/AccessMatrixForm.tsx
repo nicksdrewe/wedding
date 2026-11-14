@@ -19,7 +19,7 @@ const ROLES: { value: RoleTier; label: string }[] = [
   { value: "guest", label: "Guest" },
 ];
 
-type Access = { pageAccess: boolean; dataAccess: boolean; editAccess: boolean };
+type Access = { pageAccess: boolean; dataAccess: boolean; editAccess: boolean; costAccess: boolean };
 
 function AccessCheckboxes({ access, onChange }: { access: Access; onChange: (next: Access) => void }) {
   return (
@@ -51,6 +51,18 @@ function AccessCheckboxes({ access, onChange }: { access: Access; onChange: (nex
         />
         Can edit
       </label>
+      {/* Prices are their own switch (0031_cost_access.sql): someone can be
+          shown a venue and its dates without what it costs. Ticking this
+          also lets them change prices wherever they can edit. */}
+      <label className="flex items-center gap-1.5 font-reading text-xs text-ink-soft">
+        <input
+          type="checkbox"
+          checked={access.costAccess}
+          onChange={(e) => onChange({ ...access, costAccess: e.target.checked })}
+          className="accent-accent"
+        />
+        See costs
+      </label>
     </>
   );
 }
@@ -68,6 +80,9 @@ function RoleCell({
     pageAccess: existing?.page_access ?? true,
     dataAccess: existing?.data_access ?? true,
     editAccess: existing?.edit_access ?? true,
+    // With no saved rule, prices follow the built-in baseline: family sees
+    // them, wedding party and guests don't.
+    costAccess: existing?.cost_access ?? role === "family",
   });
   const [, startTransition] = useTransition();
 
@@ -80,6 +95,7 @@ function RoleCell({
     if (next.pageAccess) formData.set("pageAccess", "on");
     if (next.dataAccess) formData.set("dataAccess", "on");
     if (next.editAccess) formData.set("editAccess", "on");
+    if (next.costAccess) formData.set("costAccess", "on");
     startTransition(() => {
       upsertPagePermission(formData);
     });
@@ -104,6 +120,7 @@ function TagRow({
     pageAccess: link.page_access,
     dataAccess: link.data_access,
     editAccess: link.edit_access,
+    costAccess: link.cost_access,
   });
   const [pending, startTransition] = useTransition();
 
@@ -116,6 +133,7 @@ function TagRow({
     if (next.pageAccess) formData.set("pageAccess", "on");
     if (next.dataAccess) formData.set("dataAccess", "on");
     if (next.editAccess) formData.set("editAccess", "on");
+    if (next.costAccess) formData.set("costAccess", "on");
     startTransition(() => {
       upsertPagePermission(formData);
     });
@@ -175,6 +193,8 @@ function PageSection({
           page_access: true,
           data_access: true,
           edit_access: true,
+          // A new tag rule starts with prices hidden — the couple opts in.
+          cost_access: false,
         },
       ]);
       setNewTag("");

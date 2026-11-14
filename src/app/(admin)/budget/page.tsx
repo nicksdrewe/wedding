@@ -21,7 +21,7 @@ export default async function BudgetPage() {
   const [{ data: rows }, rates] = await Promise.all([
     supabase
       .from("category_pages")
-      .select("id, title, category_costs(predicted_cost_min, predicted_cost_max, actual_cost, currency)")
+      .select("id, slug, title, category_costs(predicted_cost_min, predicted_cost_max, actual_cost, currency)")
       .order("title"),
     getFxRates(),
   ]);
@@ -31,7 +31,16 @@ export default async function BudgetPage() {
   // regardless of what currency any individual category was entered in
   // (unlike a single category's own card, which shows its native currency
   // unconverted since there's nothing to sum there).
-  const items = (rows ?? []).map((r) => {
+  // A category whose prices are hidden from this viewer (cost_access,
+  // 0031_cost_access.sql) is left out of the table AND the totals — RLS
+  // returns no cost for it, and showing it as £0 would misstate both.
+  const visibility = await Promise.all(
+    (rows ?? []).map(async (r) => (await getEffectivePermission(`categories:${r.slug}`, profile)).costAccess)
+  );
+  const visibleRows = (rows ?? []).filter((_, i) => visibility[i]);
+  const hiddenCount = (rows ?? []).length - visibleRows.length;
+
+  const items = visibleRows.map((r) => {
     const cost = Array.isArray(r.category_costs) ? r.category_costs[0] : r.category_costs;
     const currency: Currency = cost?.currency ?? "GBP";
     return {
@@ -60,6 +69,13 @@ export default async function BudgetPage() {
         title="Budget Tracker"
         infoText="Rolls up automatically from the cost fields on every category page — always shown in GBP, converted live from whatever currency each category was entered in."
       />
+
+      {hiddenCount > 0 && (
+        <p className="mt-6 rounded-[10px] border border-ink/10 bg-cream-deep/40 px-5 py-3 font-reading text-[13px] text-ink-soft">
+          {hiddenCount === 1 ? "1 category isn't" : `${hiddenCount} categories aren't`} included here — the
+          totals below cover only the categories shared with your account.
+        </p>
+      )}
 
       {items.length === 0 ? (
         <EmptyState

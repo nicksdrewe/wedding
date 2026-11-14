@@ -40,6 +40,11 @@ export function LinkedCostItems({ items, isCouple }: { items: LinkedItem[]; isCo
             ? group.category_pages[0]
             : group.category_pages
           : null;
+        // Currency lives with the option's prices now (0031_cost_access.sql).
+        const optionCosts = Array.isArray(option.page_option_costs)
+          ? option.page_option_costs[0]
+          : option.page_option_costs;
+        const currency = optionCosts?.currency ?? "GBP";
         const images = Array.isArray(option.page_option_images) ? option.page_option_images : [];
         const cover = [...images].sort((a, b) => a.sort_order - b.sort_order)[0];
 
@@ -61,7 +66,7 @@ export function LinkedCostItems({ items, isCouple }: { items: LinkedItem[]; isCo
               <p className="font-serif text-sm font-semibold text-ink">{option.name}</p>
               <p className="mt-0.5 font-reading text-xs text-ink-soft/70">{costItem.name}</p>
               <p className="mt-1 font-reading text-[13px] text-ink-soft">
-                {formatCurrency(costItem.amount, option.currency)}
+                {formatCurrency(costItem.amount, currency)}
               </p>
               {sourceCategory && (
                 <Link

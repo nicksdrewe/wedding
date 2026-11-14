@@ -3,6 +3,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { AddOptionForm } from "./AddOptionForm";
 import { OptionCard, type OptionDetail } from "./OptionCard";
 import type { CostItemRow, CostItemLinkInfo } from "./CostItemsPanel";
+import { OPTION_COSTS_EMBED, readOptionCosts } from "@/lib/options/costs";
 
 // The visual option board for a category page: every page_option in the
 // group, shown as an image-first card that expands (via Disclosure) into
@@ -18,17 +19,22 @@ export async function OptionsBoard({
   categoryPageId,
   revalidate,
   isCouple,
+  costAccess,
 }: {
   groupId: string;
   categoryPageId: string | null;
   revalidate: string;
   isCouple: boolean;
+  // Whether this viewer may see prices on this board (the page's resolved
+  // cost_access) — decides whether the add-option form offers cost inputs.
+  // Each card additionally hides its own costs when RLS withheld them.
+  costAccess: boolean;
 }) {
   const supabase = await createClient();
   const { data } = await supabase
     .from("page_options")
     .select(
-      "id, name, description, web_link, predicted_cost_min, predicted_cost_max, actual_cost, currency, option_date, contact_name, contact_phone, contact_email, latitude, longitude, nights, sleeps, is_winner, page_option_images(id, image_url, sort_order)"
+      `id, name, description, web_link, option_date, contact_name, contact_phone, contact_email, latitude, longitude, nights, sleeps, is_winner, page_option_images(id, image_url, sort_order), ${OPTION_COSTS_EMBED}`
     )
     .eq("option_group_id", groupId)
     .order("created_at")
@@ -81,10 +87,7 @@ export async function OptionsBoard({
     name: o.name,
     description: o.description,
     web_link: o.web_link,
-    predicted_cost_min: o.predicted_cost_min,
-    predicted_cost_max: o.predicted_cost_max,
-    actual_cost: o.actual_cost,
-    currency: o.currency,
+    ...readOptionCosts(o),
     option_date: o.option_date,
     contact_name: o.contact_name,
     contact_phone: o.contact_phone,
@@ -131,7 +134,7 @@ export async function OptionsBoard({
       )}
       {isCouple && (
         <div className="mt-4">
-          <AddOptionForm groupId={groupId} revalidate={revalidate} />
+          <AddOptionForm groupId={groupId} revalidate={revalidate} showCosts={costAccess} />
         </div>
       )}
     </div>

@@ -21,6 +21,8 @@ export type CompareOption = {
   predicted_cost_max: number | null;
   actual_cost: number | null;
   currency: Currency;
+  // RLS withheld this option's prices from the viewer (lib/options/costs.ts).
+  costs_hidden: boolean;
   is_winner: boolean;
 };
 
@@ -30,6 +32,9 @@ export type CompareGroup = {
   categoryTitle: string | null;
   categorySlug: string | null;
   options: CompareOption[];
+  // Whether the viewer may see prices on the board this (standalone) group
+  // belongs to — decides if its add-option form offers cost inputs.
+  showCosts: boolean;
 };
 
 export function OptionsCompareGroup({ group }: { group: CompareGroup }) {
@@ -173,12 +178,14 @@ export function OptionsCompareGroup({ group }: { group: CompareGroup }) {
                     )}
                   </td>
                   <td className="px-5 py-3 align-middle font-reading text-ink-soft tabular-nums">
-                    <CostRange
-                      predictedMin={o.predicted_cost_min}
-                      predictedMax={o.predicted_cost_max}
-                      actual={o.actual_cost}
-                      currency={o.currency}
-                    />
+                    {!o.costs_hidden && (
+                      <CostRange
+                        predictedMin={o.predicted_cost_min}
+                        predictedMax={o.predicted_cost_max}
+                        actual={o.actual_cost}
+                        currency={o.currency}
+                      />
+                    )}
                   </td>
                   <td className="px-5 py-3 text-right align-middle">
                     {!o.is_winner && (
@@ -204,7 +211,7 @@ export function OptionsCompareGroup({ group }: { group: CompareGroup }) {
           no such page, so this stays their only way to log an option. */}
       {!group.categoryTitle && (
         <div className="border-t border-ink/8 px-5 py-4">
-          <AddOptionForm groupId={group.id} revalidate="/project" />
+          <AddOptionForm groupId={group.id} revalidate="/project" showCosts={group.showCosts} />
         </div>
       )}
     </div>

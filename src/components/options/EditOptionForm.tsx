@@ -48,6 +48,12 @@ export function EditOptionForm({
           placeholder="Option name"
           className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
         />
+        {/* Cost inputs only exist for someone allowed to see prices; the
+            hasCostFields marker tells updateOption it may write them. Without
+            it the action leaves existing prices untouched. */}
+        {!option.costs_hidden && (
+          <>
+        <input type="hidden" name="hasCostFields" value="1" />
         <input
           name="predictedCostMin"
           type="number"
@@ -80,6 +86,8 @@ export function EditOptionForm({
           <option value="GBP">£ GBP</option>
           <option value="EUR">€ EUR</option>
         </select>
+          </>
+        )}
         <input
           name="optionDate"
           type="date"

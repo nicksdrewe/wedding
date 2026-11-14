@@ -27,6 +27,16 @@ export default async function CategoriesPage() {
 
   const hasCategories = !!pages && pages.length > 0;
 
+  // Prices can be hidden per category (0031_cost_access.sql). RLS already
+  // returns no cost row for a hidden one; resolving the flag here lets the
+  // card leave the cost line out rather than show a misleading "no cost".
+  const costAccessBySlug: Record<string, boolean> = {};
+  await Promise.all(
+    (pages ?? []).map(async (p) => {
+      costAccessBySlug[p.slug] = (await getEffectivePermission(`categories:${p.slug}`, profile)).costAccess;
+    })
+  );
+
   return (
     <div>
       <PageHeader
@@ -60,6 +70,7 @@ export default async function CategoriesPage() {
                     predictedCostMax: cost?.predicted_cost_max ?? null,
                     actualCost: cost?.actual_cost ?? null,
                     currency: cost?.currency ?? "GBP",
+                    showCost: costAccessBySlug[p.slug] ?? false,
                   }}
                   isCouple={isCouple}
                 />

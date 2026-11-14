@@ -106,6 +106,12 @@ Model guidance: **[Fable]** = security-critical or design-heavy, do once and car
 
 ### Phase 1 — Admin: accounts, resets, view-as, errors
 
+1.0 **Accounts are GIVEN, not self-created** (Nick, 14 Nov) [Cheaper; sign-in change reviewed by Fable]
+- Today an account only appears when someone signs in with an email on the guest list (a database trigger creates it), and only family/wedding-party/couple have been through that. No ordinary guest contact is linked to an account.
+- New model: the couple **provisions** an account from the CRM for any contact with an email ("Create account", plus a bulk "Create accounts for selected"). It creates the sign-in user via the admin API, links it to the contact, sets the role from the contact, and optionally sends the invite email. The contact row shows its account status.
+- Sign-in then only works for provisioned accounts (`signInWithOtp` with `shouldCreateUser: false`, and `/api/auth/request-code` checks for an account, not just a contact), so being on the guest list alone never creates access.
+- Role/tag changes on a contact keep syncing to their profile (existing `sync_profile_from_contact` trigger).
+
 1.1 **Account status in the CRM** [Cheaper after the helper exists]
 - Server-only helper (service role) joins `contacts` ↔ `profiles` ↔ `auth.users`: status = No account / Account (never signed in) / Active, plus last sign-in. New column + filter on `/guests`.
 - Couple-only server actions, each written to a new `admin_audit` table (who/what/when):

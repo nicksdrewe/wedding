@@ -49,6 +49,7 @@ export type MapOption = {
   predicted_cost_min: number | null;
   predicted_cost_max: number | null;
   currency: Currency;
+  costs_hidden: boolean;
   latitude: number | null;
   longitude: number | null;
   coverImageUrl: string | null;
@@ -101,9 +102,11 @@ export function OptionsMap({ options }: { options: MapOption[] }) {
                   <p className="truncate font-serif text-[13px] font-semibold text-ink">
                     {option.name}
                   </p>
-                  <p className="mt-0.5 font-reading text-xs text-ink-soft">
-                    {formatCostRange(option.predicted_cost_min, option.predicted_cost_max, option.currency)} predicted
-                  </p>
+                  {!option.costs_hidden && (
+                    <p className="mt-0.5 font-reading text-xs text-ink-soft">
+                      {formatCostRange(option.predicted_cost_min, option.predicted_cost_max, option.currency)} predicted
+                    </p>
+                  )}
                 </div>
               </div>
             </Popup>
