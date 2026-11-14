@@ -17,13 +17,32 @@ export type Profile = {
   contact_id: string | null;
 };
 
-/** Single source of truth for where each tier belongs after signing in. */
+/**
+ * Where each tier belongs after signing in, by role alone. wedding_party and
+ * guest land on /account (their own details) — the one page every one of
+ * them is guaranteed to have. wedding_party previously landed on
+ * /categories, which a plain wedding-party member has no access to, so their
+ * very first sign-in ended on an error page. Use homeFor() when tags are
+ * known; this is the fallback.
+ */
 export const HOME_FOR_ROLE: Record<RoleTier, string> = {
   couple: "/guests",
   family: "/categories",
-  wedding_party: "/categories",
-  guest: "/rsvp",
+  wedding_party: "/account",
+  guest: "/account",
 };
+
+/**
+ * Role + contact tags (already normalised, see lib/tags.ts) -> landing page.
+ * Best man / maid of honour are role wedding_party with an elevated tag and
+ * start on the project hub instead of the plain wedding-party default.
+ */
+export function homeFor(role: RoleTier, tags: readonly string[]): string {
+  if (role === "wedding_party" && (tags.includes("best_man") || tags.includes("maid_of_honour"))) {
+    return "/project";
+  }
+  return HOME_FOR_ROLE[role];
+}
 
 export function canAccess(role: RoleTier, required: RoleTier[]) {
   return required.includes(role);

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getAuthState } from "@/lib/auth/roles";
+import { getAuthState, getCurrentContactTags, homeFor } from "@/lib/auth/roles";
 
 // Terminus for "signed in, but not allowed here". Crucially this is NOT a
 // redirect back to /login — sending an already-authenticated user to the
@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default async function NoAccessPage() {
   const state = await getAuthState();
+  const tags = state.status === "ok" ? await getCurrentContactTags(state.profile) : [];
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center">
@@ -31,9 +32,21 @@ export default async function NoAccessPage() {
       </p>
 
       <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+        {state.status === "ok" && (
+          <Link
+            href={homeFor(state.profile.role, tags)}
+            className="rounded-full bg-ink px-8 py-3 font-serif text-cream transition hover:bg-ink-soft"
+          >
+            Go to my page
+          </Link>
+        )}
         <Link
           href="/"
-          className="rounded-full bg-ink px-8 py-3 font-serif text-cream transition hover:bg-ink-soft"
+          className={
+            state.status === "ok"
+              ? "rounded-full border border-ink/30 px-8 py-3 font-serif text-ink transition hover:border-ink"
+              : "rounded-full bg-ink px-8 py-3 font-serif text-cream transition hover:bg-ink-soft"
+          }
         >
           Back to the home page
         </Link>

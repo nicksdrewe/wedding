@@ -99,7 +99,6 @@ const NAV_LINKS: NavLink[] = [
     label: "Guests",
     icon: Users,
     roles: ["couple", "family"],
-    tags: ["best_man", "maid_of_honour"],
     viewOnlyRoles: ["family"],
     group: "People",
   },
@@ -109,7 +108,6 @@ const NAV_LINKS: NavLink[] = [
     label: "Budget",
     icon: Wallet,
     roles: ["couple", "family"],
-    tags: ["best_man", "maid_of_honour"],
   },
   // The dedicated "Engagement Party" link this used to carry is gone now
   // that the events system exists — /diary is the way back to any

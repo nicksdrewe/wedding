@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { parseTagInput } from "@/lib/tags";
 
 const RSVP_STATUS = z.enum(["pending", "attending", "declined"]);
 
@@ -30,11 +31,10 @@ const updateContactSchema = contactSchema.extend({
   eventRsvpStatuses: z.string(),
 });
 
+// Normalised (best_man, not "Best Man") because access rules compare tags by
+// exact string — see lib/tags.ts.
 function tagsToArray(tags: string | undefined) {
-  return (tags ?? "")
-    .split(",")
-    .map((tag) => tag.trim())
-    .filter(Boolean);
+  return parseTagInput(tags);
 }
 
 // A field failing validation (e.g. a malformed email that slipped past the

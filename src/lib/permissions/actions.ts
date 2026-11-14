@@ -5,6 +5,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Profile, RoleTier } from "@/lib/auth/role-types";
+import { normalizeTag, normalizeTags, ROLE_TAG_VALUES } from "@/lib/tags";
 
 export type PageRegistryRow = {
   page_key: string;
@@ -49,8 +50,11 @@ export async function listKnownTags(): Promise<string[]> {
   // adding a database function just for an autocomplete list.
   const supabase = await createClient();
   const { data } = await supabase.from("contacts").select("tags");
-  const set = new Set<string>();
-  for (const row of data ?? []) for (const tag of row.tags ?? []) set.add(tag);
+  // Normalised, and always including the four access-bearing role tags even
+  // if nobody currently holds them, so the couple can set a rule ahead of
+  // tagging anyone.
+  const set = new Set<string>(ROLE_TAG_VALUES);
+  for (const row of data ?? []) for (const tag of normalizeTags(row.tags)) set.add(tag);
   return [...set].sort((a, b) => a.localeCompare(b));
 }
 
@@ -78,7 +82,11 @@ export async function upsertPagePermission(formData: FormData) {
     {
       page_key: parsed.pageKey,
       principal_type: parsed.principalType,
-      principal_value: parsed.principalValue,
+      // Tag rows are matched by exact string against normalised contact
+      // tags (see lib/tags.ts), so a hand-typed "Best Man" here would
+      // silently never match anyone.
+      principal_value:
+        parsed.principalType === "tag" ? normalizeTag(parsed.principalValue) : parsed.principalValue,
       page_access: parsed.pageAccess,
       data_access: parsed.dataAccess,
       edit_access: parsed.editAccess,
@@ -124,7 +132,7 @@ export async function getEffectivePermission(pageKey: string, profile: Profile |
   let tags: string[] = [];
   if (profile.contact_id) {
     const { data: contact } = await supabase.from("contacts").select("tags").eq("id", profile.contact_id).maybeSingle();
-    tags = contact?.tags ?? [];
+    tags = normalizeTags(contact?.tags);
   }
 
   const { data: registryRow } = await supabase
@@ -142,7 +150,7 @@ export async function getEffectivePermission(pageKey: string, profile: Profile |
       .eq("page_key", key);
     if (!rows || rows.length === 0) continue;
 
-    const tagRows = rows.filter((r) => r.principal_type === "tag" && tags.includes(r.principal_value));
+    const tagRows = rows.filter((r) => r.principal_type === "tag" && tags.includes(normalizeTag(r.principal_value)));
     if (tagRows.length > 0) {
       return {
         pageAccess: !tagRows.some((r) => !r.page_access),

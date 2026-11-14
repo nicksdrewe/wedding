@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getAuthState, HOME_FOR_ROLE } from "@/lib/auth/roles";
+import { getAuthState, getCurrentContactTags, homeFor } from "@/lib/auth/roles";
 
 // The one place that decides where a signed-in person belongs. Sign-in sends
 // everyone here rather than to "/", so the destination is driven by the
@@ -12,5 +12,6 @@ export default async function HubPage() {
   if (state.status === "anonymous") redirect("/login");
   if (state.status === "no-profile") redirect("/no-access");
 
-  redirect(HOME_FOR_ROLE[state.profile.role]);
+  const tags = await getCurrentContactTags(state.profile);
+  redirect(homeFor(state.profile.role, tags));
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { tagLabel } from "@/lib/tags";
 import { useRouter } from "next/navigation";
 import { Check, ChevronDown, ChevronUp, Loader2, Mail, Send, Trash2, Users } from "lucide-react";
 import { createMessage, deleteMessage, sendToRecipient } from "./actions";
@@ -206,7 +207,7 @@ export function CommsComposer({
                 <option value="">All tags</option>
                 {allTags.map((t) => (
                   <option key={t} value={t}>
-                    {t}
+                    {tagLabel(t)}
                   </option>
                 ))}
               </select>

@@ -1,6 +1,6 @@
 import { ScrollFlowerHero, type HeroCta } from "@/components/ScrollFlowerHero";
 import { SiteGate } from "@/components/SiteGate";
-import { getAuthState, HOME_FOR_ROLE } from "@/lib/auth/roles";
+import { getAuthState, getCurrentContactTags, homeFor } from "@/lib/auth/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // Reads the session so a signed-in visitor is never shown the anonymous
@@ -11,12 +11,14 @@ export const dynamic = "force-dynamic";
 export default async function LandingPage() {
   const state = await getAuthState();
 
+  const tags = state.status === "ok" ? await getCurrentContactTags(state.profile) : [];
+
   const cta: HeroCta =
     state.status === "ok"
       ? {
           kind: "signed-in",
           label: "Enter the planning hub",
-          href: HOME_FOR_ROLE[state.profile.role],
+          href: homeFor(state.profile.role, tags),
         }
       : state.status === "no-profile"
       ? { kind: "no-profile" }

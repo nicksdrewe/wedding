@@ -5,6 +5,8 @@ import { CornerDownRight, Mail, Phone, UserPlus } from "lucide-react";
 import { addChildContact, deleteContact, updateContact } from "./actions";
 import { ROLE_BADGE, ROLE_LABEL, RSVP_STYLE } from "./badges";
 import type { GuestListEvent } from "./GuestTable";
+import { TagPicker } from "./TagPicker";
+import { tagLabel } from "@/lib/tags";
 
 export type Contact = {
   id: string;
@@ -149,7 +151,7 @@ export function EditableGuestRow({
           <div className="flex flex-wrap gap-1">
             {contact.tags.map((tag) => (
               <span key={tag} className="rounded-full bg-ink/5 px-2 py-0.5 text-[11px] text-ink-soft">
-                {tag}
+                {tagLabel(tag)}
               </span>
             ))}
           </div>
@@ -332,12 +334,7 @@ function GuestEditForm({
           <label className="font-serif text-[11px] font-medium tracking-[0.04em] text-ink-soft uppercase">
             Tags
           </label>
-          <input
-            name="tags"
-            defaultValue={(contact.tags ?? []).join(", ")}
-            placeholder="comma, separated"
-            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
-          />
+          <TagPicker defaultTags={contact.tags ?? []} />
         </div>
         {showWeddingRsvp ? (
           <div className="flex flex-col gap-1">

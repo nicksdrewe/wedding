@@ -1,10 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/auth/role-types";
+import { normalizeTags } from "@/lib/tags";
 
 // Re-exported for existing server-side callers of this module — see
 // role-types.ts for why these live in their own client-safe file.
 export type { RoleTier, Profile } from "@/lib/auth/role-types";
-export { HOME_FOR_ROLE, canAccess } from "@/lib/auth/role-types";
+export { HOME_FOR_ROLE, homeFor, canAccess } from "@/lib/auth/role-types";
 
 // Deliberately three-way. Collapsing "no session" and "session but no profile"
 // into a single null is what caused the sign-in loop: an authenticated user
@@ -51,5 +52,5 @@ export async function getCurrentContactTags(profile: Profile | null): Promise<st
   if (!profile?.contact_id) return [];
   const supabase = await createClient();
   const { data } = await supabase.from("contacts").select("tags").eq("id", profile.contact_id).maybeSingle();
-  return data?.tags ?? [];
+  return normalizeTags(data?.tags);
 }

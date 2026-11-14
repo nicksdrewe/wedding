@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { tagLabel } from "@/lib/tags";
 import { ArrowDownAZ, ArrowUpAZ } from "lucide-react";
 import { InView } from "@/components/motion-primitives/in-view";
 import { EditableGuestRow, type Contact } from "./EditableGuestRow";
@@ -122,7 +123,7 @@ export function GuestTable({
             <option value="">All tags</option>
             {allTags.map((t) => (
               <option key={t} value={t}>
-                {t}
+                {tagLabel(t)}
               </option>
             ))}
           </select>
