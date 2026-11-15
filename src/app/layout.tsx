@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, Source_Serif_4, Manrope } from "next/font/google";
 import "./globals.css";
+import { ViewAsBanner } from "@/components/ViewAsBanner";
 
 // Grotesque carries UI, structure and numbers; serif carries reading copy.
 // Never mixed within one line — see docs/design-brief.md.
@@ -73,6 +74,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           ones. */}
       <body className="min-h-screen flex flex-col bg-cream text-ink font-serif">
         {children}
+        <ViewAsBanner />
       </body>
     </html>
   );

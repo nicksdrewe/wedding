@@ -1,5 +1,60 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { STASH_PREFIX, VIEW_AS_COOKIE, verifyViewAs } from "@/lib/view-as/cookie";
+
+const VIEW_AS_STOP_PATH = "/api/view-as/stop";
+
+// "View as" guard (see api/view-as/start). While the couple is looking at the
+// site through someone else's session, this is what keeps it safe — the
+// banner in the page is only a reminder, nothing relies on it:
+//
+//   * every write is refused. Server actions and API calls are all non-GET
+//     requests, so blocking those makes the borrowed session read-only: the
+//     couple can't accidentally RSVP, edit or delete AS that person.
+//   * it can't outlive its 30 minutes. The signed marker expires; if the
+//     couple's parked session is still present without a valid marker, the
+//     browser is sent to the exit route, which swaps their own session back.
+//     Without this, an expired marker would leave them silently signed in as
+//     the other person with no banner and no write block.
+//   * signing out goes through the exit route too — the normal sign-out would
+//     end the OTHER person's sessions on all their devices.
+//
+// Returns a response to short-circuit with, or null to carry on as normal.
+async function viewAsGuard(request: NextRequest): Promise<NextResponse | null> {
+  const hasStash = request.cookies.getAll().some((c) => c.name.startsWith(STASH_PREFIX));
+  const marker = request.cookies.get(VIEW_AS_COOKIE)?.value;
+  if (!hasStash && !marker) return null;
+
+  const { pathname } = request.nextUrl;
+  if (pathname === VIEW_AS_STOP_PATH) return null;
+
+  const active = (await verifyViewAs(marker)) !== null;
+
+  const toStop = () => {
+    const url = request.nextUrl.clone();
+    url.pathname = VIEW_AS_STOP_PATH;
+    url.search = "";
+    // 303 so a blocked POST becomes a GET of the exit route.
+    return NextResponse.redirect(url, 303);
+  };
+
+  // Marker without a parked session, or a parked session without a live
+  // marker (expired / tampered): either way the state is no longer
+  // trustworthy — end it.
+  if (!active || !hasStash) return toStop();
+
+  if (pathname.startsWith("/logout")) return toStop();
+
+  const method = request.method.toUpperCase();
+  if (method !== "GET" && method !== "HEAD" && method !== "OPTIONS") {
+    return NextResponse.json(
+      { error: "You're viewing the site as someone else — it's read-only. Exit view-as to make changes." },
+      { status: 403 }
+    );
+  }
+
+  return null;
+}
 
 // Routes reachable without a session. Everything else requires one.
 //
@@ -24,6 +79,9 @@ const PUBLIC_PREFIXES = [
   // Public gifts page linked from the landing hero — the wedding-fund ask,
   // no data behind it, so no session needed.
   "/gifts",
+  // Ending a view-as must work even if the borrowed session has already
+  // expired (the route can only ever END one — see api/view-as/stop).
+  "/api/view-as/stop",
   "/api/rsvp",
   "/api/events",
   "/api/auth/request-code",
@@ -50,6 +108,9 @@ function isPublic(pathname: string) {
 }
 
 export async function updateSession(request: NextRequest) {
+  const guarded = await viewAsGuard(request);
+  if (guarded) return guarded;
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(

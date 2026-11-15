@@ -11,7 +11,12 @@ import { AddContactForm } from "./AddContactForm";
 import { GuestTable, type GuestTableContact } from "./GuestTable";
 import { InviteLinkButton } from "./InviteLinkCard";
 
-export default async function GuestsPage() {
+export default async function GuestsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ viewAsError?: string }>;
+}) {
+  const { viewAsError } = await searchParams;
   const profile = await getCurrentProfile();
   const permission = await getEffectivePermission("guests", profile);
   if (!permission.pageAccess) redirect("/no-access");
@@ -171,6 +176,12 @@ export default async function GuestsPage() {
           </div>
         )}
       </div>
+
+      {viewAsError && (
+        <p className="mt-6 rounded-[10px] border border-alert/25 bg-alert/5 px-5 py-3 font-reading text-[13px] text-alert">
+          {viewAsError}
+        </p>
+      )}
 
       {isCouple && <AddContactForm />}
 

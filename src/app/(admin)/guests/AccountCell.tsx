@@ -21,7 +21,15 @@ const PILL: Record<AccountStatus["state"], { label: string; className: string }>
   duplicate: { label: "Duplicate email", className: "bg-alert/10 text-alert" },
 };
 
-type Action = { label: string; run: () => Promise<{ error: string | null; notice?: string }>; confirm?: string; danger?: boolean };
+type Action = {
+  label: string;
+  // Either a server action to run, or (view-as) a real form post — that one
+  // swaps session cookies and must end in a full page load.
+  run?: () => Promise<{ error: string | null; notice?: string }>;
+  viewAs?: boolean;
+  confirm?: string;
+  danger?: boolean;
+};
 
 // One guest's account: a status pill plus a small menu of what the couple
 // can do next. Every button maps to a server action that re-checks that the
@@ -31,6 +39,7 @@ export function AccountCell({ contactId, status }: { contactId: string; status: 
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+  const viewAsFormRef = useRef<HTMLFormElement>(null);
   useClickOutside(ref, () => setOpen(false));
 
   const pill = PILL[status.state];
@@ -43,6 +52,12 @@ export function AccountCell({ contactId, status }: { contactId: string; status: 
         ]
       : status.state === "invited" || status.state === "active"
         ? [
+            {
+              label: "View site as them",
+              viewAs: true,
+              confirm:
+                "View the site as this person? You'll see exactly what they see, read-only, for up to 30 minutes. Use 'Exit view' in the bar at the bottom to come back.",
+            },
             { label: "Send invite email", run: () => sendAccountInvite(contactId) },
             {
               label: "Reset password",
@@ -70,8 +85,14 @@ export function AccountCell({ contactId, status }: { contactId: string; status: 
     if (action.confirm && !window.confirm(action.confirm)) return;
     setOpen(false);
     setMessage(null);
+    if (action.viewAs) {
+      viewAsFormRef.current?.requestSubmit();
+      return;
+    }
+    const run = action.run;
+    if (!run) return;
     startTransition(async () => {
-      const result = await action.run();
+      const result = await run();
       if (result.error) setMessage({ text: result.error, isError: true });
       else if (result.notice) setMessage({ text: result.notice, isError: false });
     });
@@ -79,6 +100,9 @@ export function AccountCell({ contactId, status }: { contactId: string; status: 
 
   return (
     <div ref={ref} className="relative">
+      <form ref={viewAsFormRef} method="post" action="/api/view-as/start" className="hidden">
+        <input type="hidden" name="contactId" value={contactId} />
+      </form>
       <div className="flex items-center gap-1.5">
         <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium tracking-[0.02em] ${pill.className}`}>
           {pending ? "Working…" : pill.label}
