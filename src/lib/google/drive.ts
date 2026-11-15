@@ -168,7 +168,15 @@ export async function checkDriveConnection(opts: { write?: boolean } = {}): Prom
     await drive.files.get({ fileId: folderId, fields: "id, name", supportsAllDrives: true });
     result.steps.push({ step: "folder visible", ok: true });
   } catch (err) {
-    result.steps.push({ step: "folder visible", ok: false, detail: explainDriveError(err) });
+    // Informational only: this app's Drive permission (drive.file) lets it
+    // write into the folder but can still make a lookup of it fail, so a
+    // failure here does NOT mean uploads are broken — the test write below
+    // is what decides.
+    result.steps.push({
+      step: "folder lookup (informational)",
+      ok: false,
+      detail: `${explainDriveError(err)} (A failed lookup can still allow uploads — see the test write.)`,
+    });
     // Not fatal: this app's permission (drive.file) can hide a folder from
     // a lookup while still allowing writes into it, so fall through to the
     // real write test when asked.
@@ -199,7 +207,7 @@ export async function checkDriveConnection(opts: { write?: boolean } = {}): Prom
   }
 
   const writeStep = result.steps.find((x) => x.step === "test write");
-  result.ok = writeStep ? writeStep.ok : result.steps.every((x) => x.ok);
+  result.ok = writeStep ? writeStep.ok : result.steps.every((x) => x.ok || x.step.startsWith("folder lookup"));
   return result;
 }
 
