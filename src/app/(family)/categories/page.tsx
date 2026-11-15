@@ -17,7 +17,10 @@ export default async function CategoriesPage() {
   // as the category detail pages.
   const permission = await getEffectivePermission("categories", profile);
   if (!permission.pageAccess) redirect("/no-access");
-  const isCouple = permission.editAccess;
+  // Creating, renaming and deleting whole categories is the couple's alone
+  // (category_pages' write policies) — NOT edit_access, which best man /
+  // maid of honour also hold and which only covers a category's contents.
+  const isCouple = profile?.role === "couple";
   const supabase = await createClient();
 
   const { data: pages } = await supabase

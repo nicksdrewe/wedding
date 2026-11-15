@@ -12,23 +12,26 @@ type Contact = {
   email: string | null;
 };
 
-// category_contacts: couple manages, family only reads (0001) — the edit
-// and delete controls must not render for the family role even though
-// they can see this list, so isCouple gates them here, not just styling.
+// category_contacts (0033_party_planner_access.sql): anyone with "Can edit"
+// on the category may add and edit contacts; removing one is couple-only.
+// isCouple here means "may edit"; canDelete is the stricter right. The
+// controls must not render for someone RLS would refuse.
 export function ContactRow({
   contact,
   categoryPageId,
   isCouple,
+  canDelete = isCouple,
 }: {
   contact: Contact;
   categoryPageId: string;
   isCouple: boolean;
+  canDelete?: boolean;
 }) {
   return (
     <EditableRow
       item={contact}
       isCouple={isCouple}
-      onDelete={deleteCategoryContact}
+      onDelete={canDelete ? deleteCategoryContact : undefined}
       renderView={(c) => (
         <span className="font-reading text-[13px] text-ink">
           <span className="font-serif font-semibold">{c.name}</span>

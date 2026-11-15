@@ -65,13 +65,21 @@ export type OptionDetail = {
 export function OptionCard({
   option,
   isCouple,
+  canDelete = isCouple,
+  canPickWinner = isCouple,
   revalidate,
   costItems = [],
   linkableCategories = [],
   linksByItem = {},
 }: {
   option: OptionDetail;
+  // "May add to and edit this option" (photos, details, and — where prices
+  // are visible — costs). Deleting the option and choosing the winner are
+  // stricter, couple-only rights on a category board
+  // (0033_party_planner_access.sql), hence the two separate flags.
   isCouple: boolean;
+  canDelete?: boolean;
+  canPickWinner?: boolean;
   revalidate: string;
   costItems?: CostItemRow[];
   linkableCategories?: LinkableCategory[];
@@ -144,6 +152,8 @@ export function OptionCard({
         <OptionDetailPanel
           option={option}
           isCouple={isCouple}
+          canDelete={canDelete}
+          canPickWinner={canPickWinner}
           revalidate={revalidate}
           costItems={costItems}
           linkableCategories={linkableCategories}
@@ -158,6 +168,8 @@ export function OptionCard({
 function OptionDetailPanel({
   option,
   isCouple,
+  canDelete,
+  canPickWinner,
   revalidate,
   costItems,
   linkableCategories,
@@ -166,6 +178,8 @@ function OptionDetailPanel({
 }: {
   option: OptionDetail;
   isCouple: boolean;
+  canDelete: boolean;
+  canPickWinner: boolean;
   revalidate: string;
   costItems: CostItemRow[];
   linkableCategories: LinkableCategory[];
@@ -400,6 +414,7 @@ function OptionDetailPanel({
 
       {isCouple && (
         <div className="mt-4 flex flex-wrap items-center gap-3">
+          {canPickWinner && (
           <button
             type="button"
             onClick={handleMarkWinner}
@@ -420,6 +435,7 @@ function OptionDetailPanel({
               "Mark as winner"
             )}
           </button>
+          )}
           <button
             type="button"
             onClick={() => setEditing(true)}
@@ -427,6 +443,7 @@ function OptionDetailPanel({
           >
             Edit
           </button>
+          {canDelete && (
           <button
             type="button"
             onClick={handleDeleteOption}
@@ -435,6 +452,7 @@ function OptionDetailPanel({
           >
             {deletePending ? "Deleting…" : "Delete"}
           </button>
+          )}
         </div>
       )}
         </>

@@ -86,6 +86,7 @@ export default async function ProjectPage() {
       categorySlug: category?.slug ?? null,
       options,
       showCosts: costAccessForTag(g.visible_tag ?? null),
+      canPickWinner: isCouple || !category,
     };
   });
 

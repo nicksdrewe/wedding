@@ -100,13 +100,19 @@ export default async function CategoryDetailPage({
   // rather than a hardcoded role check, reusing the same permission
   // lookup already made above for the pageAccess guard.
   const isCouple = permission.editAccess;
+  // Since 0033 "Can edit" is real for best man / maid of honour (and anyone
+  // else the couple ticks it for): they add and edit options, photos,
+  // contacts and dates. Deleting those, choosing the winner, and starting or
+  // removing the board itself stay with the couple — RLS enforces the same
+  // split, these flags just keep the buttons honest.
+  const isRealCouple = profile?.role === "couple";
   // Prices are their own permission (0031_cost_access.sql): someone can see
   // this category's options, dates and contacts with every cost left out.
   // RLS already withholds the numbers; this just keeps the empty sections
-  // from rendering. Editing the category's headline cost stays couple-only
-  // (category_costs' write policy), independent of edit_access.
+  // from rendering. Whoever can both see the prices and edit the category may
+  // set its headline cost (matches category_costs' write policies).
   const canSeeCosts = permission.costAccess;
-  const canEditCategoryCost = profile?.role === "couple";
+  const canEditCategoryCost = isRealCouple || (permission.costAccess && permission.editAccess);
 
   return (
     <div className="max-w-3xl">
@@ -115,7 +121,7 @@ export default async function CategoryDetailPage({
       <section className="rounded-[10px] border border-ink/10 bg-white p-6">
         <div className="flex items-center justify-between gap-4">
           <h2 className="font-serif text-[15px] font-semibold">Options</h2>
-          {isCouple && !optionGroup && (
+          {isRealCouple && !optionGroup && (
             <StartOptionsModeButton
               categoryPageId={page.id}
               title={page.title}
@@ -147,6 +153,7 @@ export default async function CategoryDetailPage({
                 categoryPageId={page.id}
                 revalidate={`/categories/${page.slug}`}
                 isCouple={isCouple}
+                isRealCouple={isRealCouple}
                 costAccess={canSeeCosts}
               />
             </div>
@@ -190,7 +197,7 @@ export default async function CategoryDetailPage({
           <p className="mt-1.5 font-reading text-[13px] text-ink-soft">
             Cost items logged under another category, also shown here.
           </p>
-          <LinkedCostItems items={linkedCostItems} isCouple={isCouple} />
+          <LinkedCostItems items={linkedCostItems} isCouple={isRealCouple} />
         </section>
       )}
 
@@ -199,7 +206,7 @@ export default async function CategoryDetailPage({
         {contacts && contacts.length > 0 ? (
           <ul className="mt-3 flex flex-col gap-2">
             {contacts.map((c) => (
-              <ContactRow key={c.id} contact={c} categoryPageId={page.id} isCouple={isCouple} />
+              <ContactRow key={c.id} contact={c} categoryPageId={page.id} isCouple={isCouple} canDelete={isRealCouple} />
             ))}
           </ul>
         ) : (
@@ -213,7 +220,7 @@ export default async function CategoryDetailPage({
         {dates && dates.length > 0 ? (
           <ul className="mt-3 flex flex-col gap-2">
             {dates.map((d) => (
-              <DateRow key={d.id} entry={d} categoryPageId={page.id} isCouple={isCouple} />
+              <DateRow key={d.id} entry={d} categoryPageId={page.id} isCouple={isCouple} canDelete={isRealCouple} />
             ))}
           </ul>
         ) : (

@@ -71,6 +71,7 @@ export default async function GroomsmenProjectPage() {
       categorySlug: category?.slug ?? null,
       options,
       showCosts: permission.costAccess,
+      canPickWinner: isCouple || !category,
     };
   });
 

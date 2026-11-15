@@ -35,6 +35,11 @@ export type CompareGroup = {
   // Whether the viewer may see prices on the board this (standalone) group
   // belongs to — decides if its add-option form offers cost inputs.
   showCosts: boolean;
+  // Choosing the winner of a CATEGORY comparison is couple-only (it rewrites
+  // that category's live cost/date/contact — enforced by a trigger in
+  // 0033_party_planner_access.sql); standalone comparisons stay open to
+  // whoever can edit the board.
+  canPickWinner: boolean;
 };
 
 export function OptionsCompareGroup({ group }: { group: CompareGroup }) {
@@ -188,7 +193,7 @@ export function OptionsCompareGroup({ group }: { group: CompareGroup }) {
                     )}
                   </td>
                   <td className="px-5 py-3 text-right align-middle">
-                    {!o.is_winner && (
+                    {!o.is_winner && group.canPickWinner && (
                       <button
                         type="button"
                         disabled={isPending}

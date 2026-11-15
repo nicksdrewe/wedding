@@ -19,12 +19,18 @@ export async function OptionsBoard({
   categoryPageId,
   revalidate,
   isCouple,
+  isRealCouple = isCouple,
   costAccess,
 }: {
   groupId: string;
   categoryPageId: string | null;
   revalidate: string;
+  // "May add and edit options on this board" — true for the couple and for
+  // anyone given Can edit on the category (0033_party_planner_access.sql).
   isCouple: boolean;
+  // The couple themselves: the only ones who may delete a category option,
+  // choose the winner, or link a cost line into another category.
+  isRealCouple?: boolean;
   // Whether this viewer may see prices on this board (the page's resolved
   // cost_access) — decides whether the add-option form offers cost inputs.
   // Each card additionally hides its own costs when RLS withheld them.
@@ -62,7 +68,7 @@ export async function OptionsBoard({
   // standalone comparisons — categoryPageId is null there.
   let otherCategories: { id: string; title: string }[] = [];
   let linksByItem: Record<string, CostItemLinkInfo[]> = {};
-  if (categoryPageId && isCouple) {
+  if (categoryPageId && isRealCouple) {
     const costItemIds = (costItemRows ?? []).map((i) => i.id);
     const [{ data: categories }, { data: links }] = await Promise.all([
       supabase.from("category_pages").select("id, title").neq("id", categoryPageId).order("title"),
@@ -124,6 +130,8 @@ export async function OptionsBoard({
               key={option.id}
               option={option}
               isCouple={isCouple}
+              canDelete={isRealCouple}
+              canPickWinner={isRealCouple}
               revalidate={revalidate}
               costItems={costItemsByOption[option.id] ?? []}
               linkableCategories={otherCategories}

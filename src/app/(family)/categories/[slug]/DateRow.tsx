@@ -6,7 +6,9 @@ import { DateForm } from "./DateForm";
 
 type DiaryEntry = { id: string; title: string; entry_date: string };
 
-// diary_entries (category-sourced): couple manages, family reads. A
+// diary_entries (category-sourced): anyone with "Can edit" on the category
+// may add and edit dates; removing one is couple-only (0033). isCouple here
+// means "may edit"; canDelete is the stricter right. A
 // page_option-sourced entry from markOptionWinner is keyed on
 // (category_page_id, source) independently of these rows, so editing or
 // deleting a manually-added entry here is safe.
@@ -14,16 +16,18 @@ export function DateRow({
   entry,
   categoryPageId,
   isCouple,
+  canDelete = isCouple,
 }: {
   entry: DiaryEntry;
   categoryPageId: string;
   isCouple: boolean;
+  canDelete?: boolean;
 }) {
   return (
     <EditableRow
       item={entry}
       isCouple={isCouple}
-      onDelete={deleteCategoryDate}
+      onDelete={canDelete ? deleteCategoryDate : undefined}
       renderView={(d) => (
         <span className="font-reading text-[13px] text-ink">
           {d.entry_date} — {d.title}
