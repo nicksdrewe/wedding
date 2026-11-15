@@ -46,6 +46,8 @@ export default async function IdeaBoardPage() {
     .from("idea_boards")
     .select("id, title, body, tags, created_at, idea_board_images(image_url, sort_order)")
     .eq("tier", "wedding_party")
+    // Stag/hen ideas belong to their own boards, not this shared one.
+    .is("visible_tag", null)
     .order("created_at", { ascending: false })
     .order("sort_order", { ascending: true, referencedTable: "idea_board_images" });
 

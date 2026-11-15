@@ -12,12 +12,17 @@ Run them after writing or changing any migration that affects access:
 npm install --no-save @electric-sql/pglite
 node supabase/tests/rls_cost_access.test.mjs
 node supabase/tests/rls_planner_access.test.mjs
+node supabase/tests/rls_project_admin.test.mjs
 ```
 
 - `rls_cost_access.test.mjs` — prices (0031/0032): who sees and edits costs.
 - `rls_planner_access.test.mjs` — categories, options, photos, contacts, dates
-  (0033). Pass a migration number to stop early, e.g. `... 0032`, to confirm
-  the checks really fail without the migration under test.
+  (0033).
+- `rls_project_admin.test.mjs` — stag/hen boards (0034): what the project
+  admin, ordinary members and outsiders can do, and the project budget.
+
+The last two accept a migration number to stop early (e.g. `... 0033`), to
+confirm the checks really fail without the migration under test.
 
 Each prints `ALL CHECKS PASSED` or the failing checks, and exits non-zero on
 failure. PGlite is deliberately not a project dependency (it is only needed

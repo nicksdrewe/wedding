@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentProfile } from "@/lib/auth/roles";
+import { getCurrentContactTags, getCurrentProfile } from "@/lib/auth/roles";
 import { getEffectivePermission } from "@/lib/permissions/actions";
 import { OPTION_COSTS_EMBED, readOptionCosts } from "@/lib/options/costs";
 import { redirect } from "next/navigation";
@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { IdeaCard } from "../IdeaCard";
 import { TaskRow } from "../TaskRow";
 import { OptionsCompareGroup, type CompareGroup } from "../OptionsCompareGroup";
+import { ProjectBudget, type ChosenOption } from "../ProjectBudget";
 import { GenderedIdeaForm } from "./GenderedIdeaForm";
 import { GenderedTaskForm } from "./GenderedTaskForm";
 import { GenderedOptionGroupForm } from "./GenderedOptionGroupForm";
@@ -30,6 +31,13 @@ export default async function GroomsmenProjectPage() {
 
   const permission = await getEffectivePermission("project:groomsmen", profile);
   if (!permission.pageAccess) redirect("/no-access");
+
+  // This board is a managed project (0034_project_admins_and_budgets.sql):
+  // the best man — and the couple — administer it; everyone else on it
+  // contributes. RLS enforces the same split; isAdmin only decides which
+  // controls are worth showing.
+  const myTags = await getCurrentContactTags(profile);
+  const isAdmin = isCouple || myTags.includes("best_man");
 
   const [{ data: ideas }, { data: tasks }, { data: contacts }, { data: optionGroups }] = await Promise.all([
     supabase
@@ -71,9 +79,25 @@ export default async function GroomsmenProjectPage() {
       categorySlug: category?.slug ?? null,
       options,
       showCosts: permission.costAccess,
-      canPickWinner: isCouple || !category,
+      canPickWinner: isAdmin,
+      canManageGroup: isAdmin,
     };
   });
+
+  // Winners with a visible price feed the project budget below.
+  const chosen: ChosenOption[] = compareGroups.flatMap((g) =>
+    g.options
+      .filter((o) => o.is_winner && !o.costs_hidden)
+      .map((o) => ({
+        id: o.id,
+        name: o.name,
+        comparison: g.title,
+        predicted_cost_min: o.predicted_cost_min,
+        predicted_cost_max: o.predicted_cost_max,
+        actual_cost: o.actual_cost,
+        currency: o.currency,
+      }))
+  );
 
   return (
     <div>
@@ -104,7 +128,7 @@ export default async function GroomsmenProjectPage() {
                 body={idea.body}
                 tags={idea.tags ?? []}
                 images={idea.idea_board_images ?? []}
-                canEdit={permission.editAccess && (isCouple || idea.created_by === profile?.id)}
+                canEdit={permission.editAccess && (isAdmin || idea.created_by === profile?.id)}
               />
             ))}
           </ul>
@@ -133,6 +157,7 @@ export default async function GroomsmenProjectPage() {
                   ownerContactId={t.owner_contact_id}
                   ownerName={owner?.full_name ?? null}
                   contacts={contacts ?? []}
+                  canDelete={isAdmin}
                 />
               );
             })}
@@ -149,7 +174,7 @@ export default async function GroomsmenProjectPage() {
           Comparisons started here — stag do venue, outfits, and anything
           else just for the groomsmen.
         </p>
-        {permission.editAccess && <GenderedOptionGroupForm visibleTag="groomsman" />}
+        {permission.editAccess && isAdmin && <GenderedOptionGroupForm visibleTag="groomsman" />}
 
         <div className="mt-5 flex flex-col gap-5">
           {compareGroups.map((g) => (
@@ -159,11 +184,15 @@ export default async function GroomsmenProjectPage() {
             <EmptyState
               className="mt-2"
               title="Nothing being compared yet"
-              hint={permission.editAccess ? "Start a comparison above." : undefined}
+              hint={permission.editAccess && isAdmin ? "Start a comparison above." : undefined}
             />
           )}
         </div>
       </section>
+
+      {permission.costAccess && (
+        <ProjectBudget visibleTag="groomsman" chosen={chosen} canManage={isAdmin} />
+      )}
     </div>
   );
 }

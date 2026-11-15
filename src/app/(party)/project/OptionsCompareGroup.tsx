@@ -40,6 +40,9 @@ export type CompareGroup = {
   // 0033_party_planner_access.sql); standalone comparisons stay open to
   // whoever can edit the board.
   canPickWinner: boolean;
+  // Renaming or deleting a standalone comparison: on a stag/hen board that
+  // is the project admin's (0034); on the main board, whoever can edit it.
+  canManageGroup: boolean;
 };
 
 export function OptionsCompareGroup({ group }: { group: CompareGroup }) {
@@ -52,7 +55,7 @@ export function OptionsCompareGroup({ group }: { group: CompareGroup }) {
   // Only a standalone comparison's own title/existence is editable here —
   // a category-linked group (Venue, Flowers...) lives on that category's
   // board and is that agent's surface, not this one's.
-  const isStandalone = !group.categoryTitle;
+  const isStandalone = !group.categoryTitle && group.canManageGroup;
 
   function pick(optionId: string) {
     setError(null);

@@ -11,6 +11,7 @@ export function TaskRow({
   ownerContactId,
   ownerName,
   contacts,
+  canDelete = true,
 }: {
   id: string;
   title: string;
@@ -19,6 +20,10 @@ export function TaskRow({
   ownerContactId: string | null;
   ownerName: string | null;
   contacts: { id: string; full_name: string }[];
+  // On a stag/hen board only the project's admin may delete a task
+  // (0034_project_admins_and_budgets.sql); everyone on the board can still
+  // add, edit and tick them off.
+  canDelete?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
@@ -119,14 +124,16 @@ export function TaskRow({
         >
           Edit
         </button>
-        <button
-          type="button"
-          onClick={handleDelete}
-          disabled={pending}
-          className="font-serif text-[11px] tracking-[0.06em] text-alert/80 uppercase hover:text-alert"
-        >
-          Delete
-        </button>
+        {canDelete && (
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={pending}
+            className="font-serif text-[11px] tracking-[0.06em] text-alert/80 uppercase hover:text-alert"
+          >
+            Delete
+          </button>
+        )}
       </div>
       {error && <p className="w-full font-reading text-xs text-alert">{error}</p>}
     </li>

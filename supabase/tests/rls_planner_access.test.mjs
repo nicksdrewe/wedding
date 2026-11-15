@@ -1,4 +1,4 @@
-// Step 3 RLS test: replay 0001-0032, seed, apply 0033, check every persona's
+// Planner-access RLS test: replay 0001-0032, seed, apply 0033 onwards, check every persona's
 // reads and writes on category/option/contact/date/cost tables.
 import { PGlite } from "@electric-sql/pglite";
 import fs from "node:fs";
@@ -6,7 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const MIG = fileURLToPath(new URL("../migrations/", import.meta.url));
-const LAST = process.argv[2] ?? "0033";
+const LAST = process.argv[2] ?? "9999";
 const db = new PGlite();
 let failures = 0;
 
@@ -121,7 +121,9 @@ async function readMatrix(title, want) {
 }
 const none = { categories: "", options: "", images: "", contacts: "", dates: "", optionPrices: "", rawPriceRows: "0", categoryTotals: "" };
 
-if (LAST >= "0033") await migrate("0033", "0033");
+if (LAST >= "0033") await migrate("0033", LAST);
+// From 0034 a plain groomsman can no longer pick the stag winner (project admins only).
+const memberPicksWinner = LAST >= "0034" ? "no-op" : "done";
 
 await readMatrix("reads after 0033", {
   couple: { categories: "suits,venue", options: "Band,Chateau,Hen spa,Stag villa,Tailor", images: "Band.jpg,Chateau.jpg,Hen spa.jpg,Stag villa.jpg,Tailor.jpg", contacts: "Tailor Tom,Venue manager", dates: "Free note,Suit fitting,Venue deposit", optionPrices: "Band,Chateau,Hen spa,Stag villa,Tailor", rawPriceRows: "5", categoryTotals: "suits,venue" },
@@ -178,7 +180,7 @@ const wantWrites = {
   family:    [R, N, N, N, R, N, R, N, N, R, N, R, N, N, R, N, N, N, N, R, N, R, R, N],
   bm:        [D, D, N, R, D, D, D, D, N, D, N, R, N, N, R, N, D, N, D, D, D, D, R, D],
   moh:       [D, D, N, R, D, D, D, D, N, D, N, R, N, N, R, N, N, N, N, D, D, R, D, N],
-  groomsman: [R, N, N, N, R, N, R, N, N, R, N, R, N, N, R, N, N, N, N, R, N, D, R, D],
+  groomsman: [R, N, N, N, R, N, R, N, N, R, N, R, N, N, R, N, N, N, N, R, N, D, R, memberPicksWinner],
   plain:     [R, N, N, N, R, N, R, N, N, R, N, R, N, N, R, N, N, N, N, R, N, R, R, N],
   guest:     [R, N, N, N, R, N, R, N, N, R, N, R, N, N, R, N, N, N, N, R, N, R, R, N],
 };

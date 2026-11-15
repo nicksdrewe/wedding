@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Images } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentProfile } from "@/lib/auth/roles";
+import { getCurrentContactTags, getCurrentProfile } from "@/lib/auth/roles";
 import { getEffectivePermission } from "@/lib/permissions/actions";
 import { OPTION_COSTS_EMBED, readOptionCosts } from "@/lib/options/costs";
 import { PageHeader } from "@/components/PageHeader";
@@ -36,11 +36,15 @@ export default async function ProjectPage() {
       .from("idea_boards")
       .select("id, title, body, tags, created_at, created_by, idea_board_images(id, image_url, sort_order)")
       .eq("tier", "wedding_party")
+      // Stag/hen ideas and tasks live on their own boards — without these
+      // filters they also appeared here for anyone able to see them.
+      .is("visible_tag", null)
       .order("created_at", { ascending: false })
       .order("sort_order", { referencedTable: "idea_board_images", ascending: true }),
     supabase
       .from("tasks")
       .select("id, title, notes, status, due_date, owner_contact_id, contacts(full_name)")
+      .is("visible_tag", null)
       .order("status")
       .order("due_date", { ascending: true, nullsFirst: false }),
     supabase
@@ -68,6 +72,16 @@ export default async function ProjectPage() {
     getEffectivePermission("project:groomsmen", profile),
     getEffectivePermission("project:bridesmaids", profile),
   ]);
+  // Who runs a comparison shown here: a stag/hen one belongs to that
+  // project's admin (0034); an untagged standalone one to whoever can edit
+  // this page; a category one's winner is the couple's alone.
+  const myTags = await getCurrentContactTags(profile);
+  const isAdminForTag = (visibleTag: string | null) =>
+    isCouple ||
+    (visibleTag === "groomsman" && myTags.includes("best_man")) ||
+    (visibleTag === "bridesmaid" && myTags.includes("maid_of_honour"));
+  const canManageStandalone = (visibleTag: string | null) => (visibleTag ? isAdminForTag(visibleTag) : canEdit);
+
   const costAccessForTag = (visibleTag: string | null) =>
     visibleTag === "groomsman"
       ? groomsmenPermission.costAccess
@@ -86,7 +100,8 @@ export default async function ProjectPage() {
       categorySlug: category?.slug ?? null,
       options,
       showCosts: costAccessForTag(g.visible_tag ?? null),
-      canPickWinner: isCouple || !category,
+      canPickWinner: category ? isCouple : canManageStandalone(g.visible_tag ?? null),
+      canManageGroup: !category && canManageStandalone(g.visible_tag ?? null),
     };
   });
 
