@@ -129,17 +129,78 @@ export function explainDriveError(err: unknown): string {
   return `Google Drive error: ${message}`;
 }
 
-// Quick end-to-end check of the Drive connection: can the saved login be
-// exchanged for access, and is the folder reachable. No file is created.
-export async function checkDriveConnection(): Promise<{ ok: true } | { ok: false; reason: string }> {
+export type DriveCheck = {
+  ok: boolean;
+  // Which Google account the saved login belongs to — the first thing to
+  // check when the folder "isn't found" (it must be the account that owns
+  // or can open that folder).
+  account: string | null;
+  steps: { step: string; ok: boolean; detail?: string }[];
+};
+
+// End-to-end check of the Drive connection, step by step so a failure says
+// exactly where it stopped: (1) the saved login works, (2) which account it
+// is, (3) the folder is visible to this app, (4) optionally a real write —
+// creates a 4-byte file in the folder and deletes it straight away, which is
+// exactly what an upload does. Nothing is left behind.
+export async function checkDriveConnection(opts: { write?: boolean } = {}): Promise<DriveCheck> {
+  const result: DriveCheck = { ok: false, account: null, steps: [] };
+  let drive: ReturnType<typeof getDriveClient>;
+  let folderId: string;
   try {
-    const folderId = getFolderId();
-    const drive = getDriveClient();
-    await drive.files.get({ fileId: folderId, fields: "id, name", supportsAllDrives: true });
-    return { ok: true };
+    folderId = getFolderId();
+    drive = getDriveClient();
   } catch (err) {
-    return { ok: false, reason: explainDriveError(err) };
+    result.steps.push({ step: "config", ok: false, detail: explainDriveError(err) });
+    return result;
   }
+
+  try {
+    const about = await drive.about.get({ fields: "user(emailAddress)" });
+    result.account = about.data.user?.emailAddress ?? null;
+    result.steps.push({ step: "login", ok: true });
+  } catch (err) {
+    result.steps.push({ step: "login", ok: false, detail: explainDriveError(err) });
+    return result;
+  }
+
+  try {
+    await drive.files.get({ fileId: folderId, fields: "id, name", supportsAllDrives: true });
+    result.steps.push({ step: "folder visible", ok: true });
+  } catch (err) {
+    result.steps.push({ step: "folder visible", ok: false, detail: explainDriveError(err) });
+    // Not fatal: this app's permission (drive.file) can hide a folder from
+    // a lookup while still allowing writes into it, so fall through to the
+    // real write test when asked.
+  }
+
+  if (opts.write) {
+    let createdId: string | null = null;
+    try {
+      const created = await drive.files.create({
+        requestBody: { name: "connection-test-delete-me.txt", parents: [folderId] },
+        media: { mimeType: "text/plain", body: Readable.from(Buffer.from("test")) },
+        fields: "id",
+        supportsAllDrives: true,
+      });
+      createdId = created.data.id ?? null;
+      result.steps.push({ step: "test write", ok: true });
+    } catch (err) {
+      result.steps.push({ step: "test write", ok: false, detail: explainDriveError(err) });
+    }
+    if (createdId) {
+      try {
+        await drive.files.delete({ fileId: createdId, supportsAllDrives: true });
+        result.steps.push({ step: "test file removed", ok: true });
+      } catch (err) {
+        result.steps.push({ step: "test file removed", ok: false, detail: explainDriveError(err) });
+      }
+    }
+  }
+
+  const writeStep = result.steps.find((x) => x.step === "test write");
+  result.ok = writeStep ? writeStep.ok : result.steps.every((x) => x.ok);
+  return result;
 }
 
 export async function deleteFromDrive(fileId: string): Promise<void> {
