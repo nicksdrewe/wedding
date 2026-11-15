@@ -1,0 +1,47 @@
+<!--
+  Supabase -> Authentication -> Emails -> Templates -> "Confirm sign up"
+
+  Why this exists: the site signs people in with a typed code. A brand-new
+  person's FIRST sign-in is sent through Supabase's "Confirm sign up" email,
+  not the "Magic link or OTP" one — and the default version has only a link
+  and no code, so the site asks for a code the email doesn't contain. This
+  version mirrors the "Magic link or OTP" design and shows the code.
+
+  Subject line to use: Sign In - Nick & Ellie's Wedding Site
+-->
+<div style="background-color:#faf6ef; padding:40px 20px; font-family: Georgia, 'Times New Roman', serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px; margin:0 auto; background-color:#faf6ef;">
+    <tr>
+      <td style="text-align:center; padding-bottom:8px;">
+        <p style="margin:0; font-size:12px; letter-spacing:3px; text-transform:uppercase; color:#574f43;">Nick &amp; Ellie</p>
+        <p style="margin:4px 0 0 0; font-size:12px; letter-spacing:2px; color:#b08d57;">28.11.26</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:28px 8px 8px; text-align:center;">
+        <h1 style="margin:0; font-size:26px; font-weight:normal; color:#2b2620;">Your sign-in code</h1>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:12px 16px 0; text-align:center;">
+        <p style="margin:0; font-size:15px; line-height:1.6; color:#574f43;">
+          Welcome! Pop this code into the sign-in page to reach our wedding hub &mdash;
+          RSVPs, plans, and everything you need for the big day.
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:28px 16px; text-align:center;">
+        <p style="margin:0; display:inline-block; padding:14px 28px; font-size:32px; letter-spacing:8px; color:#2b2620; background-color:#ffffff; border:1px solid #e6dfd0; border-radius:10px;">{{ .Token }}</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:0 16px; text-align:center;">
+        <p style="margin:0; font-size:13px; line-height:1.6; color:#8a8174;">
+          Type it in rather than clicking anything &mdash; the code only works once and expires soon.
+          If you didn&rsquo;t ask for this, you can ignore this email.
+        </p>
+      </td>
+    </tr>
+  </table>
+</div>

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { explainDriveError, uploadToDrive } from "@/lib/google/drive";
 
 // Generic image upload endpoint backing every "add a photo" flow in the
@@ -19,6 +20,21 @@ export async function POST(request: Request) {
   const profile = await getCurrentProfile();
   if (!profile || profile.role === "guest") {
     return NextResponse.json({ error: "Not allowed." }, { status: 403 });
+  }
+
+  // Per-person cap, not per-IP: everyone here is signed in, and a shared
+  // phone network would otherwise lock a whole group out together. Generous
+  // for a real "dump a day's photos" session, low enough that one runaway
+  // client or script can't fill the couple's Drive.
+  const { ok: withinLimit } = await checkRateLimit(`upload:${profile.id}`, {
+    max: 60,
+    windowSeconds: 60 * 60,
+  });
+  if (!withinLimit) {
+    return NextResponse.json(
+      { error: "That's a lot of photos in a short time — please try again in a little while." },
+      { status: 429 }
+    );
   }
 
   const formData = await request.formData();
