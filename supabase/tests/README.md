@@ -15,6 +15,8 @@ node supabase/tests/rls_planner_access.test.mjs
 node supabase/tests/rls_project_admin.test.mjs
 node supabase/tests/rls_admin_accounts.test.mjs
 node supabase/tests/rls_feedback.test.mjs
+node supabase/tests/rls_moodboard.test.mjs
+node supabase/tests/rls_error_log.test.mjs
 ```
 
 - `rls_cost_access.test.mjs` — prices (0031/0032): who sees and edits costs.
@@ -29,7 +31,12 @@ node supabase/tests/rls_feedback.test.mjs
 - `rls_feedback.test.mjs` — votes and comments (0037): who can see, vote,
   comment, edit and delete on options, ideas and tasks.
 
-The last four accept a migration number to stop early (e.g. `... 0033`), to
+- `rls_moodboard.test.mjs` — who can read and add to the main moodboard and the
+  stag/hen boards, and authorship (0038).
+
+- `rls_error_log.test.mjs` — the error log: couple-only read/clear, no forging (0039).
+
+The last five accept a migration number to stop early (e.g. `... 0033`), to
 confirm the checks really fail without the migration under test.
 
 Each prints `ALL CHECKS PASSED` or the failing checks, and exits non-zero on

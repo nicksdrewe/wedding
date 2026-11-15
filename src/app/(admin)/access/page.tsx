@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { getCurrentProfile } from "@/lib/auth/roles";
@@ -34,6 +35,13 @@ export default async function AccessPage() {
         title="Roles & Access"
         infoText="Control which roles and contact tags can see each page, and whether they see itemized detail or just the totals."
       />
+
+      <p className="mt-4 font-reading text-sm text-ink-soft">
+        <Link href="/errors" className="text-accent underline underline-offset-2">
+          Recent errors
+        </Link>{" "}
+        — anything that has gone wrong on the site.
+      </p>
 
       <div className="mt-8 flex flex-col gap-4">
         {topLevel.map((page) => (

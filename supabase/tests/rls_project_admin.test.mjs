@@ -119,13 +119,15 @@ const READS = {
   prices: `select po.name as n from page_option_costs c join page_options po on po.id = c.page_option_id`,
   budget: has34 ? `select name as n from project_budget_items` : `select '' as n where false`,
 };
+// Since 0038 the main moodboard is for couple, family, best man and maid of
+// honour only; groomsmen/bridesmaids see just their own board.
 const wantReads = {
   couple:     { ideas: "Go-karting,Main board idea,Paintball,Spa day", ideaPhotos: "kart.jpg,main.jpg,paint.jpg,spa.jpg", tasks: "Book hen brunch,Book stag flights", comparisons: "Hen do,Stag do", options: "Hen spa,Stag villa", prices: "Hen spa,Stag villa", budget: "Hen brunch,Stag flights" },
   bm:         { ideas: "Go-karting,Main board idea,Paintball", ideaPhotos: "kart.jpg,main.jpg,paint.jpg", tasks: "Book stag flights", comparisons: "Stag do", options: "Stag villa", prices: "Stag villa", budget: "Stag flights" },
   moh:        { ideas: "Main board idea,Spa day", ideaPhotos: "main.jpg,spa.jpg", tasks: "Book hen brunch", comparisons: "Hen do", options: "Hen spa", prices: "Hen spa", budget: "Hen brunch" },
-  groomsman:  { ideas: "Go-karting,Main board idea,Paintball", ideaPhotos: "kart.jpg,main.jpg,paint.jpg", tasks: "Book stag flights", comparisons: "Stag do", options: "Stag villa", prices: "", budget: "" },
-  bridesmaid: { ideas: "Main board idea,Spa day", ideaPhotos: "main.jpg,spa.jpg", tasks: "Book hen brunch", comparisons: "Hen do", options: "Hen spa", prices: "", budget: "" },
-  plain:      { ideas: "Main board idea", ideaPhotos: "main.jpg", tasks: "", comparisons: "", options: "", prices: "", budget: "" },
+  groomsman:  { ideas: "Go-karting,Paintball", ideaPhotos: "kart.jpg,paint.jpg", tasks: "Book stag flights", comparisons: "Stag do", options: "Stag villa", prices: "", budget: "" },
+  bridesmaid: { ideas: "Spa day", ideaPhotos: "spa.jpg", tasks: "Book hen brunch", comparisons: "Hen do", options: "Hen spa", prices: "", budget: "" },
+  plain:      { ideas: "", ideaPhotos: "", tasks: "", comparisons: "", options: "", prices: "", budget: "" },
   family:     { ideas: "Main board idea", ideaPhotos: "main.jpg", tasks: "", comparisons: "", options: "", prices: "", budget: "" },
   guest:      { ideas: "", ideaPhotos: "", tasks: "", comparisons: "", options: "", prices: "", budget: "" },
 };

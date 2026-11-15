@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 // tags: same comma-separated-input -> trimmed-array approach as
 // src/app/(admin)/guests/actions.ts's updateContact/tagsToArray, kept local
@@ -17,29 +18,59 @@ function tagsToArray(tags: string | undefined) {
 }
 
 const ideaSchema = z.object({
-  title: z.string().min(1),
-  body: z.string().optional(),
-  tags: z.string().optional(),
+  title: z.string().trim().min(1, "Give the idea a title.").max(200),
+  body: z.string().max(4000).optional(),
+  tags: z.string().max(500).optional(),
+  imageUrl: z.string().max(2000).optional(),
 });
 
-export async function addIdea(formData: FormData) {
-  const parsed = ideaSchema.parse({
+// Adds an idea to the MAIN moodboard. Who may is decided by the database
+// (couple, family, best man, maid of honour — 0038); this reports a refusal
+// in plain language rather than throwing, and can attach a first photo the
+// person has already uploaded.
+export async function addIdea(formData: FormData): Promise<{ error: string | null }> {
+  const result = ideaSchema.safeParse({
     title: formData.get("title"),
     body: formData.get("body") || undefined,
     tags: formData.get("tags") || "",
+    imageUrl: formData.get("imageUrl") || undefined,
   });
+  if (!result.success) return { error: result.error.issues[0]?.message ?? "Check the fields and try again." };
+  const parsed = result.data;
 
   const profile = await getCurrentProfile();
+  if (!profile || profile.role === "guest") return { error: "You can't add ideas here." };
+  const { ok } = await checkRateLimit(`idea:${profile.id}`, { max: 40, windowSeconds: 60 * 60 });
+  if (!ok) return { error: "That's a lot of ideas in a short time — please try again in a little while." };
+
   const supabase = await createClient();
-  await supabase.from("idea_boards").insert({
-    tier: "wedding_party",
-    title: parsed.title,
-    body: parsed.body ?? null,
-    tags: tagsToArray(parsed.tags),
-    created_by: profile?.id ?? null,
-  });
+  const { data: idea, error } = await supabase
+    .from("idea_boards")
+    .insert({
+      tier: "wedding_party",
+      title: parsed.title,
+      body: parsed.body ?? null,
+      tags: tagsToArray(parsed.tags),
+      created_by: profile.id,
+    })
+    .select("id")
+    .single();
+  if (error || !idea) return { error: "You can't add ideas here." };
+
+  if (parsed.imageUrl) {
+    const { error: imageError } = await supabase
+      .from("idea_board_images")
+      .insert({ idea_board_id: idea.id, image_url: parsed.imageUrl, sort_order: 0 });
+    if (imageError) {
+      revalidatePath("/project");
+      revalidatePath("/project/ideas");
+      return { error: "The idea was added, but its photo couldn't be attached — open the idea and add it again." };
+    }
+  }
 
   revalidatePath("/project");
+  revalidatePath("/project/ideas");
+  return { error: null };
 }
 
 const updateIdeaSchema = z.object({

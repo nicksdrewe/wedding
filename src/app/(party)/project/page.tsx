@@ -31,6 +31,15 @@ export default async function ProjectPage() {
   // 0028), so their visibility follows edit_access rather than "anyone who
   // reached this page can post".
   const canEdit = permission.editAccess;
+  // Who may add to the main moodboard (0038_moodboard_contributors.sql): the
+  // couple, family, best man and maid of honour — family included even though
+  // they can't edit the rest of this page.
+  const myTagsForBoard = await getCurrentContactTags(profile);
+  const canContribute =
+    isCouple ||
+    profile?.role === "family" ||
+    myTagsForBoard.includes("best_man") ||
+    myTagsForBoard.includes("maid_of_honour");
 
   const [{ data: ideas }, { data: tasks }, { data: contacts }, { data: optionGroups }] = await Promise.all([
     supabase
@@ -148,7 +157,7 @@ export default async function ProjectPage() {
             Idea board
             <Images className="h-3.5 w-3.5 text-ink-soft/50 transition-colors group-hover:text-accent" strokeWidth={2} aria-hidden="true" />
           </Link>
-          {canEdit && <IdeaForm />}
+          {canContribute && <IdeaForm />}
           <ul className="mt-4 flex flex-col gap-2.5">
             {(ideas ?? []).map((idea) => (
               <IdeaCard

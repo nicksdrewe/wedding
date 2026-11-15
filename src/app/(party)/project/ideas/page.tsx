@@ -2,7 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft, ImageOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentProfile } from "@/lib/auth/roles";
+import { getCurrentContactTags, getCurrentProfile } from "@/lib/auth/roles";
+import { IdeaForm } from "../IdeaForm";
 import { getEffectivePermission } from "@/lib/permissions/actions";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
@@ -42,6 +43,15 @@ export default async function IdeaBoardPage() {
   if (!permission.pageAccess) redirect("/no-access");
 
   const supabase = await createClient();
+
+  // Couple, family, best man and maid of honour can add to this board
+  // (0038_moodboard_contributors.sql).
+  const myTags = await getCurrentContactTags(profile);
+  const canContribute =
+    profile?.role === "couple" ||
+    profile?.role === "family" ||
+    myTags.includes("best_man") ||
+    myTags.includes("maid_of_honour");
 
   // Same source query as /project (tier: "wedding_party", RLS-gated), just
   // extended with tags + the one-to-many idea_board_images child rows
@@ -102,11 +112,21 @@ export default async function IdeaBoardPage() {
         />
       </div>
 
+      {canContribute && (
+        <section className="mt-6 max-w-xl rounded-[10px] border border-ink/10 bg-white p-5">
+          <h2 className="font-serif text-[15px] font-semibold tracking-wide">Add to the board</h2>
+          <p className="mt-1 font-reading text-[13px] text-ink-soft">
+            Drop in a photo, a link idea or a note — it appears here straight away.
+          </p>
+          <IdeaForm />
+        </section>
+      )}
+
       {orderedTags.length === 0 ? (
         <EmptyState
           className="mt-4"
           title="No ideas yet"
-          hint="Add ideas from the Project page and they'll show up here."
+          hint={canContribute ? "Be the first to add one above." : "Ideas added to the board will show up here."}
         />
       ) : (
         orderedTags.map((tag, i) => (
