@@ -2,6 +2,8 @@
 
 import { useRef, useState, useTransition } from "react";
 import { deleteTask, toggleTask, updateTask } from "./actions";
+import { Feedback } from "@/components/feedback/Feedback";
+import type { FeedbackData } from "@/lib/feedback/types";
 
 export function TaskRow({
   id,
@@ -12,6 +14,10 @@ export function TaskRow({
   ownerName,
   contacts,
   canDelete = true,
+  feedback,
+  canInteract = true,
+  canModerate = false,
+  revalidate = "/project",
 }: {
   id: string;
   title: string;
@@ -24,6 +30,11 @@ export function TaskRow({
   // (0034_project_admins_and_budgets.sql); everyone on the board can still
   // add, edit and tick them off.
   canDelete?: boolean;
+  // Comments on the task (0037) — tasks take comments only, no thumbs.
+  feedback?: FeedbackData;
+  canInteract?: boolean;
+  canModerate?: boolean;
+  revalidate?: string;
 }) {
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
@@ -104,7 +115,7 @@ export function TaskRow({
   }
 
   return (
-    <li className="group flex items-center gap-3 rounded-[10px] border border-ink/10 bg-white px-4 py-3 font-serif text-[13px]">
+    <li className="group flex flex-wrap items-center gap-3 rounded-[10px] border border-ink/10 bg-white px-4 py-3 font-serif text-[13px]">
       <input
         type="checkbox"
         checked={done}
@@ -135,6 +146,16 @@ export function TaskRow({
           </button>
         )}
       </div>
+      <Feedback
+        targetType="task"
+        targetId={id}
+        data={feedback}
+        canInteract={canInteract}
+        canModerate={canModerate}
+        revalidate={revalidate}
+        showReactions={false}
+        className="w-full"
+      />
       {error && <p className="w-full font-reading text-xs text-alert">{error}</p>}
     </li>
   );

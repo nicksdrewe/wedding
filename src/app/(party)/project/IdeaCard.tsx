@@ -5,6 +5,8 @@ import { Loader2, X } from "lucide-react";
 import { ImageUpload } from "@/components/ImageUpload";
 import { toDriveImageUrl } from "@/lib/google/image-url";
 import { addIdeaImage, deleteIdea, removeIdeaImage, updateIdea } from "./actions";
+import { Feedback } from "@/components/feedback/Feedback";
+import type { FeedbackData } from "@/lib/feedback/types";
 
 export type IdeaImage = {
   id: string;
@@ -19,6 +21,10 @@ export function IdeaCard({
   tags,
   images,
   canEdit,
+  feedback,
+  canInteract = true,
+  canModerate = false,
+  revalidate = "/project",
 }: {
   id: string;
   title: string;
@@ -26,6 +32,11 @@ export function IdeaCard({
   tags: string[];
   images: IdeaImage[];
   canEdit: boolean;
+  // Votes and comments (0037).
+  feedback?: FeedbackData;
+  canInteract?: boolean;
+  canModerate?: boolean;
+  revalidate?: string;
 }) {
   const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -190,6 +201,16 @@ export function IdeaCard({
       {imagePending && !removingId && (
         <p className="mt-1 font-reading text-[11px] text-ink-soft/60 italic">Uploading…</p>
       )}
+
+      <Feedback
+        targetType="idea"
+        targetId={id}
+        data={feedback}
+        canInteract={canInteract}
+        canModerate={canModerate}
+        revalidate={revalidate}
+        className="mt-3"
+      />
 
       {error && <p className="mt-1.5 font-reading text-xs text-alert">{error}</p>}
     </li>

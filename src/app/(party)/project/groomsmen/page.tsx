@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentContactTags, getCurrentProfile } from "@/lib/auth/roles";
 import { getEffectivePermission } from "@/lib/permissions/actions";
 import { OPTION_COSTS_EMBED, readOptionCosts } from "@/lib/options/costs";
+import { loadFeedback } from "@/lib/feedback/load";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
@@ -68,10 +69,29 @@ export default async function GroomsmenProjectPage() {
       .order("created_at", { ascending: true, referencedTable: "page_options" }),
   ]);
 
+  // Votes and comments for every idea, task and comparison option on this
+  // board, in a handful of queries (not one per card). The database only
+  // returns feedback the viewer may see.
+  const optionIds = (optionGroups ?? []).flatMap((g) =>
+    (Array.isArray(g.page_options) ? g.page_options : g.page_options ? [g.page_options] : []).map((o) => o.id)
+  );
+  const [ideaFeedback, taskFeedback, optionFeedback] = await Promise.all([
+    loadFeedback(supabase, "idea", (ideas ?? []).map((i) => i.id), profile?.id ?? null),
+    loadFeedback(supabase, "task", (tasks ?? []).map((t) => t.id), profile?.id ?? null),
+    loadFeedback(supabase, "page_option", optionIds, profile?.id ?? null),
+  ]);
+  const feedbackPath = "/project/groomsmen";
+
   const compareGroups: CompareGroup[] = (optionGroups ?? []).map((g) => {
     const category = Array.isArray(g.category_pages) ? g.category_pages[0] : g.category_pages;
     const rawOptions = Array.isArray(g.page_options) ? g.page_options : g.page_options ? [g.page_options] : [];
-    const options = rawOptions.map((o) => ({ id: o.id, name: o.name, is_winner: o.is_winner, ...readOptionCosts(o) }));
+    const options = rawOptions.map((o) => ({
+      id: o.id,
+      name: o.name,
+      is_winner: o.is_winner,
+      feedback: optionFeedback[o.id],
+      ...readOptionCosts(o),
+    }));
     return {
       id: g.id,
       title: g.title,
@@ -81,6 +101,9 @@ export default async function GroomsmenProjectPage() {
       showCosts: permission.costAccess,
       canPickWinner: isAdmin,
       canManageGroup: isAdmin,
+      revalidate: feedbackPath,
+      canModerateFeedback: isAdmin,
+      canInteractFeedback: true,
     };
   });
 
@@ -129,6 +152,9 @@ export default async function GroomsmenProjectPage() {
                 tags={idea.tags ?? []}
                 images={idea.idea_board_images ?? []}
                 canEdit={permission.editAccess && (isAdmin || idea.created_by === profile?.id)}
+                feedback={ideaFeedback[idea.id]}
+                canModerate={isAdmin}
+                revalidate={feedbackPath}
               />
             ))}
           </ul>
@@ -158,6 +184,9 @@ export default async function GroomsmenProjectPage() {
                   ownerName={owner?.full_name ?? null}
                   contacts={contacts ?? []}
                   canDelete={isAdmin}
+                  feedback={taskFeedback[t.id]}
+                  canModerate={isAdmin}
+                  revalidate={feedbackPath}
                 />
               );
             })}

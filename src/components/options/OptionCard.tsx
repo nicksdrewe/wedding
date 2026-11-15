@@ -30,6 +30,8 @@ import { computeOptionTotals } from "@/lib/options/totals";
 import { normalizeExternalUrl } from "@/lib/url";
 import { CostItemsPanel, type CostItemRow, type LinkableCategory, type CostItemLinkInfo } from "./CostItemsPanel";
 import { EditOptionForm } from "./EditOptionForm";
+import { Feedback, FeedbackSummary } from "@/components/feedback/Feedback";
+import type { FeedbackData } from "@/lib/feedback/types";
 
 export type OptionImage = {
   id: string;
@@ -67,6 +69,9 @@ export function OptionCard({
   isCouple,
   canDelete = isCouple,
   canPickWinner = isCouple,
+  feedback,
+  canInteract = false,
+  canModerateFeedback = false,
   revalidate,
   costItems = [],
   linkableCategories = [],
@@ -80,6 +85,10 @@ export function OptionCard({
   isCouple: boolean;
   canDelete?: boolean;
   canPickWinner?: boolean;
+  // Votes and comments (0037). canInteract is false for plain guests.
+  feedback?: FeedbackData;
+  canInteract?: boolean;
+  canModerateFeedback?: boolean;
   revalidate: string;
   costItems?: CostItemRow[];
   linkableCategories?: LinkableCategory[];
@@ -145,6 +154,7 @@ export function OptionCard({
                 {option.sleeps != null ? `sleeps ${option.sleeps}` : ""}
               </p>
             )}
+            <FeedbackSummary data={feedback} />
           </div>
         </div>
       </DisclosureTrigger>
@@ -159,6 +169,9 @@ export function OptionCard({
           linkableCategories={linkableCategories}
           linksByItem={linksByItem}
           totals={totals}
+          feedback={feedback}
+          canInteract={canInteract}
+          canModerateFeedback={canModerateFeedback}
         />
       </DisclosureContent>
     </Disclosure>
@@ -175,7 +188,13 @@ function OptionDetailPanel({
   linkableCategories,
   linksByItem,
   totals,
+  feedback,
+  canInteract,
+  canModerateFeedback,
 }: {
+  feedback?: FeedbackData;
+  canInteract: boolean;
+  canModerateFeedback: boolean;
   option: OptionDetail;
   isCouple: boolean;
   canDelete: boolean;
@@ -255,6 +274,15 @@ function OptionDetailPanel({
 
   return (
     <div className="border-t border-ink/10 p-5">
+      <Feedback
+        targetType="page_option"
+        targetId={option.id}
+        data={feedback}
+        canInteract={canInteract}
+        canModerate={canModerateFeedback}
+        revalidate={revalidate}
+        className="mb-4"
+      />
       {/* Full image gallery */}
       {option.images.length > 0 && (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">

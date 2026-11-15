@@ -8,6 +8,9 @@ import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { InView } from "@/components/motion-primitives/in-view";
 import { toDriveImageUrl } from "@/lib/google/image-url";
+import { Feedback } from "@/components/feedback/Feedback";
+import { loadFeedback } from "@/lib/feedback/load";
+import type { FeedbackData } from "@/lib/feedback/types";
 
 const EASE = [0.22, 1, 0.36, 1] as [number, number, number, number];
 
@@ -23,6 +26,7 @@ type BoardIdea = {
   body: string | null;
   tags: string[];
   images: IdeaImage[];
+  feedback?: FeedbackData;
 };
 
 export default async function IdeaBoardPage() {
@@ -51,12 +55,17 @@ export default async function IdeaBoardPage() {
     .order("created_at", { ascending: false })
     .order("sort_order", { ascending: true, referencedTable: "idea_board_images" });
 
+  // Votes and comments for every tile, in two queries. Only what this
+  // viewer may see comes back.
+  const feedbackByIdea = await loadFeedback(supabase, "idea", (data ?? []).map((r) => r.id), profile?.id ?? null);
+
   const ideas: BoardIdea[] = (data ?? []).map((row) => ({
     id: row.id,
     title: row.title,
     body: row.body,
     tags: (row.tags ?? []) as string[],
     images: (row.idea_board_images ?? []) as IdeaImage[],
+    feedback: feedbackByIdea[row.id],
   }));
 
   // Group by tag — an idea with several tags reasonably shows up in each
@@ -101,7 +110,7 @@ export default async function IdeaBoardPage() {
         />
       ) : (
         orderedTags.map((tag, i) => (
-          <TagSection key={tag} tag={tag} ideas={sections.get(tag)!} sectionIndex={i} />
+          <TagSection key={tag} tag={tag} ideas={sections.get(tag)!} sectionIndex={i} isCouple={profile?.role === "couple"} />
         ))
       )}
     </div>
@@ -112,10 +121,12 @@ function TagSection({
   tag,
   ideas,
   sectionIndex,
+  isCouple,
 }: {
   tag: string;
   ideas: BoardIdea[];
   sectionIndex: number;
+  isCouple: boolean;
 }) {
   const label = tag === UNTAGGED ? "Untagged" : tag;
 
@@ -143,6 +154,17 @@ function TagSection({
             className="mb-4 break-inside-avoid"
           >
             <IdeaTile idea={idea} />
+            {/* Under the tile, not on it: the tile's own text sits on a dark
+                scrim over the photo. Plain guests can't reach this page. */}
+            <Feedback
+              targetType="idea"
+              targetId={idea.id}
+              data={idea.feedback}
+              canInteract
+              canModerate={isCouple}
+              revalidate="/project/ideas"
+              className="mt-2"
+            />
           </InView>
         ))}
       </div>

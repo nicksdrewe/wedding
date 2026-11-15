@@ -7,6 +7,8 @@ import { AddOptionForm } from "@/components/options/AddOptionForm";
 import { CostRange } from "@/components/CostRange";
 import type { Currency } from "@/lib/currency/convert";
 import { deleteOptionGroup, updateOptionGroupTitle } from "./actions";
+import { Feedback } from "@/components/feedback/Feedback";
+import type { FeedbackData } from "@/lib/feedback/types";
 
 // The skimmed cross-category comparison row. Unlike OptionsGrid (the full
 // card board on category pages, complete with confirm dialog + contact/date
@@ -24,6 +26,8 @@ export type CompareOption = {
   // RLS withheld this option's prices from the viewer (lib/options/costs.ts).
   costs_hidden: boolean;
   is_winner: boolean;
+  // Votes and comments (0037) — filled in by the page.
+  feedback?: FeedbackData;
 };
 
 export type CompareGroup = {
@@ -43,6 +47,13 @@ export type CompareGroup = {
   // Renaming or deleting a standalone comparison: on a stag/hen board that
   // is the project admin's (0034); on the main board, whoever can edit it.
   canManageGroup: boolean;
+  // The page this comparison is shown on, so a vote or comment refreshes it.
+  revalidate: string;
+  // May remove other people's comments on this comparison's options: the
+  // couple, or the stag/hen board's admin (enforced by the database too).
+  canModerateFeedback: boolean;
+  // False for a plain guest — they see counts only.
+  canInteractFeedback: boolean;
 };
 
 export function OptionsCompareGroup({ group }: { group: CompareGroup }) {
@@ -184,6 +195,15 @@ export function OptionsCompareGroup({ group }: { group: CompareGroup }) {
                         Winner
                       </span>
                     )}
+                    <Feedback
+                      targetType="page_option"
+                      targetId={o.id}
+                      data={o.feedback}
+                      canInteract={group.canInteractFeedback}
+                      canModerate={group.canModerateFeedback}
+                      revalidate={group.revalidate}
+                      className="mt-2 font-normal"
+                    />
                   </td>
                   <td className="px-5 py-3 align-middle font-reading text-ink-soft tabular-nums">
                     {!o.costs_hidden && (

@@ -4,6 +4,8 @@ import { AddOptionForm } from "./AddOptionForm";
 import { OptionCard, type OptionDetail } from "./OptionCard";
 import type { CostItemRow, CostItemLinkInfo } from "./CostItemsPanel";
 import { OPTION_COSTS_EMBED, readOptionCosts } from "@/lib/options/costs";
+import { getCurrentProfile } from "@/lib/auth/roles";
+import { loadFeedback } from "@/lib/feedback/load";
 
 // The visual option board for a category page: every page_option in the
 // group, shown as an image-first card that expands (via Disclosure) into
@@ -47,6 +49,10 @@ export async function OptionsBoard({
     .order("sort_order", { referencedTable: "page_option_images", ascending: true });
 
   const optionIds = (data ?? []).map((o) => o.id);
+
+  // Votes and comments for every card on the board, in two queries.
+  const profile = await getCurrentProfile();
+  const feedbackByOption = await loadFeedback(supabase, "page_option", optionIds, profile?.id ?? null);
 
   const { data: costItemRows } = optionIds.length > 0
     ? await supabase
@@ -132,6 +138,9 @@ export async function OptionsBoard({
               isCouple={isCouple}
               canDelete={isRealCouple}
               canPickWinner={isRealCouple}
+              feedback={feedbackByOption[option.id]}
+              canInteract={!!profile && profile.role !== "guest"}
+              canModerateFeedback={isRealCouple}
               revalidate={revalidate}
               costItems={costItemsByOption[option.id] ?? []}
               linkableCategories={otherCategories}

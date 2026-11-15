@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentContactTags, getCurrentProfile } from "@/lib/auth/roles";
 import { getEffectivePermission } from "@/lib/permissions/actions";
 import { OPTION_COSTS_EMBED, readOptionCosts } from "@/lib/options/costs";
+import { loadFeedback } from "@/lib/feedback/load";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { IdeaForm } from "./IdeaForm";
@@ -89,10 +90,28 @@ export default async function ProjectPage() {
         ? bridesmaidsPermission.costAccess
         : permission.costAccess;
 
+  // Votes and comments for everything shown on this page, in a handful of
+  // queries. The database only returns feedback the viewer may see.
+  const optionIds = (optionGroups ?? []).flatMap((g) =>
+    (Array.isArray(g.page_options) ? g.page_options : g.page_options ? [g.page_options] : []).map((o) => o.id)
+  );
+  const [ideaFeedback, taskFeedback, optionFeedback] = await Promise.all([
+    loadFeedback(supabase, "idea", (ideas ?? []).map((i) => i.id), profile?.id ?? null),
+    loadFeedback(supabase, "task", (tasks ?? []).map((t) => t.id), profile?.id ?? null),
+    loadFeedback(supabase, "page_option", optionIds, profile?.id ?? null),
+  ]);
+  const feedbackPath = "/project";
+
   const compareGroups: CompareGroup[] = (optionGroups ?? []).map((g) => {
     const category = Array.isArray(g.category_pages) ? g.category_pages[0] : g.category_pages;
     const rawOptions = Array.isArray(g.page_options) ? g.page_options : g.page_options ? [g.page_options] : [];
-    const options = rawOptions.map((o) => ({ id: o.id, name: o.name, is_winner: o.is_winner, ...readOptionCosts(o) }));
+    const options = rawOptions.map((o) => ({
+      id: o.id,
+      name: o.name,
+      is_winner: o.is_winner,
+      feedback: optionFeedback[o.id],
+      ...readOptionCosts(o),
+    }));
     return {
       id: g.id,
       title: g.title,
@@ -102,6 +121,11 @@ export default async function ProjectPage() {
       showCosts: costAccessForTag(g.visible_tag ?? null),
       canPickWinner: category ? isCouple : canManageStandalone(g.visible_tag ?? null),
       canManageGroup: !category && canManageStandalone(g.visible_tag ?? null),
+      revalidate: feedbackPath,
+      // The couple anywhere; a stag/hen comparison's admin on their own (the
+      // database enforces the same rule).
+      canModerateFeedback: isCouple || (!!g.visible_tag && isAdminForTag(g.visible_tag)),
+      canInteractFeedback: true,
     };
   });
 
@@ -135,6 +159,9 @@ export default async function ProjectPage() {
                 tags={idea.tags ?? []}
                 images={idea.idea_board_images ?? []}
                 canEdit={isCouple || idea.created_by === profile?.id}
+                feedback={ideaFeedback[idea.id]}
+                canModerate={isCouple}
+                revalidate={feedbackPath}
               />
             ))}
           </ul>
@@ -163,6 +190,9 @@ export default async function ProjectPage() {
                   ownerContactId={t.owner_contact_id}
                   ownerName={owner?.full_name ?? null}
                   contacts={contacts ?? []}
+                  feedback={taskFeedback[t.id]}
+                  canModerate={isCouple}
+                  revalidate={feedbackPath}
                 />
               );
             })}
