@@ -5,6 +5,8 @@ import { tagLabel } from "@/lib/tags";
 import { ArrowDownAZ, ArrowUpAZ } from "lucide-react";
 import { InView } from "@/components/motion-primitives/in-view";
 import { EditableGuestRow, type Contact } from "./EditableGuestRow";
+import { BulkAccounts } from "./BulkAccounts";
+import type { AccountStatus } from "@/lib/accounts/types";
 
 export type GuestListEvent = { id: string; name: string };
 
@@ -31,6 +33,7 @@ export function GuestTable({
   events,
   showWeddingRsvp,
   isCouple,
+  accounts = null,
 }: {
   contacts: GuestTableContact[];
   events: GuestListEvent[];
@@ -40,6 +43,9 @@ export function GuestTable({
   // it at, same principle as every dynamic event column in `events`.
   showWeddingRsvp: boolean;
   isCouple: boolean;
+  // Per-guest account status — only passed to Nick and Ellie. Its presence
+  // is what turns the Account column and bulk "Create accounts" on.
+  accounts?: Record<string, AccountStatus> | null;
 }) {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [role, setRole] = useState("");
@@ -108,8 +114,22 @@ export function GuestTable({
     [filtered, topLevelIds]
   );
 
+  // Everyone currently shown who could be given an account but hasn't one.
+  const bulkEligible = useMemo(
+    () =>
+      accounts
+        ? topLevel.filter((c) => accounts[c.id]?.state === "none").map((c) => ({ id: c.id, name: c.full_name }))
+        : [],
+    [accounts, topLevel]
+  );
+
   return (
     <div className="mt-10">
+      {accounts && (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <BulkAccounts key={bulkEligible.map((p) => p.id).join(",")} eligible={bulkEligible} />
+        </div>
+      )}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <select value={role} onChange={(e) => setRole(e.target.value)} className={SELECT_CLASS}>
           <option value="">All roles</option>
@@ -178,7 +198,7 @@ export function GuestTable({
         </p>
       ) : (
         <div className="overflow-x-auto rounded-[10px] border border-ink/10">
-          <table className="w-full min-w-[760px] text-left font-serif text-[13px]">
+          <table className="w-full min-w-[900px] text-left font-serif text-[13px]">
             <thead className="bg-cream-deep">
               <tr>
                 <th className="px-5 py-3 text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
@@ -198,6 +218,9 @@ export function GuestTable({
                 <th className="px-5 py-3 text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">Contact</th>
                 <th className="px-5 py-3 text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">Role</th>
                 <th className="px-5 py-3 text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">Tags</th>
+                {accounts && (
+                  <th className="px-5 py-3 text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">Account</th>
+                )}
                 <th className="px-5 py-3 text-center text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
                   Plus one
                 </th>
@@ -226,7 +249,7 @@ export function GuestTable({
                     transition={{ duration: 0.3, delay: Math.min(i, 12) * 0.03 }}
                     className="group transition-colors duration-150 hover:bg-cream-deep/40"
                   >
-                    <EditableGuestRow contact={c} isCouple={isCouple} events={events} showWeddingRsvp={showWeddingRsvp} />
+                    <EditableGuestRow contact={c} isCouple={isCouple} events={events} showWeddingRsvp={showWeddingRsvp} account={accounts?.[c.id]} showAccounts={!!accounts} />
                   </InView>
                   {(childrenByParent.get(c.id) ?? []).map((child) => (
                     <InView
@@ -237,7 +260,7 @@ export function GuestTable({
                       transition={{ duration: 0.3, delay: Math.min(i, 12) * 0.03 }}
                       className="group bg-cream-deep/20 transition-colors duration-150 hover:bg-cream-deep/40"
                     >
-                      <EditableGuestRow contact={child} isCouple={isCouple} isChild events={events} showWeddingRsvp={showWeddingRsvp} />
+                      <EditableGuestRow contact={child} isCouple={isCouple} isChild events={events} showWeddingRsvp={showWeddingRsvp} showAccounts={!!accounts} />
                     </InView>
                   ))}
                 </React.Fragment>
@@ -251,7 +274,7 @@ export function GuestTable({
                   transition={{ duration: 0.3, delay: Math.min(i, 12) * 0.03 }}
                   className="group transition-colors duration-150 hover:bg-cream-deep/40"
                 >
-                  <EditableGuestRow contact={c} isCouple={isCouple} events={events} showWeddingRsvp={showWeddingRsvp} />
+                  <EditableGuestRow contact={c} isCouple={isCouple} events={events} showWeddingRsvp={showWeddingRsvp} account={accounts?.[c.id]} showAccounts={!!accounts} />
                 </InView>
               ))}
             </tbody>

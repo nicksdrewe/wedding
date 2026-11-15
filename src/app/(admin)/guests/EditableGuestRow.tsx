@@ -6,6 +6,8 @@ import { addChildContact, deleteContact, updateContact } from "./actions";
 import { ROLE_BADGE, ROLE_LABEL, RSVP_STYLE } from "./badges";
 import type { GuestListEvent } from "./GuestTable";
 import { TagPicker } from "./TagPicker";
+import { AccountCell } from "./AccountCell";
+import type { AccountStatus } from "@/lib/accounts/types";
 import { tagLabel } from "@/lib/tags";
 
 export type Contact = {
@@ -37,9 +39,16 @@ export function EditableGuestRow({
   isChild = false,
   events,
   showWeddingRsvp,
+  account,
+  showAccounts = false,
 }: {
   contact: Contact;
   isCouple: boolean;
+  // Present only for Nick and Ellie: this guest's account status, which
+  // also adds the Account column. showAccounts keeps plus-one rows (which
+  // never have accounts) lined up with it.
+  account?: AccountStatus;
+  showAccounts?: boolean;
   // True for a contact nested under a parent (e.g. an "other" added via
   // an event's group RSVP) — renders indented directly below the
   // parent's row rather than as its own top-level row. Grouping is done
@@ -68,7 +77,7 @@ export function EditableGuestRow({
     });
   }
 
-  const colCount = (showWeddingRsvp ? 7 : 6) + events.length;
+  const colCount = (showWeddingRsvp ? 7 : 6) + events.length + (showAccounts ? 1 : 0);
 
   if (editing) {
     return (
@@ -159,6 +168,11 @@ export function EditableGuestRow({
           <span className="text-ink-soft/30">—</span>
         )}
       </td>
+      {showAccounts && (
+        <td className="px-5 py-3.5 align-top">
+          {account ? <AccountCell contactId={contact.id} status={account} /> : <span className="text-ink-soft/30">—</span>}
+        </td>
+      )}
       <td className="px-5 py-3.5 text-center">
         {contact.plus_one_limit > 0 ? (
           <span className="inline-flex items-center gap-1 text-accent">

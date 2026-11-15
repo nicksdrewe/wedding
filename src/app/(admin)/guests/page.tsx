@@ -6,6 +6,7 @@ import { AnimatedNumber } from "@/components/motion-primitives/animated-number";
 import { getActiveInviteLink } from "@/lib/invite/actions";
 import { getCurrentProfile } from "@/lib/auth/roles";
 import { getEffectivePermission } from "@/lib/permissions/actions";
+import { loadAccountStatuses } from "@/lib/accounts/status";
 import { AddContactForm } from "./AddContactForm";
 import { GuestTable, type GuestTableContact } from "./GuestTable";
 import { InviteLinkButton } from "./InviteLinkCard";
@@ -116,6 +117,17 @@ export default async function GuestsPage() {
   // this route means couple.
   const isCouple = permission.editAccess;
 
+  // Account management (who has an account, create/invite/reset) is Nick
+  // and Ellie only — never anyone else, whatever "Can edit" they've been
+  // ticked for. Statuses come from Supabase's admin API, so they are only
+  // fetched for them, and the server actions re-check the same thing.
+  const canManageAccounts = profile?.role === "couple";
+  const accountStatuses = canManageAccounts
+    ? await loadAccountStatuses(
+        (contacts ?? []).map((c) => ({ id: c.id, email: c.email, parent_contact_id: c.parent_contact_id }))
+      ).catch(() => null)
+    : null;
+
   return (
     <div>
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -168,6 +180,7 @@ export default async function GuestsPage() {
           events={events}
           showWeddingRsvp={showWeddingRsvp}
           isCouple={isCouple}
+          accounts={accountStatuses}
         />
       ) : (
         <EmptyState

@@ -13,6 +13,7 @@ let failures = 0;
 await db.exec(`
   create role anon nologin;
   create role authenticated nologin;
+  create role service_role nologin bypassrls; -- exists on Supabase; later migrations grant to it
   create schema auth;
   create table auth.users (id uuid primary key default gen_random_uuid(), email text, raw_user_meta_data jsonb default '{}');
   create function auth.uid() returns uuid language sql stable as $$

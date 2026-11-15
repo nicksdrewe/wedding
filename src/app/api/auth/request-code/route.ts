@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { findAuthUserByEmail, isBanned } from "@/lib/accounts/status";
 
 // Gate for the sign-in code request: the browser has no read access to
 // `contacts` (RLS restricts it to the couple and self), so this runs the
@@ -57,6 +58,28 @@ export async function POST(request: Request) {
           "We don't have that email on our guest list. Double-check it, or ask Nick or Ellie to add you.",
       },
       { status: 404 }
+    );
+  }
+
+  // Accounts are given, not self-created: being on the guest list isn't
+  // enough on its own. Without this check Supabase would either reject the
+  // request with an unhelpful message (sign-up from sign-in is switched off
+  // in SignInFields) or, if it were ever allowed, mint an account for
+  // anyone whose email we know.
+  const user = await findAuthUserByEmail(body.data.email);
+  if (!user) {
+    return NextResponse.json(
+      {
+        error:
+          "You're on the guest list, but your account isn't set up yet. Ask Nick or Ellie to send you an invite.",
+      },
+      { status: 403 }
+    );
+  }
+  if (isBanned(user)) {
+    return NextResponse.json(
+      { error: "This account has been switched off. Please check with Nick or Ellie." },
+      { status: 403 }
     );
   }
 

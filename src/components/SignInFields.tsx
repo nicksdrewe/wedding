@@ -92,7 +92,12 @@ export function SignInFields({ next = "/hub" }: { next?: string }) {
       return;
     }
 
-    const { error } = await createClient().auth.signInWithOtp({ email });
+    // shouldCreateUser: false — sign-in must never mint an account; accounts
+    // are created by the couple from the guest list.
+    const { error } = await createClient().auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: false },
+    });
     setBusy(false);
     if (error) {
       setError(error.message);

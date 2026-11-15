@@ -13,6 +13,7 @@ npm install --no-save @electric-sql/pglite
 node supabase/tests/rls_cost_access.test.mjs
 node supabase/tests/rls_planner_access.test.mjs
 node supabase/tests/rls_project_admin.test.mjs
+node supabase/tests/rls_admin_accounts.test.mjs
 ```
 
 - `rls_cost_access.test.mjs` — prices (0031/0032): who sees and edits costs.
@@ -21,7 +22,10 @@ node supabase/tests/rls_project_admin.test.mjs
 - `rls_project_admin.test.mjs` — stag/hen boards (0034): what the project
   admin, ordinary members and outsiders can do, and the project budget.
 
-The last two accept a migration number to stop early (e.g. `... 0033`), to
+- `rls_admin_accounts.test.mjs` — account management (0035): the audit log and
+  sign-out-everywhere function, and who is allowed to call them.
+
+The last three accept a migration number to stop early (e.g. `... 0033`), to
 confirm the checks really fail without the migration under test.
 
 Each prints `ALL CHECKS PASSED` or the failing checks, and exits non-zero on
