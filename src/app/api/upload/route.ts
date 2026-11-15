@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
-import { uploadToDrive } from "@/lib/google/drive";
+import { explainDriveError, uploadToDrive } from "@/lib/google/drive";
 
 // Generic image upload endpoint backing every "add a photo" flow in the
 // app (category options, and anywhere else that adopts it later) — one
@@ -48,6 +48,12 @@ export async function POST(request: Request) {
     // isn't in it, but folder IDs and internal error shapes are) that a
     // signed-in-but-untrusted caller has no reason to see.
     console.error("Drive upload failed:", err);
+    // The couple get the actual cause and fix — they own the Google
+    // connection and are the ones who can repair it. Everyone else keeps
+    // the generic message.
+    if (profile.role === "couple") {
+      return NextResponse.json({ error: explainDriveError(err) }, { status: 500 });
+    }
     return NextResponse.json({ error: "Upload failed — please try again." }, { status: 500 });
   }
 }

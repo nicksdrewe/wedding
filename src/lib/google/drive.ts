@@ -99,6 +99,49 @@ export async function uploadToDrive(
   };
 }
 
+// Turns a Google/config failure into a plain-English cause plus the fix.
+// Only ever shown to the couple (see the upload route and
+// /api/google/status) — it never includes secrets, only which setting is
+// at fault.
+export function explainDriveError(err: unknown): string {
+  const message = err instanceof Error ? err.message : String(err);
+  if (/invalid_grant/i.test(message)) {
+    return "Google rejected the saved login (invalid_grant): GOOGLE_OAUTH_REFRESH_TOKEN is expired, revoked, or was pasted wrongly. Reconnect at /api/google/oauth/start, paste the new token into Vercel, and redeploy. If it keeps expiring after a week, set the Google OAuth consent screen to 'In production'.";
+  }
+  if (/GOOGLE_OAUTH_REFRESH_TOKEN|isn't connected yet/i.test(message)) {
+    return "GOOGLE_OAUTH_REFRESH_TOKEN isn't set in this environment. Add it in Vercel (Production) and redeploy.";
+  }
+  if (/GOOGLE_OAUTH_CLIENT_ID|GOOGLE_OAUTH_CLIENT_SECRET/i.test(message)) {
+    return "GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET aren't set in this environment. Add them in Vercel and redeploy.";
+  }
+  if (/GOOGLE_DRIVE_FOLDER_ID/i.test(message)) {
+    return "GOOGLE_DRIVE_FOLDER_ID isn't set in this environment. Add it in Vercel and redeploy.";
+  }
+  if (/invalid_client|unauthorized_client/i.test(message)) {
+    return "Google doesn't recognise the OAuth client (invalid_client): GOOGLE_OAUTH_CLIENT_ID or GOOGLE_OAUTH_CLIENT_SECRET in Vercel doesn't match the Google Cloud credentials.";
+  }
+  if (/File not found|notFound|404/i.test(message)) {
+    return "The Drive folder wasn't found: GOOGLE_DRIVE_FOLDER_ID is wrong, or the connected Google account can't open that folder.";
+  }
+  if (/insufficient|forbidden|403|storageQuota|quota/i.test(message)) {
+    return "Google refused the upload (permission or storage): the connected account may be out of Drive space or lacks access to the folder.";
+  }
+  return `Google Drive error: ${message}`;
+}
+
+// Quick end-to-end check of the Drive connection: can the saved login be
+// exchanged for access, and is the folder reachable. No file is created.
+export async function checkDriveConnection(): Promise<{ ok: true } | { ok: false; reason: string }> {
+  try {
+    const folderId = getFolderId();
+    const drive = getDriveClient();
+    await drive.files.get({ fileId: folderId, fields: "id, name", supportsAllDrives: true });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, reason: explainDriveError(err) };
+  }
+}
+
 export async function deleteFromDrive(fileId: string): Promise<void> {
   const drive = getDriveClient();
   await drive.files.delete({ fileId });
