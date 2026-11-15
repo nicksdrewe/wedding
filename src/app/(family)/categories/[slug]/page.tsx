@@ -115,7 +115,7 @@ export default async function CategoryDetailPage({
   const canEditCategoryCost = isRealCouple || (permission.costAccess && permission.editAccess);
 
   return (
-    <div className="max-w-3xl">
+    <div className="mx-auto max-w-3xl">
       <PageHeader eyebrow="Planning" title={page.title} />
 
       <section className="rounded-[10px] border border-ink/10 bg-white p-6">

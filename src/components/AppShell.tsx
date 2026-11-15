@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   BookOpen,
   ChevronDown,
   FolderKanban,
   LayoutGrid,
   LogOut,
+  Menu,
+  X,
   Mail,
   PartyPopper,
   Sparkles,
@@ -245,6 +247,21 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
   const { groups, ungrouped } = buildDesktopItems(links);
   const name = firstName(profile.full_name);
 
+  // Phone menu: one burger button instead of a bar holding every link. Closes
+  // whenever the page changes, and locks the page behind it from scrolling.
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [menuOpen]);
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-40 h-16 border-b border-ink/10 bg-[#f4f1ec]/95 backdrop-blur-sm">
@@ -306,6 +323,17 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
 
           {/* Right: identity + sign out. */}
           <div className="flex shrink-0 items-center gap-3">
+            {links.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setMenuOpen((o) => !o)}
+                aria-label={menuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={menuOpen}
+                className="flex h-10 w-10 items-center justify-center rounded-full text-ink transition-colors hover:bg-ink/5 md:hidden"
+              >
+                {menuOpen ? <X className="h-5 w-5" strokeWidth={2} /> : <Menu className="h-5 w-5" strokeWidth={2} />}
+              </button>
+            )}
             {name && <span className="hidden text-[13px] text-ink-soft sm:inline">{name}</span>}
             {profile.role === "couple" ? (
               <Link
@@ -332,35 +360,63 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
         </div>
       </header>
 
-      {/* pb-24 clears the fixed mobile tab bar; md:pb-10 restores normal
-          bottom spacing once that bar is hidden. */}
-      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10 pb-24 md:px-12 md:pb-10">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10 md:px-12">
         {children}
       </main>
 
-      {/* Mobile: bottom tab bar instead of a hamburger — this is a tool
-          people open one-handed at a venue. Only rendered when there's
-          something to show (a "guest" role resolves to zero links, and the
-          bar simply omits itself). */}
-      {links.length > 0 && (
-        <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-ink/10 bg-[#f4f1ec] md:hidden">
-          {links.map((link) => {
-            const active = isActiveHref(pathname, link.href);
-            const Icon = link.icon;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px] font-medium tracking-[0.02em] transition-colors duration-150 ${
-                  active ? "text-accent" : "text-ink-soft"
-                }`}
-              >
-                <Icon className="h-5 w-5" strokeWidth={2} />
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
+      {/* Phone menu panel, opened by the burger in the header. Same grouping
+          as the desktop dropdowns (Planning, People, then the rest). Links
+          are full-width, 48px tall, for thumbs. */}
+      {links.length > 0 && menuOpen && (
+        <div className="fixed inset-x-0 top-16 bottom-0 z-30 overflow-y-auto bg-[#f4f1ec] px-6 py-6 md:hidden">
+          <nav aria-label="Main menu" className="mx-auto flex max-w-md flex-col gap-6">
+            {[...groups.map((g) => ({ name: g.name, links: g.links })), ...(ungrouped.length ? [{ name: "", links: ungrouped }] : [])].map(
+              (section) => (
+                <div key={section.name || "other"}>
+                  {section.name && (
+                    <p className="mb-1 px-3 font-serif text-[11px] font-semibold tracking-[0.18em] text-ink-soft/70 uppercase">
+                      {section.name}
+                    </p>
+                  )}
+                  <ul className="flex flex-col">
+                    {section.links.map((link) => {
+                      const active = isActiveHref(pathname, link.href);
+                      const Icon = link.icon;
+                      return (
+                        <li key={link.href}>
+                          <Link
+                            href={link.href}
+                            className={`flex min-h-12 items-center gap-3 rounded-[12px] px-3 font-serif text-[15px] transition-colors ${
+                              active ? "bg-accent/10 text-accent" : "text-ink hover:bg-ink/5"
+                            }`}
+                          >
+                            <Icon className="h-5 w-5 shrink-0" strokeWidth={2} />
+                            {link.label}
+                            {link.viewOnlyRoles?.includes(profile.role) && (
+                              <span className="rounded-full bg-cream-deep px-1.5 py-0.5 text-[8px] font-medium tracking-[0.06em] text-ink-soft/70 uppercase">
+                                View
+                              </span>
+                            )}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )
+            )}
+            <div className="flex items-center justify-between border-t border-ink/10 px-3 pt-4 font-serif text-sm text-ink-soft">
+              <span>
+                {name ? `${name} · ` : ""}
+                {ROLE_LABEL[profile.role]}
+              </span>
+              <a href="/logout" className="inline-flex min-h-10 items-center gap-2 text-ink">
+                <LogOut className="h-4 w-4" strokeWidth={2} />
+                Sign out
+              </a>
+            </div>
+          </nav>
+        </div>
       )}
     </div>
   );
