@@ -58,8 +58,10 @@ export async function loadGroupChart(kind: GroupKind): Promise<GroupChartData> {
   // missing, the chart still shows them at the top (initials only until they
   // are added as a contact with a photo).
   const first = HEAD_FIRST_NAME[kind];
+  // Shown by the name everyone uses ("Ellie"), whatever the full legal name is.
+  const display = first.charAt(0).toUpperCase() + first.slice(1);
   const head: GroupMember = headRow
-    ? toMember(headRow)
+    ? { ...toMember(headRow), first: display }
     : { id: `head-${kind}`, name: first.charAt(0).toUpperCase() + first.slice(1), first: first.charAt(0).toUpperCase() + first.slice(1), photo: null };
   return { head, lead, members };
 }
