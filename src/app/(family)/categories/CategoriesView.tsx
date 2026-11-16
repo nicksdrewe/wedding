@@ -31,8 +31,9 @@ export function CategoriesView({
 }) {
   // Categories with something inside get their own family tree; ones on
   // their own sit together in a grid underneath.
-  const families = roots.filter((r) => r.children.length > 0);
-  const singles = roots.filter((r) => r.children.length === 0);
+  // A plan hidden from you keeps its tail, so it joins the trees.
+  const families = roots.filter((r) => r.children.length > 0 || r.hiddenFromMe);
+  const singles = roots.filter((r) => r.children.length === 0 && !r.hiddenFromMe);
 
   const card = (node: CategoryNode) => (
     <CategoryCard

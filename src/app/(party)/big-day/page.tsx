@@ -1,13 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import { getCurrentContactTags, getCurrentProfile } from "@/lib/auth/roles";
+import { getEffectivePermission } from "@/lib/permissions/actions";
 import { PageHeader } from "@/components/PageHeader";
 import { loadBigDayItems, loadBigDaySettings, loadBigDaySources } from "@/lib/big-day/load";
 import { BigDayBoard } from "./BigDayBoard";
 
 export default async function BigDayPage() {
   const profile = await getCurrentProfile();
-  const tags = await getCurrentContactTags(profile);
+  const [tags, permission] = await Promise.all([getCurrentContactTags(profile), getEffectivePermission("big-day", profile)]);
+  // Roles & Access can grant or remove it (0053); the built-in groups still apply.
+  if (!permission.pageAccess) redirect("/no-access");
   const canEdit =
+    permission.editAccess ||
     profile?.role === "couple" ||
     profile?.role === "family" ||
     tags.includes("best_man") ||

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { AppShell } from "@/components/AppShell";
 import { SetPasswordForm } from "./SetPasswordForm";
 import { MyDetailsForm } from "./MyDetailsForm";
+import { MyPhoto } from "./MyPhoto";
 
 export default async function AccountPage() {
   const state = await getAuthState();
@@ -17,6 +18,7 @@ export default async function AccountPage() {
     guest_note: string | null;
     plus_one_limit: number;
   } | null = null;
+  let photoUrl: string | null = null;
   let plusOnes: { id: string; full_name: string }[] = [];
   let events: { id: string; name: string; starts_at: string | null; location: string | null }[] = [];
   let rsvps: {
@@ -56,6 +58,8 @@ export default async function AccountPage() {
       ]);
 
     contact = contactRow ?? null;
+    // Its own small query so the page works before migration 0045.
+    photoUrl = ((await supabase.from("contacts").select("photo_url").eq("id", profile.contact_id).maybeSingle()).data as { photo_url?: string | null } | null)?.photo_url ?? null;
     plusOnes = plusOneRows ?? [];
     events = eventRows ?? [];
     rsvps = rsvpRows ?? [];
@@ -66,10 +70,19 @@ export default async function AccountPage() {
   // of their layouts) — it renders AppShell directly here instead, same as
   // those layouts do, so nav stays consistent everywhere rather than this
   // one page using the older, now-unused SiteNav component.
+  const myTags = profile ? await getCurrentContactTags(profile) : [];
+  const canPhoto = profile?.role === "couple" || myTags.some((t) => ["bridesmaid", "groomsman", "best_man", "maid_of_honour"].includes(t));
+
   const content = (
     <div className="flex flex-col items-center px-6 py-16">
       <div className="w-full max-w-lg">
         <h1 className="text-center font-display text-4xl">Your account</h1>
+
+        {contact && canPhoto && (
+          <div className="mt-10">
+            <MyPhoto name={contact.full_name} url={photoUrl} />
+          </div>
+        )}
 
         {contact && (
           <div className="mt-12">

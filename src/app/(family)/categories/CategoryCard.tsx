@@ -199,7 +199,7 @@ export function CategoryCard({
       <div className="surface h-full p-4 text-left">
         <span className="font-title text-[20px] leading-tight tracking-tight text-ink">{category.title}</span>
         <span className="mt-2 flex items-center gap-1.5 font-serif text-[12px] text-ink-soft">
-          <EyeOff className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden="true" />A surprise, kept hidden from you
+          <EyeOff className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden="true" />This one&rsquo;s not for you
         </span>
       </div>
     );

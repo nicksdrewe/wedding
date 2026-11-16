@@ -127,7 +127,7 @@ const NAV_LINKS: NavLink[] = [
   { href: "/big-day", label: "The Big Day", icon: CalendarHeart, roles: ["couple", "family", "wedding_party"] },
   // "Edit my page" — the guest/wedding_party self-service surface. Couple
   // and family don't need this in nav (they're not personally RSVPing).
-  { href: "/account", label: "My Details", icon: User, roles: ["guest", "wedding_party"] },
+  { href: "/account", label: "My Details", icon: User, roles: ["guest", "wedding_party", "couple"] },
 ];
 
 // Desktop nav order: grouped dropdowns first (Planning, then People, each

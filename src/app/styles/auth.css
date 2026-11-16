@@ -1,0 +1,466 @@
+/* Sign-in: a night garden on the left, a clean page on the right, one flower
+   standing across the split. Everything here is decoration around the form;
+   motion is switched off for people who ask for less of it. */
+
+.auth-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-paper);
+  overflow: hidden;
+  --split-y: 34vh;
+}
+@media (min-width: 1024px) {
+  .auth-stage {
+    flex-direction: row;
+  }
+}
+
+/* ── night half ── */
+.auth-night {
+  position: relative;
+  flex: 0 0 var(--split-y);
+  overflow: hidden;
+  background:
+    radial-gradient(60% 50% at 30% 85%, rgba(240, 169, 180, 0.22), transparent 70%),
+    radial-gradient(50% 45% at 75% 90%, rgba(236, 197, 102, 0.2), transparent 70%),
+    radial-gradient(70% 60% at 50% 0%, rgba(122, 79, 134, 0.35), transparent 70%),
+    linear-gradient(180deg, #0c130e 0%, #14201a 55%, #1d2a21 100%);
+}
+@media (min-width: 1024px) {
+  .auth-night {
+    flex: 0 0 50%;
+  }
+}
+.auth-paper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 72px 24px 40px;
+  background:
+    radial-gradient(70% 50% at 100% 100%, color-mix(in srgb, var(--sec-glow) 35%, transparent), transparent 70%),
+    radial-gradient(50% 40% at 0% 0%, color-mix(in srgb, #f0a9b4 22%, transparent), transparent 70%),
+    var(--color-paper);
+}
+@media (min-width: 1024px) {
+  .auth-paper {
+    /* keep the form clear of the flower standing on the split */
+    padding: 40px 48px 40px calc(clamp(190px, 24vw, 360px) * 0.36 + 24px);
+  }
+}
+
+/* stars */
+.auth-star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: #fff;
+  opacity: 0.2;
+  animation: auth-twinkle var(--tw, 4s) ease-in-out var(--td, 0s) infinite;
+}
+@keyframes auth-twinkle {
+  0%, 100% { opacity: 0.15; transform: scale(1); }
+  50% { opacity: 0.95; transform: scale(1.8); }
+}
+
+/* hearts that drift up out of the garden */
+.auth-heart {
+  position: absolute;
+  bottom: -24px;
+  width: var(--hs, 14px);
+  fill: var(--hc, #f0a9b4);
+  opacity: 0;
+  filter: drop-shadow(0 0 6px var(--hc, #f0a9b4));
+  animation: auth-rise var(--hd, 11s) ease-in var(--hdl, 0s) infinite;
+}
+@keyframes auth-rise {
+  0% { transform: translateY(0) translateX(0) scale(0.6); opacity: 0; }
+  12% { opacity: 0.85; }
+  100% { transform: translateY(-62vh) translateX(var(--hx, 20px)) scale(1.1); opacity: 0; }
+}
+
+/* fireflies */
+.auth-firefly {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #fff3c2;
+  box-shadow: 0 0 10px 3px rgba(255, 220, 130, 0.7);
+  opacity: 0;
+  animation: auth-drift var(--fd, 9s) ease-in-out var(--fdl, 0s) infinite;
+}
+@keyframes auth-drift {
+  0%, 100% { opacity: 0; transform: translate(0, 0); }
+  25% { opacity: 1; }
+  50% { transform: translate(var(--fx, 30px), var(--fy, -26px)); opacity: 0.9; }
+  75% { opacity: 1; }
+}
+
+/* the garden: stems grow, blooms open, everything sways */
+.auth-garden {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 70%;
+  pointer-events: none;
+}
+.auth-flower {
+  position: absolute;
+  bottom: 0;
+  left: var(--x);
+  width: 0;
+  height: var(--h);
+  transform-origin: bottom center;
+  animation: auth-sway 7s ease-in-out var(--sd, 0s) infinite alternate;
+}
+.auth-flower__stem {
+  position: absolute;
+  bottom: 0;
+  left: -1.5px;
+  width: 3px;
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(to top, #2f5a3a, #6aa77a);
+  transform-origin: bottom;
+  transform: scaleY(0);
+  animation: auth-grow 2.2s cubic-bezier(0.19, 1, 0.22, 1) var(--gd, 0s) forwards;
+  box-shadow: 0 0 10px rgba(156, 196, 164, 0.4);
+}
+.auth-flower__leaf {
+  position: absolute;
+  bottom: 32%;
+  width: 26px;
+  height: 12px;
+  border-radius: 100% 0;
+  background: linear-gradient(135deg, #6aa77a, #2f5a3a);
+  opacity: 0;
+  animation: auth-fade 1s ease-out calc(var(--gd, 0s) + 1.2s) forwards;
+}
+.auth-flower__leaf--l { right: 1px; transform: rotate(-20deg) scaleX(-1); transform-origin: right center; }
+.auth-flower__leaf--r { left: 1px; transform: rotate(-20deg); transform-origin: left center; bottom: 48%; }
+.auth-flower__bloom {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--bs, 70px);
+  height: var(--bs, 70px);
+  margin: calc(var(--bs, 70px) / -2) 0 0 calc(var(--bs, 70px) / -2);
+  transform: scale(0) rotate(-40deg);
+  animation: auth-bloom 2.4s cubic-bezier(0.19, 1, 0.22, 1) calc(var(--gd, 0s) + 1.6s) forwards, auth-glow 4s ease-in-out calc(var(--gd, 0s) + 4s) infinite alternate;
+  filter: drop-shadow(0 0 14px var(--bc));
+}
+.auth-flower__petal {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 34%;
+  height: 50%;
+  margin-left: -17%;
+  margin-top: -50%;
+  border-radius: 50% 50% 50% 50% / 70% 70% 30% 30%;
+  background: radial-gradient(ellipse at 50% 85%, #fff8e0 0%, var(--bc) 55%, color-mix(in srgb, var(--bc) 60%, #000) 100%);
+  transform-origin: 50% 100%;
+  transform: rotate(var(--r));
+  opacity: 0.95;
+}
+.auth-flower__core {
+  position: absolute;
+  inset: 38%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff6c8, #f2c14e 70%);
+  box-shadow: 0 0 16px 4px rgba(255, 220, 130, 0.75);
+}
+@keyframes auth-grow { to { transform: scaleY(1); } }
+@keyframes auth-fade { to { opacity: 1; } }
+@keyframes auth-bloom { to { transform: scale(1) rotate(0deg); } }
+@keyframes auth-glow {
+  from { filter: drop-shadow(0 0 8px var(--bc)); }
+  to { filter: drop-shadow(0 0 22px var(--bc)); }
+}
+@keyframes auth-sway {
+  from { transform: rotate(-1.6deg); }
+  to { transform: rotate(1.6deg); }
+}
+
+/* the flower that stands across the split */
+.auth-medallion {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  top: var(--split-y);
+  width: clamp(190px, 24vw, 360px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+  -webkit-mask: radial-gradient(circle, #000 52%, transparent 71%);
+  mask: radial-gradient(circle, #000 52%, transparent 71%);
+}
+@media (min-width: 1024px) {
+  .auth-medallion {
+    top: 50%;
+  }
+}
+.auth-medallion canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.auth-medallion-glow {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  top: var(--split-y);
+  width: clamp(260px, 34vw, 520px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(236, 197, 102, 0.28), transparent 65%);
+  pointer-events: none;
+  animation: auth-glow-pulse 5s ease-in-out infinite alternate;
+}
+@media (min-width: 1024px) {
+  .auth-medallion-glow {
+    top: 50%;
+  }
+}
+@keyframes auth-glow-pulse {
+  from { opacity: 0.6; transform: translate(-50%, -50%) scale(0.95); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+}
+
+/* ── the Splitting-style word ── */
+.split-word {
+  display: inline-flex;
+  align-items: flex-end;
+  font-family: var(--font-title), Georgia, serif;
+  font-size: clamp(44px, 7vw, 72px);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+  margin: 0;
+}
+.split-word__char {
+  display: inline-block;
+  --delay: calc(0.15s + var(--i) * 0.07s);
+  animation: split-in 0.6s cubic-bezier(0.5, 0, 0.5, 1) var(--delay) backwards;
+  transform-origin: center bottom;
+}
+@keyframes split-in {
+  0% { opacity: 0; transform: translateX(calc(-0.5em * var(--k))) scale(0); }
+  90% { transform: translateX(0) scale(1.12); }
+}
+.split-word__dot {
+  display: inline-block;
+  width: 0.2em;
+  height: 0.2em;
+  margin-left: 0.08em;
+  margin-bottom: 0.06em;
+  border-radius: 50%;
+  background: var(--color-accent);
+  box-shadow: 0 0 14px 2px color-mix(in srgb, var(--sec-glow) 80%, transparent);
+  animation: split-dot 2.2s cubic-bezier(0.5, 0, 0.5, 1) both;
+}
+@keyframes split-dot {
+  0% { opacity: 0; transform: translateY(-3.2em) scale(3); }
+  14% { opacity: 1; transform: translateY(-3.2em) scale(3); }
+  26% { transform: translateY(0.6em) scaleY(0.5); }
+  40% { transform: translateY(-2.2em) scale(1); }
+  54% { transform: translateY(0.3em) scaleY(0.7); }
+  68% { transform: translateY(-0.9em); }
+  82%, 100% { transform: translateY(0); }
+}
+
+/* ── the cosmic button, in our greens ── */
+.galaxy-btn {
+  --hue: 150;
+  --transition: 0.25s;
+  --spark: 1.8s;
+  position: relative;
+  display: block;
+  width: 100%;
+}
+.galaxy-btn button {
+  --cut: 0.1em;
+  --active: 0;
+  --bg:
+    radial-gradient(120% 120% at 126% 126%, hsl(var(--hue) calc(var(--active) * 80%) 96% / calc(var(--active) * 0.9)) 40%, transparent 50%) calc(100px - (var(--active) * 100px)) 0 / 100% 100% no-repeat,
+    radial-gradient(120% 120% at 120% 120%, hsl(var(--hue) calc(var(--active) * 55%) 58% / calc(var(--active) * 1)) 30%, transparent 70%) calc(100px - (var(--active) * 100px)) 0 / 100% 100% no-repeat,
+    hsl(var(--hue) calc(var(--active) * 35%) calc(10% - (var(--active) * 4%)));
+  background: var(--bg);
+  width: 100%;
+  font-family: var(--font-ui), system-ui, sans-serif;
+  font-size: 1.05rem;
+  font-weight: 500;
+  border: 0;
+  cursor: pointer;
+  padding: 1em 1.3em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25em;
+  white-space: nowrap;
+  border-radius: 2rem;
+  position: relative;
+  box-shadow:
+    0 0 calc(var(--active) * 3em) calc(var(--active) * 1.2em) hsl(var(--hue) 60% 55% / 0.45),
+    0 0.05em 0 0 hsl(var(--hue) calc(var(--active) * 60%) calc((var(--active) * 40%) + 28%)) inset,
+    0 -0.05em 0 0 hsl(var(--hue) calc(var(--active) * 60%) calc(var(--active) * 10%)) inset;
+  transition: box-shadow var(--transition), scale var(--transition), background var(--transition);
+  scale: calc(1 + (var(--active) * 0.04));
+  transform-style: preserve-3d;
+  perspective: 100vmin;
+  overflow: hidden;
+}
+.galaxy-btn button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.galaxy-btn button:active {
+  scale: 1;
+}
+.galaxy-btn button:is(:hover, :focus-visible):not(:disabled) {
+  --active: 1;
+}
+.galaxy-btn .gstar {
+  height: calc(var(--size) * 1px);
+  aspect-ratio: 1;
+  background: white;
+  border-radius: 50%;
+  position: absolute;
+  opacity: var(--alpha);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(10deg) rotate(0deg) translateY(calc(var(--distance) * 1px));
+  animation: galaxy-orbit calc(var(--duration) * 1s) calc(var(--delay) * -1s) infinite linear;
+}
+@keyframes galaxy-orbit {
+  to { transform: translate(-50%, -50%) rotate(10deg) rotate(360deg) translateY(calc(var(--distance) * 1px)); }
+}
+.galaxy-btn .galaxy {
+  position: absolute;
+  width: 100%;
+  aspect-ratio: 1;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  overflow: hidden;
+  opacity: var(--active);
+  transition: opacity var(--transition);
+}
+.galaxy-btn .galaxy__ring {
+  height: 200%;
+  width: 200%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+  transform: translate(-28%, -40%) rotateX(-24deg) rotateY(-30deg) rotateX(90deg);
+  transform-style: preserve-3d;
+}
+.galaxy-btn .galaxy__container {
+  position: absolute;
+  inset: 0;
+  opacity: var(--active);
+  transition: opacity var(--transition);
+  -webkit-mask: radial-gradient(white, transparent);
+  mask: radial-gradient(white, transparent);
+}
+.galaxy-btn .gstar--static {
+  animation: galaxy-x calc(var(--duration) * 0.1s) calc(var(--delay) * -0.1s) infinite linear, galaxy-y calc(var(--duration) * 0.2s) calc(var(--delay) * -0.2s) infinite linear;
+  transform: translate(0, 0);
+  max-height: 4px;
+  filter: brightness(4);
+  opacity: 0.9;
+}
+@keyframes galaxy-x { 0% { translate: -100px 0; } 100% { translate: 100px 0; } }
+@keyframes galaxy-y { 0% { transform: translate(0, -50px); } 100% { transform: translate(0, 50px); } }
+.galaxy-btn .gspark {
+  position: absolute;
+  inset: 0;
+  border-radius: 2rem;
+  overflow: hidden;
+  -webkit-mask: linear-gradient(white, transparent 50%);
+  mask: linear-gradient(white, transparent 50%);
+  animation: galaxy-flip calc(var(--spark) * 2) infinite steps(2, end);
+}
+@keyframes galaxy-flip { to { rotate: 360deg; } }
+.galaxy-btn .gspark::before {
+  content: "";
+  position: absolute;
+  width: 200%;
+  aspect-ratio: 1;
+  top: 0;
+  left: 50%;
+  z-index: -1;
+  translate: -50% -15%;
+  transform: rotate(-90deg);
+  opacity: calc(var(--active) + 0.4);
+  background: conic-gradient(from 0deg, transparent 0 340deg, white 360deg);
+  transition: opacity var(--transition);
+  animation: galaxy-rotate var(--spark) linear infinite both;
+}
+@keyframes galaxy-rotate { to { transform: rotate(90deg); } }
+.galaxy-btn .gbackdrop {
+  position: absolute;
+  inset: var(--cut);
+  background: var(--bg);
+  border-radius: 2rem;
+  transition: background var(--transition);
+}
+.galaxy-btn .gtext {
+  position: relative;
+  letter-spacing: 0.01ch;
+  color: hsl(0 0% calc(66% + (var(--active) * 26%)));
+}
+
+/* ── the whoosh: bars of our colours sweep across, then the page opens ── */
+.whoosh {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  overflow: hidden;
+}
+.whoosh__bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--n) * 16.7%);
+  width: 16.8%;
+  background: var(--c);
+  transform: scaleY(0);
+  transform-origin: bottom;
+  animation: whoosh-up 0.7s cubic-bezier(0.19, 1, 0.22, 1) calc(var(--n) * 0.09s) forwards;
+}
+.whoosh__bar:nth-child(even) {
+  transform-origin: top;
+}
+.whoosh__cover {
+  position: absolute;
+  inset: 0;
+  background: var(--color-paper);
+  opacity: 0;
+  animation: whoosh-cover 0.5s ease-out 0.95s forwards;
+}
+.whoosh--quick .whoosh__cover {
+  background: var(--color-paper);
+  animation: whoosh-cover 0.3s ease-out forwards;
+}
+@keyframes whoosh-up { to { transform: scaleY(1); } }
+@keyframes whoosh-cover { to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-star, .auth-heart, .auth-firefly, .auth-flower, .auth-medallion-glow, .split-word__dot { animation: none; }
+  .auth-flower__stem { animation: none; transform: scaleY(1); }
+  .auth-flower__bloom { animation: none; transform: none; }
+  .auth-flower__leaf { animation: none; opacity: 1; }
+  .split-word__char { animation: none; }
+  .whoosh__bar { animation: none; transform: scaleY(1); }
+}

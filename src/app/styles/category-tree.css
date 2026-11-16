@@ -266,7 +266,15 @@
    fades away, so you can tell there is something there you cannot see. */
 .cat-hidden-line {
   width: 2px;
-  height: 72px;
+  height: 110px;
   margin: 0 auto;
-  background: linear-gradient(to bottom, color-mix(in srgb, var(--sec) 45%, transparent), transparent);
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--sec) 55%, transparent), transparent);
+  animation: cat-hidden-breathe 3.2s ease-in-out infinite;
+}
+@keyframes cat-hidden-breathe {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cat-hidden-line { animation: none; }
 }

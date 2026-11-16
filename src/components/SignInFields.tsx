@@ -123,6 +123,12 @@ export function SignInFields({ next = "/hub" }: { next?: string }) {
       return;
     }
     rememberEmail(null);
+    // First time in: straight on to choosing a password, on the sign-in page.
+    const { data } = await createClient().auth.getUser();
+    if (!data.user?.user_metadata?.password_set) {
+      window.location.assign(`/login?step=password&next=${encodeURIComponent(next)}`);
+      return;
+    }
     goToDestination();
   }
 

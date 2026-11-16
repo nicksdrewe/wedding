@@ -181,9 +181,9 @@ export async function CategoryDetail({ slug, board = null }: { slug: string; boa
 
       {node?.hiddenFromMe && (
         <div className="surface p-6">
-          <p className="font-serif text-[15px] font-semibold">A surprise, kept hidden from you</p>
+          <p className="font-serif text-[15px] font-semibold">This one&rsquo;s not for you</p>
           <p className="mt-1.5 font-reading text-[13px] text-ink-soft">
-            Everything inside {page.title} has been hidden from you on purpose. It still shows on the plan as a line, and will appear when it is revealed.
+            There is more inside {page.title}, but it has been kept from you on purpose. It will appear when it is revealed.
           </p>
         </div>
       )}
