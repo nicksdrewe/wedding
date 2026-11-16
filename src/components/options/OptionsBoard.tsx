@@ -27,7 +27,11 @@ export async function OptionsBoard({
   costAccess,
   showCommsLink = false,
   optionKind = null,
+  categoryChoices,
 }: {
+  // Other categories this board's options could be moved or linked to,
+  // labelled by full path. Defaults to every category the viewer can see.
+  categoryChoices?: { id: string; title: string }[];
   // The category's kind of options (0046); null shows every box.
   optionKind?: string | null;
   groupId: string;
@@ -95,7 +99,7 @@ export async function OptionsBoard({
     ]);
     // Labelled by full path so two "Breakfast"s are told apart.
     const labelled = categoryPathLabels(categories ?? []);
-    otherCategories = labelled.filter((c) => c.id !== categoryPageId).map((c) => ({ id: c.id, title: c.label }));
+    otherCategories = categoryChoices ?? labelled.filter((c) => c.id !== categoryPageId).map((c) => ({ id: c.id, title: c.label }));
     linksByItem = (links ?? []).reduce<Record<string, CostItemLinkInfo[]>>((acc, l) => {
       const category = Array.isArray(l.category_pages) ? l.category_pages[0] : l.category_pages;
       const entry = { id: l.id, categoryTitle: category?.title ?? "Unknown" };

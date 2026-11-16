@@ -18,6 +18,7 @@ node supabase/tests/rls_feedback.test.mjs
 node supabase/tests/rls_moodboard.test.mjs
 node supabase/tests/rls_error_log.test.mjs
 node supabase/tests/rls_nested_comms_bigday.test.mjs
+node supabase/tests/rls_board_categories.test.mjs
 ```
 
 - `rls_cost_access.test.mjs` — prices (0031/0032): who sees and edits costs.
@@ -44,3 +45,4 @@ Each prints `ALL CHECKS PASSED` or the failing checks, and exits non-zero on
 failure. PGlite is deliberately not a project dependency (it is only needed
 here), hence `--no-save`.
 - `rls_nested_comms_bigday.test.mjs` — nested categories (0042: access cascades down the tree, no loops), organising comms (0043) and the Big Day schedule (0044).
+- `rls_board_categories.test.mjs` — stag/hen boards with nested categories (0047): who sees them, who adds options, who is the board admin, and that nothing leaks between boards or into the main wedding.

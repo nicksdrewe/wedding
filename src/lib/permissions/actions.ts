@@ -7,6 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { Profile, RoleTier } from "@/lib/auth/role-types";
 import { normalizeTag, normalizeTags, ROLE_TAG_VALUES } from "@/lib/tags";
 import { categoryKeyChain, resolvePermission } from "./resolve";
+import { fetchCategoryRows } from "@/lib/categories/rows";
 
 export type PageRegistryRow = {
   page_key: string;
@@ -154,8 +155,8 @@ export async function getEffectivePermission(pageKey: string, profile: Profile |
   // from its registry parent (project:* falls back to "project").
   let keyChain: string[];
   if (pageKey.startsWith("categories:")) {
-    const { data: cats } = await supabase.from("category_pages").select("id, slug, parent_id");
-    keyChain = categoryKeyChain(pageKey.slice("categories:".length), cats ?? []);
+    const cats = await fetchCategoryRows(supabase);
+    keyChain = categoryKeyChain(pageKey.slice("categories:".length), cats);
   } else {
     const { data: registryRow } = await supabase
       .from("page_registry")

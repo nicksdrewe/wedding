@@ -204,3 +204,19 @@ export function categoryPathLabels(
   };
   return rows.map((r) => ({ id: r.id, label: label(r) })).sort((a, b) => a.label.localeCompare(b.label));
 }
+
+// The total across a set of top-level categories the viewer may see prices
+// for (each already includes everything inside it).
+export function sumTotals(roots: CategoryNode[]): { total: Range | null; partial: boolean } {
+  let total: Range | null = null;
+  let partial = false;
+  for (const r of roots) {
+    if (!r.costAccess) {
+      partial = true;
+      continue;
+    }
+    total = add(total, r.total);
+    partial = partial || r.partial;
+  }
+  return { total, partial };
+}

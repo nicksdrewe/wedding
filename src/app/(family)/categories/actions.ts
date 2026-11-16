@@ -5,6 +5,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
 import { parseOptionKind } from "@/lib/options/kinds";
+import { BOARDS, parseBoard } from "@/lib/categories/boards";
 
 function slugify(title: string) {
   return title
@@ -21,6 +22,9 @@ export async function createCategoryPage(formData: FormData) {
   // What kind of options it holds (0046). Only sent when it isn't the default,
   // so creating a plain category works before that migration is run.
   const optionKind = parseOptionKind(formData.get("optionKind"));
+  // A new top-level category on a stag/hen board (0047). One inside another
+  // takes its parent's board by itself.
+  const boardTag = parentId ? null : parseBoard(formData.get("boardTag"));
   const supabase = await createClient();
 
   // slug has a unique constraint (0001_init.sql) — two titles that
@@ -45,12 +49,13 @@ export async function createCategoryPage(formData: FormData) {
 
   const { data: page, error } = await supabase
     .from("category_pages")
-    .insert({ title, slug, parent_id: parentId, ...(optionKind && optionKind !== "general" ? { option_kind: optionKind } : {}) })
+    .insert({ title, slug, parent_id: parentId, ...(optionKind && optionKind !== "general" ? { option_kind: optionKind } : {}), ...(boardTag ? { board_tag: boardTag } : {}) })
     .select("id")
     .single();
 
   if (error) {
-    revalidatePath("/categories");
+    revalidatePath("/categories", "layout");
+  revalidatePath("/project", "layout");
     return { error: error.message };
   }
 
@@ -60,7 +65,7 @@ export async function createCategoryPage(formData: FormData) {
   // to "allowed" for a page_key with no registry row at all.
   // The registry's parent mirrors the tree so Roles & Access lists it in the
   // right place; the access rules themselves read the tree directly.
-  let parentKey = "categories";
+  let parentKey = boardTag ? BOARDS[boardTag].pageKey : "categories";
   if (parentId) {
     const { data: parent } = await supabase.from("category_pages").select("slug").eq("id", parentId).maybeSingle();
     if (parent) parentKey = `categories:${parent.slug}`;
@@ -155,7 +160,8 @@ export async function deleteCategoryPage(id: string) {
   // caller's confirm copy must say so explicitly.
   const { error } = await supabase.from("category_pages").delete().eq("id", parsed);
 
-  revalidatePath("/categories");
+  revalidatePath("/categories", "layout");
+  revalidatePath("/project", "layout");
   revalidatePath("/budget");
   revalidatePath("/diary");
   revalidatePath("/project");
@@ -211,7 +217,8 @@ export async function updateCategoryCost(formData: FormData) {
         currency: parsed.currency,
       });
 
-  revalidatePath("/categories");
+  revalidatePath("/categories", "layout");
+  revalidatePath("/project", "layout");
   revalidatePath("/budget");
   return { error: error?.message ?? null };
 }
@@ -242,7 +249,8 @@ export async function addCategoryContact(formData: FormData) {
     email: parsed.email || null,
   });
 
-  revalidatePath("/categories");
+  revalidatePath("/categories", "layout");
+  revalidatePath("/project", "layout");
   return { error: error?.message ?? null };
 }
 
@@ -274,7 +282,8 @@ export async function updateCategoryContact(formData: FormData) {
     })
     .eq("id", parsed.id);
 
-  revalidatePath("/categories");
+  revalidatePath("/categories", "layout");
+  revalidatePath("/project", "layout");
   return { error: error?.message ?? null };
 }
 
@@ -284,7 +293,8 @@ export async function deleteCategoryContact(id: string) {
 
   const { error } = await supabase.from("category_contacts").delete().eq("id", parsed);
 
-  revalidatePath("/categories");
+  revalidatePath("/categories", "layout");
+  revalidatePath("/project", "layout");
   return { error: error?.message ?? null };
 }
 
@@ -309,7 +319,8 @@ export async function addCategoryDate(formData: FormData) {
     category_page_id: parsed.categoryPageId,
   });
 
-  revalidatePath("/categories");
+  revalidatePath("/categories", "layout");
+  revalidatePath("/project", "layout");
   revalidatePath("/diary");
   return { error: error?.message ?? null };
 }
@@ -333,7 +344,8 @@ export async function updateCategoryDate(formData: FormData) {
     .update({ title: parsed.title, entry_date: parsed.entryDate })
     .eq("id", parsed.id);
 
-  revalidatePath("/categories");
+  revalidatePath("/categories", "layout");
+  revalidatePath("/project", "layout");
   revalidatePath("/diary");
   return { error: error?.message ?? null };
 }
@@ -344,7 +356,8 @@ export async function deleteCategoryDate(id: string) {
 
   const { error } = await supabase.from("diary_entries").delete().eq("id", parsed);
 
-  revalidatePath("/categories");
+  revalidatePath("/categories", "layout");
+  revalidatePath("/project", "layout");
   revalidatePath("/diary");
   return { error: error?.message ?? null };
 }

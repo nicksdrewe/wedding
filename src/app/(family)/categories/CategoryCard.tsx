@@ -38,7 +38,10 @@ export function CategoryCard({
   category,
   isCouple,
   moveTargets = [],
+  basePath = "/categories",
 }: {
+  // Where category pages live: /categories, or a board's own plans path.
+  basePath?: string;
   category: CategoryCardData;
   isCouple: boolean;
   // Where this category could be moved to (everything except itself and
@@ -136,7 +139,7 @@ export function CategoryCard({
 
   return (
     <div className="surface surface-lift group h-full text-left">
-      <Link href={`/categories/${category.slug}`} className="block p-4 pb-3">
+      <Link href={`${basePath}/${category.slug}`} className="block p-4 pb-3">
         <span className="flex items-start gap-2">
           {category.childCount > 0 && <FolderTree className="mt-1 h-4 w-4 shrink-0 text-sec" strokeWidth={2} aria-hidden="true" />}
           <span className="font-title text-[20px] leading-tight tracking-tight text-ink transition-colors duration-150 group-hover:text-sec">

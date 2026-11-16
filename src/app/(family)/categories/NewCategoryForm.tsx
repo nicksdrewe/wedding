@@ -4,7 +4,16 @@ import { useRef, useState, useTransition } from "react";
 import { createCategoryPage } from "./actions";
 import { OPTION_KINDS } from "@/lib/options/kinds";
 
-export function NewCategoryForm({ parentId, label = "New category" }: { parentId?: string; label?: string } = {}) {
+export function NewCategoryForm({
+  parentId,
+  label = "New category",
+  boardTag,
+}: {
+  parentId?: string;
+  label?: string;
+  // Set for a new top-level plan on a stag/hen board.
+  boardTag?: string;
+} = {}) {
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +39,7 @@ export function NewCategoryForm({ parentId, label = "New category" }: { parentId
           {label}
         </label>
         {parentId && <input type="hidden" name="parentId" value={parentId} />}
+        {boardTag && <input type="hidden" name="boardTag" value={boardTag} />}
         <input
           name="title"
           required

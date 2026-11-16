@@ -7,6 +7,8 @@ import { convertToGBP, type Currency } from "@/lib/currency/convert";
 import { computeOptionTotals, type CostItem } from "@/lib/options/totals";
 import { readOptionCosts } from "@/lib/options/costs";
 import { categoryKeyChain, resolvePermission, type ResolvedPermission } from "@/lib/permissions/resolve";
+import { fetchCategoryRows } from "./rows";
+import type { BoardKey } from "./boards";
 import { buildCategoryTree, type CategoryInput, type CategoryNode } from "./tree";
 
 // Server-only: loads every category this person can see, with its options'
@@ -30,7 +32,9 @@ type CostEmbed = {
   currency: Currency | null;
 };
 
-export async function loadCategoryTree(profile: Profile | null): Promise<CategoryTree> {
+// board = null loads the main wedding's categories; 'groomsman' / 'bridesmaid'
+// loads that stag or hen board's own tree (0047_board_categories.sql).
+export async function loadCategoryTree(profile: Profile | null, board: BoardKey | null = null): Promise<CategoryTree> {
   const supabase = await createClient();
   const [{ data: cats }, { data: groups }, rates] = await Promise.all([
     supabase
@@ -46,7 +50,10 @@ export async function loadCategoryTree(profile: Profile | null): Promise<Categor
     getFxRates(),
   ]);
 
-  const categories = cats ?? [];
+  // Which board each category is on (own query so a missing column never breaks the tree).
+  const allRows = await fetchCategoryRows(supabase);
+  const boardById = new Map(allRows.map((r) => [r.id, r.board_tag]));
+  const categories = (cats ?? []).filter((c) => (boardById.get(c.id) ?? null) === board);
   // Kinds come from their own small query so a missing column never breaks the tree.
   const { data: kindRows } = await supabase.from("category_pages").select("id, option_kind");
   const kindById = new Map((kindRows ?? []).map((r) => [r.id, (r as { option_kind?: string | null }).option_kind ?? null]));
@@ -55,9 +62,9 @@ export async function loadCategoryTree(profile: Profile | null): Promise<Categor
   const permissions = new Map<string, ResolvedPermission>();
   if (profile && profile.role !== "couple") {
     const admin = createAdminClient();
-    const [{ data: allCats }, { data: rules }, contact] = await Promise.all([
+    const [allCats, { data: rules }, contact] = await Promise.all([
       // The full chain, including parents this person can't see themselves.
-      admin.from("category_pages").select("id, slug, parent_id"),
+      fetchCategoryRows(admin),
       admin
         .from("page_permissions")
         .select("page_key, principal_type, principal_value, page_access, data_access, edit_access, cost_access"),
@@ -67,7 +74,7 @@ export async function loadCategoryTree(profile: Profile | null): Promise<Categor
     ]);
     const tags = normalizeTags((contact.data as { tags?: string[] | null } | null)?.tags);
     for (const c of categories) {
-      permissions.set(c.id, resolvePermission(categoryKeyChain(c.slug, allCats ?? []), rules ?? [], profile.role, tags));
+      permissions.set(c.id, resolvePermission(categoryKeyChain(c.slug, allCats), rules ?? [], profile.role, tags));
     }
   } else {
     const all = profile?.role === "couple";

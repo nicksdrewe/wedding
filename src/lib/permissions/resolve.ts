@@ -63,7 +63,7 @@ export function resolvePermission(
 // the top-level "categories" page.
 export function categoryKeyChain(
   slug: string,
-  categories: { id: string; slug: string; parent_id: string | null }[]
+  categories: { id: string; slug: string; parent_id: string | null; board_tag?: string | null }[]
 ): string[] {
   const bySlug = new Map(categories.map((c) => [c.slug, c]));
   const byId = new Map(categories.map((c) => [c.id, c]));
@@ -74,6 +74,10 @@ export function categoryKeyChain(
     chain.push(`categories:${cursor.slug}`);
     cursor = cursor.parent_id ? byId.get(cursor.parent_id) : undefined;
   }
-  chain.push("categories");
+  // A category on a stag/hen board inherits that board's page rules, not the
+  // main "categories" page (0047_board_categories.sql).
+  const boardTag = categories.find((c) => c.slug === slug)?.board_tag ?? null;
+  chain.push(boardTag === "groomsman" ? "project:groomsmen" : boardTag === "bridesmaid" ? "project:bridesmaids" : "categories");
+  if (boardTag) chain.push("project");
   return chain;
 }

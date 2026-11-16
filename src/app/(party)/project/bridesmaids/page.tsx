@@ -8,6 +8,8 @@ import { loadFeedback } from "@/lib/feedback/load";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { GroupChart } from "@/components/ui/GroupChart";
+import { BoardPlans } from "@/components/ui/BoardPlans";
+import { loadCategoryTree } from "@/lib/categories/load";
 import { loadGroupChart } from "@/lib/party/group";
 import { EmptyState } from "@/components/EmptyState";
 import { OPTION_COVER_EMBED, coverImageOf } from "@/lib/options/cover";
@@ -141,6 +143,8 @@ export default async function BridesmaidsProjectPage() {
       >
         <GroupChart kind="bridesmaid" data={await loadGroupChart("bridesmaid")} />
       </PageHeader>
+
+      <BoardPlans board="bridesmaid" roots={(await loadCategoryTree(profile, "bridesmaid")).roots} isAdmin={isAdmin} />
 
       <div className="flex flex-col gap-8">
         <IdeaPortal
