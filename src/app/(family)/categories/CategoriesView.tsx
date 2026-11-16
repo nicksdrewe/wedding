@@ -1,6 +1,4 @@
 import { EmptyState } from "@/components/EmptyState";
-import { OptionsMapLoader } from "@/components/options/OptionsMapLoader";
-import { placePins } from "@/lib/categories/map";
 import { moveTargetsFor, toCardData } from "@/lib/categories/card";
 import type { CategoryNode } from "@/lib/categories/tree";
 import type { BoardKey } from "@/lib/categories/boards";
@@ -31,9 +29,6 @@ export function CategoriesView({
   feedback?: Record<string, FeedbackData>;
   interact?: { canInteract: boolean; canModerate: boolean; revalidate: string };
 }) {
-  // Boards hold all sorts of things (suits, dresses), so no map there.
-  const placePinList = board ? [] : placePins(roots, basePath);
-
   // Categories with something inside get their own family tree; ones on
   // their own sit together in a grid underneath.
   const families = roots.filter((r) => r.children.length > 0);
@@ -46,7 +41,7 @@ export function CategoriesView({
       moveTargets={canManage ? moveTargetsFor(roots, node) : []}
       basePath={basePath}
       board={
-        board && interact
+        interact
           ? { feedback: feedback?.[node.id], canInteract: interact.canInteract, canModerate: interact.canModerate, revalidate: interact.revalidate, canChoose: canManage }
           : undefined
       }
@@ -65,13 +60,6 @@ export function CategoriesView({
 
   return (
     <>
-      {placePinList.length > 0 && (
-        <div className="mt-6">
-          <p className="mb-2 font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft/70 uppercase">On the map</p>
-          <OptionsMapLoader options={placePinList} />
-        </div>
-      )}
-
       {canManage && <NewCategoryForm boardTag={board ?? undefined} label={board ? "New plan" : "New category"} />}
 
       {roots.length === 0 ? (

@@ -16,7 +16,6 @@ import { BOARDS, categoryHref, type BoardKey } from "@/lib/categories/boards";
 import { getCurrentContactTags } from "@/lib/auth/roles";
 import { ancestorsOf, categoryPathLabels, findNode, flattenTree } from "@/lib/categories/tree";
 import { moveTargetsFor, toCardData } from "@/lib/categories/card";
-import { placePins } from "@/lib/categories/map";
 import { CategoryCard } from "../CategoryCard";
 import { Feedback } from "@/components/feedback/Feedback";
 import { loadCategoryFeedback } from "@/lib/categories/feedback";
@@ -117,12 +116,9 @@ export async function CategoryDetail({ slug, board = null }: { slug: string; boa
   const node = findNode(roots, page.id);
   const trail = ancestorsOf(roots, page.id);
   const children = node?.children ?? [];
-  // One pin per category inside this one (its own pin, or the middle of the
-  // pins of the options inside it), each with its total.
-  const placePinList = board ? [] : placePins(children, basePath);
   const canInteract = !!profile && profile.role !== "guest";
-  // Boards: votes and comments on this category and the ones inside it.
-  const catFeedback = board ? await loadCategoryFeedback(roots, profile?.id ?? null) : {};
+  // Votes and comments on this category and the ones inside it.
+  const catFeedback = await loadCategoryFeedback(roots, profile?.id ?? null);
   // Options are decided at the lowest level. A category that only groups
   // others doesn't offer its own board unless it already has options.
   const showOptions = children.length === 0 || (node?.options.length ?? 0) > 0;
@@ -179,7 +175,7 @@ export async function CategoryDetail({ slug, board = null }: { slug: string; boa
 
       <PageHeader eyebrow={trail.length > 0 ? trail[trail.length - 1].title : board ? BOARDS[board].label : "Planning"} title={page.title} />
 
-      {board && node && node.feedbackEnabled !== false && (
+      {node && node.feedbackEnabled !== false && (
         <div className="surface mb-6 p-4">
           <p className="mb-2 font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft/70 uppercase">
             What do you think of {page.title}?
@@ -234,20 +230,12 @@ export async function CategoryDetail({ slug, board = null }: { slug: string; boa
             <h2 className="section-head__title">Inside {page.title}</h2>
             <span className="section-head__rule" />
           </div>
-          {placePinList.length > 0 && (
-            <div className="mb-4">
-              <p className="mb-2 font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft/70 uppercase">
-                Where things are
-              </p>
-              <OptionsMapLoader options={placePinList} />
-            </div>
-          )}
           {children.length > 0 ? (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {children.map((c) => (
                 <CategoryCard key={c.id} category={toCardData(c)} isCouple={isRealCouple} moveTargets={isRealCouple ? moveTargetsFor(roots, c) : []}
                   basePath={basePath}
-                  board={board ? { feedback: catFeedback[c.id], canInteract, canModerate: isRealCouple, revalidate: `${basePath}/${page.slug}`, canChoose: isRealCouple } : undefined}
+                  board={{ feedback: catFeedback[c.id], canInteract, canModerate: isRealCouple, revalidate: `${basePath}/${page.slug}`, canChoose: isRealCouple }}
                 />
               ))}
             </div>

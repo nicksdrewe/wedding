@@ -1,6 +1,6 @@
-import { formatCostRange, formatCurrency } from "@/lib/currency/format";
+import { PlanTotals } from "./PlanTotals";
 import { loadCategoryFeedback } from "@/lib/categories/feedback";
-import { sumTotals, type CategoryNode } from "@/lib/categories/tree";
+import type { CategoryNode } from "@/lib/categories/tree";
 import { BOARDS, type BoardKey } from "@/lib/categories/boards";
 import { CategoriesView } from "@/app/(family)/categories/CategoriesView";
 
@@ -24,33 +24,13 @@ export async function BoardPlans({
 }) {
   const cfg = BOARDS[board];
   const feedback = await loadCategoryFeedback(roots, profileId);
-  const { total, partial } = sumTotals(roots);
   return (
     <section className="mb-10">
       <div className="section-head">
         <h2 className="section-head__title">Plans</h2>
         <span className="section-head__rule" />
       </div>
-      {total && (
-        <div className="surface surface-tint mb-2 p-5 sm:p-6">
-          <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-            <div>
-              <p className="stat__label">Everything planned so far</p>
-              <p className="stat__value">
-                {formatCostRange(total.min, total.max, "GBP")}
-                {partial && <span className="text-[18px] text-ink-soft"> +</span>}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="stat__label">Spent so far</p>
-              <p className="stat__value text-accent">{formatCurrency(total.actual ?? 0, "GBP")}</p>
-            </div>
-          </div>
-          <p className="mt-2 font-reading text-[13px] text-ink-soft">
-            Added up from every plan below: a range from the cheapest to the dearest option until you choose one, then the real figure.
-          </p>
-        </div>
-      )}
+      <PlanTotals roots={roots} />
       <CategoriesView
         roots={roots}
         canManage={isAdmin}

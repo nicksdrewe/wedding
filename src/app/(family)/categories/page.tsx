@@ -3,6 +3,8 @@ import { getCurrentProfile } from "@/lib/auth/roles";
 import { getEffectivePermission } from "@/lib/permissions/actions";
 import { PageHeader } from "@/components/PageHeader";
 import { loadCategoryTree } from "@/lib/categories/load";
+import { PlanTotals } from "@/components/ui/PlanTotals";
+import { loadCategoryFeedback } from "@/lib/categories/feedback";
 import { CategoriesView } from "./CategoriesView";
 
 export default async function CategoriesPage() {
@@ -19,6 +21,8 @@ export default async function CategoriesPage() {
   // The main wedding's only: the stag and hen plans live on their own boards.
   const { roots } = await loadCategoryTree(profile);
 
+  const feedback = await loadCategoryFeedback(roots, profile?.id ?? null);
+
   return (
     <div>
       <PageHeader
@@ -26,7 +30,14 @@ export default async function CategoriesPage() {
         title="Categories"
         infoText="Everything with a cost, a contact or a date. Categories can sit inside each other; each one's cost is worked out from its options and everything inside it."
       />
-      <CategoriesView roots={roots} canManage={isCouple} basePath="/categories" />
+      <div className="mt-6"><PlanTotals roots={roots} /></div>
+      <CategoriesView
+        roots={roots}
+        canManage={isCouple}
+        basePath="/categories"
+        feedback={feedback}
+        interact={{ canInteract: !!profile && profile.role !== "guest", canModerate: isCouple, revalidate: "/categories" }}
+      />
     </div>
   );
 }

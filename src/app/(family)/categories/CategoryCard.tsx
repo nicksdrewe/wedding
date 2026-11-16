@@ -146,18 +146,6 @@ export function CategoryCard({
             ))}
           </select>
         </label>
-        {!board && (
-        <div>
-          <span className="field-label">Place on the map (optional)</span>
-          <div className="flex gap-2">
-            <input name="latitude" type="number" step="any" min={-90} max={90} defaultValue={category.latitude ?? ""} placeholder="Latitude" className="field" />
-            <input name="longitude" type="number" step="any" min={-180} max={180} defaultValue={category.longitude ?? ""} placeholder="Longitude" className="field" />
-          </div>
-          <p className="mt-1 font-reading text-[11px] text-ink-soft">
-            For a destination like Porto. Left blank, it is placed from the pins of the options inside it.
-          </p>
-        </div>
-        )}
         {board && (
           <label className="flex items-center gap-2 font-reading text-[13px] text-ink">
             <input type="hidden" name="feedbackPresent" value="1" />
