@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { ChevronDown, ImageIcon, MessagesSquare } from "lucide-react";
 import { toDriveImageUrl } from "@/lib/google/image-url";
-import { markOptionWinner } from "@/lib/options/actions";
+import { clearOptionWinner, markOptionWinner } from "@/lib/options/actions";
 import { AddOptionForm } from "@/components/options/AddOptionForm";
 import { CostRange } from "@/components/CostRange";
 import type { Currency } from "@/lib/currency/convert";
@@ -82,6 +82,17 @@ export function OptionsCompareGroup({ group, showCommsLink = false }: { group: C
     setPendingId(optionId);
     startTransition(async () => {
       const { error } = await markOptionWinner(optionId);
+      setPendingId(null);
+      if (error) setError(error);
+    });
+  }
+
+  function unpick(optionId: string) {
+    if (!window.confirm("Remove this as the winner?")) return;
+    setError(null);
+    setPendingId(optionId);
+    startTransition(async () => {
+      const { error } = await clearOptionWinner(optionId);
       setPendingId(null);
       if (error) setError(error);
     });
@@ -269,6 +280,11 @@ export function OptionsCompareGroup({ group, showCommsLink = false }: { group: C
                         className="btn btn-sm btn-quiet"
                       >
                         {pendingId === o.id ? "Marking…" : "Mark as winner"}
+                      </button>
+                    )}
+                    {o.is_winner && group.canPickWinner && (
+                      <button type="button" disabled={isPending} onClick={() => unpick(o.id)} className="btn btn-sm btn-quiet">
+                        {pendingId === o.id ? "Removing…" : "Remove winner"}
                       </button>
                     )}
                   </td>

@@ -564,3 +564,41 @@ export async function moveOption(optionId: string, targetCategoryId: string, rev
   revalidatePath("/organising");
   return { error: null };
 }
+
+// Take the winner mark off an option (chosen by accident, or things changed).
+// The category goes back to being undecided: its cost reverts to the range
+// across its options, and the diary date that choosing a winner added is
+// removed. Same rule as choosing one: on a category board that is the couple's
+// call (enforced by the database).
+export async function clearOptionWinner(optionId: string) {
+  const id = z.string().uuid().parse(optionId);
+  const supabase = await createClient();
+
+  const { data: option, error: fetchError } = await supabase
+    .from("page_options")
+    .select("id, option_group_id, is_winner")
+    .eq("id", id)
+    .maybeSingle();
+  if (fetchError) return { error: fetchError.message };
+  if (!option) return { error: "Option not found." };
+
+  const { data: cleared, error } = await supabase
+    .from("page_options")
+    .update({ is_winner: false })
+    .eq("id", id)
+    .select("id, is_winner");
+  if (error) return { error: error.message };
+  if (!cleared || cleared.length === 0) return { error: "You can't change the winner here." };
+
+  const { data: group } = await supabase.from("option_groups").select("category_page_id").eq("id", option.option_group_id).maybeSingle();
+  if (group?.category_page_id) {
+    // The diary date added when this category's winner was chosen.
+    await supabase.from("diary_entries").delete().eq("category_page_id", group.category_page_id).eq("source", "page_option");
+  }
+
+  revalidatePath("/categories", "layout");
+  revalidatePath("/budget");
+  revalidatePath("/diary");
+  revalidatePath("/project");
+  return { error: null };
+}

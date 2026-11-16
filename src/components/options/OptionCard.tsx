@@ -23,6 +23,7 @@ import {
 import {
   addOptionImage,
   deleteOption,
+  clearOptionWinner,
   markOptionWinner,
   moveOption,
   removeOptionImage,
@@ -319,6 +320,15 @@ function OptionDetailPanel({
     });
   }
 
+  function handleClearWinner() {
+    if (!window.confirm("Remove this as the winner? The category goes back to undecided.")) return;
+    setError(null);
+    startWinnerTransition(async () => {
+      const result = await clearOptionWinner(option.id);
+      if (result.error) setError(result.error);
+    });
+  }
+
   function handleUploaded(url: string) {
     setError(null);
     startImageTransition(async () => {
@@ -542,8 +552,8 @@ function OptionDetailPanel({
           {canPickWinner && (
           <button
             type="button"
-            onClick={handleMarkWinner}
-            disabled={winnerPending || option.is_winner}
+            onClick={option.is_winner ? handleClearWinner : handleMarkWinner}
+            disabled={winnerPending}
             className={`flex items-center gap-1.5 rounded-full px-4.5 py-2 font-serif text-xs transition disabled:opacity-70 ${
               option.is_winner
                 ? "bg-accent text-cream"
@@ -552,7 +562,7 @@ function OptionDetailPanel({
           >
             {option.is_winner ? (
               <>
-                <Check className="h-3.5 w-3.5" strokeWidth={2.5} /> Winner
+                <Check className="h-3.5 w-3.5" strokeWidth={2.5} /> {winnerPending ? "Removing…" : "Winner · remove"}
               </>
             ) : winnerPending ? (
               "Marking…"

@@ -35,7 +35,8 @@ export async function loadGroupChart(kind: GroupKind): Promise<GroupChartData> {
   // Everyone (not just a filtered few), and the tags compared after
   // normalising them in code: a tag typed as "Bridesmaid" or "bridesmaid "
   // still counts, which a database-side match would silently miss.
-  const query = (cols: string) => admin.from("contacts").select(cols).is("parent_contact_id", null).order("full_name").limit(2000);
+  // Plus-ones are included: someone added under another guest can still be tagged into the group.
+  const query = (cols: string) => admin.from("contacts").select(cols).order("full_name").limit(2000);
   // With photos once migration 0045 has been run; without them until then.
   let res = await query("id, full_name, role, tags, photo_url");
   if (res.error) res = await query("id, full_name, role, tags");
@@ -53,5 +54,12 @@ export async function loadGroupChart(kind: GroupKind): Promise<GroupChartData> {
     couple.find((r) => startsWith(r, HEAD_FIRST_NAME[kind])) ??
     couple.find((r) => !startsWith(r, OTHER_FIRST_NAME[kind]) && couple.length > 1) ??
     null;
-  return { head: headRow ? toMember(headRow) : null, lead, members };
+  // The couple don't both have to be on the guest list as contacts. If one is
+  // missing, the chart still shows them at the top (initials only until they
+  // are added as a contact with a photo).
+  const first = HEAD_FIRST_NAME[kind];
+  const head: GroupMember = headRow
+    ? toMember(headRow)
+    : { id: `head-${kind}`, name: first.charAt(0).toUpperCase() + first.slice(1), first: first.charAt(0).toUpperCase() + first.slice(1), photo: null };
+  return { head, lead, members };
 }
