@@ -6,6 +6,7 @@ import { getFxRates } from "@/lib/currency/rates";
 import { convertToGBP, type Currency } from "@/lib/currency/convert";
 import { computeOptionTotals, type CostItem } from "@/lib/options/totals";
 import { readOptionCosts } from "@/lib/options/costs";
+import { coverImageOf } from "@/lib/options/cover";
 import { categoryKeyChain, resolvePermission, type ResolvedPermission } from "@/lib/permissions/resolve";
 import { fetchCategoryRows } from "./rows";
 import type { BoardKey } from "./boards";
@@ -44,7 +45,7 @@ export async function loadCategoryTree(profile: Profile | null, board: BoardKey 
     supabase
       .from("option_groups")
       .select(
-        "id, category_page_id, page_options(id, name, is_winner, latitude, longitude, page_option_costs(predicted_cost_min, predicted_cost_max, actual_cost, currency), option_cost_items(amount, kind))"
+        "id, category_page_id, page_options(id, name, is_winner, latitude, longitude, page_option_images(image_url, sort_order), page_option_costs(predicted_cost_min, predicted_cost_max, actual_cost, currency), option_cost_items(amount, kind))"
       )
       .not("category_page_id", "is", null),
     getFxRates(),
@@ -117,6 +118,7 @@ export async function loadCategoryTree(profile: Profile | null, board: BoardKey 
         costsHidden: costs.costs_hidden,
         latitude: o.latitude ?? null,
         longitude: o.longitude ?? null,
+        coverImageUrl: coverImageOf(o),
       });
     }
     optionsByCategory.set(g.category_page_id, list);

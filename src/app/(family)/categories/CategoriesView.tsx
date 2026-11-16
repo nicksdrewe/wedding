@@ -4,6 +4,7 @@ import { placePins } from "@/lib/categories/map";
 import { moveTargetsFor, toCardData } from "@/lib/categories/card";
 import type { CategoryNode } from "@/lib/categories/tree";
 import type { BoardKey } from "@/lib/categories/boards";
+import type { FeedbackData } from "@/lib/feedback/types";
 import { NewCategoryForm } from "./NewCategoryForm";
 import { CategoryCard } from "./CategoryCard";
 
@@ -16,6 +17,8 @@ export function CategoriesView({
   basePath,
   board = null,
   emptyHint,
+  feedback,
+  interact,
 }: {
   roots: CategoryNode[];
   // May create, rename, move and delete categories here: the couple on the
@@ -24,8 +27,12 @@ export function CategoriesView({
   basePath: string;
   board?: BoardKey | null;
   emptyHint?: string;
+  // Board plans: votes and comments on each category, and who may take part.
+  feedback?: Record<string, FeedbackData>;
+  interact?: { canInteract: boolean; canModerate: boolean; revalidate: string };
 }) {
-  const placePinList = placePins(roots, basePath);
+  // Boards hold all sorts of things (suits, dresses), so no map there.
+  const placePinList = board ? [] : placePins(roots, basePath);
 
   // Categories with something inside get their own family tree; ones on
   // their own sit together in a grid underneath.
@@ -38,6 +45,11 @@ export function CategoriesView({
       isCouple={canManage}
       moveTargets={canManage ? moveTargetsFor(roots, node) : []}
       basePath={basePath}
+      board={
+        board && interact
+          ? { feedback: feedback?.[node.id], canInteract: interact.canInteract, canModerate: interact.canModerate, revalidate: interact.revalidate, canChoose: canManage }
+          : undefined
+      }
     />
   );
 

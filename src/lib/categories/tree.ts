@@ -24,6 +24,8 @@ export type OptionFigure = {
   // Map pin, if it has one.
   latitude?: number | null;
   longitude?: number | null;
+  // First picture of the option, for showing the chosen one in the tree.
+  coverImageUrl?: string | null;
 };
 
 export type CategoryInput = {

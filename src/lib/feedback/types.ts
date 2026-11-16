@@ -1,7 +1,7 @@
 // Client-safe types for votes and comments (see 0037_reactions_and_comments
 // .sql and docs/plans/step8-feedback-ui.md).
 
-export type FeedbackTargetType = "page_option" | "idea" | "task";
+export type FeedbackTargetType = "page_option" | "idea" | "task" | "category";
 
 export type FeedbackComment = {
   id: string;

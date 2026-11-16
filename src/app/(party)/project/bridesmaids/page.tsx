@@ -16,7 +16,6 @@ import { IdeaPortal, portalThumbs } from "@/components/ui/IdeaPortal";
 import { TaskBoard } from "../TaskBoard";
 import { TASK_SELECT, toBoardTask } from "@/lib/tasks/priority";
 import { OptionsCompareGroup, type CompareGroup } from "../OptionsCompareGroup";
-import { ProjectBudget, type ChosenOption } from "../ProjectBudget";
 
 // Near-duplicate of ../page.tsx (Project Management), scoped to
 // visible_tag='bridesmaid' instead of tier='wedding_party' — see
@@ -109,21 +108,6 @@ export default async function BridesmaidsProjectPage() {
     };
   });
 
-  // Winners with a visible price feed the project budget below.
-  const chosen: ChosenOption[] = compareGroups.flatMap((g) =>
-    g.options
-      .filter((o) => o.is_winner && !o.costs_hidden)
-      .map((o) => ({
-        id: o.id,
-        name: o.name,
-        comparison: g.title,
-        predicted_cost_min: o.predicted_cost_min,
-        predicted_cost_max: o.predicted_cost_max,
-        actual_cost: o.actual_cost,
-        currency: o.currency,
-      }))
-  );
-
   return (
     <div>
       <Link
@@ -163,7 +147,7 @@ export default async function BridesmaidsProjectPage() {
       </div>
 
       <div className="mt-12">
-        <BoardPlans board="bridesmaid" roots={(await loadCategoryTree(profile, "bridesmaid")).roots} isAdmin={isAdmin} />
+        <BoardPlans board="bridesmaid" roots={(await loadCategoryTree(profile, "bridesmaid")).roots} isAdmin={isAdmin} profileId={profile?.id ?? null} canInteract={!!profile && profile.role !== "guest"} />
       </div>
 
       {/* Comparisons started before plans existed stay available, tucked below. */}
@@ -176,10 +160,6 @@ export default async function BridesmaidsProjectPage() {
             ))}
           </div>
         </section>
-      )}
-
-      {permission.costAccess && (
-        <ProjectBudget visibleTag="bridesmaid" chosen={chosen} canManage={isAdmin} />
       )}
     </div>
   );

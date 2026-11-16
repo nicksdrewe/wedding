@@ -18,6 +18,8 @@ import { ancestorsOf, categoryPathLabels, findNode, flattenTree } from "@/lib/ca
 import { moveTargetsFor, toCardData } from "@/lib/categories/card";
 import { placePins } from "@/lib/categories/map";
 import { CategoryCard } from "../CategoryCard";
+import { Feedback } from "@/components/feedback/Feedback";
+import { loadCategoryFeedback } from "@/lib/categories/feedback";
 import { NewCategoryForm } from "../NewCategoryForm";
 import { getLinkedCostItemsForCategory } from "@/lib/costs/links";
 import { OPTION_COSTS_EMBED, readOptionCosts } from "@/lib/options/costs";
@@ -91,7 +93,7 @@ export async function CategoryDetail({ slug, board = null }: { slug: string; boa
         };
       })
     : [];
-  const hasPinnedOptions = mapOptions.some((o) => o.latitude != null && o.longitude != null);
+  const hasPinnedOptions = !board && mapOptions.some((o) => o.latitude != null && o.longitude != null);
 
   const [{ data: contacts }, { data: dates }, linkedCostItems, { roots }] = await Promise.all([
     supabase
@@ -117,7 +119,10 @@ export async function CategoryDetail({ slug, board = null }: { slug: string; boa
   const children = node?.children ?? [];
   // One pin per category inside this one (its own pin, or the middle of the
   // pins of the options inside it), each with its total.
-  const placePinList = placePins(children, basePath);
+  const placePinList = board ? [] : placePins(children, basePath);
+  const canInteract = !!profile && profile.role !== "guest";
+  // Boards: votes and comments on this category and the ones inside it.
+  const catFeedback = board ? await loadCategoryFeedback(roots, profile?.id ?? null) : {};
   // Options are decided at the lowest level. A category that only groups
   // others doesn't offer its own board unless it already has options.
   const showOptions = children.length === 0 || (node?.options.length ?? 0) > 0;
@@ -174,6 +179,22 @@ export async function CategoryDetail({ slug, board = null }: { slug: string; boa
 
       <PageHeader eyebrow={trail.length > 0 ? trail[trail.length - 1].title : board ? BOARDS[board].label : "Planning"} title={page.title} />
 
+      {board && node && (
+        <div className="surface mb-6 p-4">
+          <p className="mb-2 font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft/70 uppercase">
+            What do you think of {page.title}?
+          </p>
+          <Feedback
+            targetType="category"
+            targetId={page.id}
+            data={catFeedback[page.id]}
+            canInteract={canInteract}
+            canModerate={isRealCouple}
+            revalidate={`${basePath}/${page.slug}`}
+          />
+        </div>
+      )}
+
       {node && children.length === 0 && node.winners.length > 0 && permission.dataAccess && (
         <div className="route" data-lit="true" aria-label={`Chosen: ${node.winners.join(", ")}`}>
           <span className="route__node">{page.title}</span>
@@ -224,7 +245,10 @@ export async function CategoryDetail({ slug, board = null }: { slug: string; boa
           {children.length > 0 ? (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {children.map((c) => (
-                <CategoryCard key={c.id} category={toCardData(c)} isCouple={isRealCouple} moveTargets={isRealCouple ? moveTargetsFor(roots, c) : []} basePath={basePath} />
+                <CategoryCard key={c.id} category={toCardData(c)} isCouple={isRealCouple} moveTargets={isRealCouple ? moveTargetsFor(roots, c) : []}
+                  basePath={basePath}
+                  board={board ? { feedback: catFeedback[c.id], canInteract, canModerate: isRealCouple, revalidate: `${basePath}/${page.slug}`, canChoose: isRealCouple } : undefined}
+                />
               ))}
             </div>
           ) : (

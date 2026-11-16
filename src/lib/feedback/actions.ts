@@ -16,7 +16,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 type Result = { error: string | null };
 
 const targetSchema = z.object({
-  targetType: z.enum(["page_option", "idea", "task"]),
+  targetType: z.enum(["page_option", "idea", "task", "category"]),
   targetId: z.string().uuid(),
 });
 const pathSchema = z.string().startsWith("/").max(200);

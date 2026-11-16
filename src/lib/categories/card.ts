@@ -19,6 +19,20 @@ export function toCardData(node: CategoryNode) {
     childCount: node.children.length,
     optionCount: node.options.length,
     winners: node.winners,
+    // Shown inside the card (with Choose buttons) on a board, for categories
+    // that hold options directly.
+    options:
+      node.children.length === 0
+        ? node.options.map((o) => ({
+            id: o.id,
+            name: o.name,
+            isWinner: o.isWinner,
+            coverImageUrl: o.coverImageUrl ?? null,
+            costsHidden: o.costsHidden,
+            figure: o.actual ?? o.min,
+            max: o.max,
+          }))
+        : [],
     decisions: node.decisions,
     decided: node.decided,
   };

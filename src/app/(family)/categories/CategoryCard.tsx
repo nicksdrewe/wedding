@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Check, FolderTree } from "lucide-react";
+import { Feedback } from "@/components/feedback/Feedback";
+import type { FeedbackData } from "@/lib/feedback/types";
+import { clearOptionWinner, markOptionWinner } from "@/lib/options/actions";
 import { formatCostRange, formatCurrency } from "@/lib/currency/format";
 import { OPTION_KINDS } from "@/lib/options/kinds";
 import { createCategoryPage, deleteCategoryPage, moveCategoryPage, updateCategoryPage } from "./actions";
@@ -29,8 +33,28 @@ export type CategoryCardData = {
   childCount: number;
   optionCount: number;
   winners: string[];
+  // This category's own options, when it holds any directly (used on boards).
+  options?: {
+    id: string;
+    name: string;
+    isWinner: boolean;
+    coverImageUrl: string | null;
+    costsHidden: boolean;
+    figure: number | null;
+    max: number | null;
+  }[];
   decisions: number;
   decided: number;
+};
+
+// Votes and comments on the category itself (boards), and whether the viewer
+// may pick winners right from the tree.
+export type CardBoardTools = {
+  feedback: FeedbackData | undefined;
+  canInteract: boolean;
+  canModerate: boolean;
+  revalidate: string;
+  canChoose: boolean;
 };
 
 export type MoveTarget = { id: string; label: string };
@@ -43,7 +67,11 @@ export function CategoryCard({
   isCouple,
   moveTargets = [],
   basePath = "/categories",
+  board,
 }: {
+  // Set on a stag/hen board: options and winners shown in the card, votes and
+  // comments under it, and no map fields.
+  board?: CardBoardTools;
   // Where category pages live: /categories, or a board's own plans path.
   basePath?: string;
   category: CategoryCardData;
@@ -55,6 +83,17 @@ export function CategoryCard({
   const [mode, setMode] = useState<"view" | "edit" | "add">("view");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
+  const router = useRouter();
+
+  function choose(optionId: string, winner: boolean) {
+    setError(null);
+    startTransition(async () => {
+      const result = winner ? await clearOptionWinner(optionId) : await markOptionWinner(optionId);
+      if (result?.error) setError(result.error);
+      else router.refresh();
+    });
+  }
 
   function handleDelete() {
     if (!window.confirm(DELETE_CONFIRM)) return;
@@ -105,6 +144,7 @@ export function CategoryCard({
             ))}
           </select>
         </label>
+        {!board && (
         <div>
           <span className="field-label">Place on the map (optional)</span>
           <div className="flex gap-2">
@@ -115,6 +155,7 @@ export function CategoryCard({
             For a destination like Porto. Left blank, it is placed from the pins of the options inside it.
           </p>
         </div>
+        )}
         <label>
           <span className="field-label">Kind of options</span>
           <select name="optionKind" defaultValue={category.optionKind ?? "general"} className="field">
@@ -183,6 +224,69 @@ export function CategoryCard({
           </span>
         )}
       </Link>
+
+      {board && (category.options?.length ?? 0) > 0 && (
+        <div className="border-t border-ink/8 px-3 py-2">
+          {(() => {
+            const opts = category.options ?? [];
+            const winner = opts.find((o) => o.isWinner);
+            const list = winner && !showAll ? [winner] : opts;
+            return (
+              <>
+                <ul className="flex flex-col gap-1.5">
+                  {list.map((o) => (
+                    <li key={o.id} data-lit={o.isWinner ? "true" : undefined} className={`flex items-center gap-2 rounded-lg p-1.5 ${o.isWinner ? "bg-accent/10 ring-1 ring-accent/40" : ""}`}>
+                      {o.coverImageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={o.coverImageUrl} alt="" className={`${o.isWinner ? "h-14 w-14" : "h-8 w-8"} shrink-0 rounded-md object-cover`} />
+                      ) : null}
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center gap-1 font-serif text-[12px] font-semibold text-ink">
+                          {o.isWinner && <Check className="h-3.5 w-3.5 shrink-0 text-accent" strokeWidth={3} aria-hidden="true" />}
+                          <span className="truncate">{o.name}</span>
+                        </span>
+                        {category.showCost && !o.costsHidden && o.figure != null && (
+                          <span className="block font-serif text-[11px] tabular-nums text-ink-soft">
+                            {o.isWinner ? `${formatCurrency(o.figure, "GBP")} locked in` : formatCostRange(o.figure, o.max ?? o.figure, "GBP")}
+                          </span>
+                        )}
+                      </span>
+                      {board.canChoose && (
+                        <button
+                          type="button"
+                          disabled={pending}
+                          onClick={() => choose(o.id, o.isWinner)}
+                          className="shrink-0 font-serif text-[10px] tracking-[0.06em] text-sec uppercase hover:text-ink disabled:opacity-60"
+                        >
+                          {o.isWinner ? "Remove" : "Choose"}
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                {winner && opts.length > 1 && (
+                  <button type="button" onClick={() => setShowAll((v) => !v)} className="mt-1 font-serif text-[10px] tracking-[0.06em] text-ink-soft uppercase hover:text-sec">
+                    {showAll ? "Hide others" : `${opts.length - 1} other ${opts.length === 2 ? "option" : "options"}`}
+                  </button>
+                )}
+              </>
+            );
+          })()}
+        </div>
+      )}
+
+      {board && (
+        <div className="border-t border-ink/8 px-3 py-2">
+          <Feedback
+            targetType="category"
+            targetId={category.id}
+            data={board.feedback}
+            canInteract={board.canInteract}
+            canModerate={board.canModerate}
+            revalidate={board.revalidate}
+          />
+        </div>
+      )}
 
       {isCouple && mode === "view" && (
         <div className="flex gap-3 border-t border-ink/8 px-4 py-1.5 transition-opacity [@media(hover:hover)]:opacity-60 [@media(hover:hover)]:group-hover:opacity-100">
