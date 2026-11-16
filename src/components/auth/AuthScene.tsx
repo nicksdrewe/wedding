@@ -6,13 +6,15 @@
 // Each flower has its own uneven set of petals (angle, length, width), so none
 // is a perfect wheel. Colours are the site's own: sage, cream, dusky rose, soft gold.
 type Petal = [number, number, number];
-const FLOWERS: { x: string; h: string; bs: number; bc: string; gd: number; sd: number; petals: Petal[] }[] = [
-  { x: "11%", h: "44%", bs: 58, bc: "#c98f9a", gd: 0.2, sd: 0.4, petals: [[-70, 0.9, 0.8], [-22, 1, 1], [30, 0.78, 0.9], [84, 0.95, 0.7]] },
-  { x: "28%", h: "60%", bs: 76, bc: "#dcc489", gd: 0.7, sd: 1.2, petals: [[-95, 0.8, 0.9], [-48, 1, 0.8], [-4, 0.85, 1], [41, 1, 0.75], [96, 0.7, 0.9], [150, 0.6, 0.8]] },
-  { x: "45%", h: "36%", bs: 52, bc: "#9cc4a4", gd: 1.2, sd: 2, petals: [[-40, 1, 0.9], [18, 0.8, 1], [76, 0.95, 0.8]] },
-  { x: "60%", h: "68%", bs: 88, bc: "#f1e9dc", gd: 0.5, sd: 0.8, petals: [[-100, 0.75, 0.85], [-58, 0.95, 0.9], [-12, 1, 0.8], [33, 0.82, 1], [78, 1, 0.7], [128, 0.7, 0.9], [-145, 0.6, 0.8]] },
-  { x: "75%", h: "48%", bs: 62, bc: "#c98f9a", gd: 1.5, sd: 1.6, petals: [[-62, 1, 0.8], [-8, 0.8, 0.95], [47, 0.95, 0.85], [104, 0.7, 0.8]] },
-  { x: "89%", h: "56%", bs: 70, bc: "#9cc4a4", gd: 0.9, sd: 2.4, petals: [[-84, 0.85, 0.9], [-30, 1, 0.8], [22, 0.9, 1], [70, 0.75, 0.85], [118, 0.6, 0.9]] },
+// Leaves: which side, how far up the stem (%), size, tilt. One to three per stem.
+type Leaf = ["l" | "r", number, number, number];
+const FLOWERS: { x: string; h: string; bs: number; bc: string; gd: number; sd: number; petals: Petal[]; leaves: Leaf[] }[] = [
+  { x: "11%", h: "44%", bs: 58, bc: "#c98f9a", gd: 0.2, sd: 0.4, petals: [[-70, 0.9, 0.8], [-22, 1, 1], [30, 0.78, 0.9], [84, 0.95, 0.7]], leaves: [["l", 30, 1.1, -28], ["r", 52, 0.8, -12], ["l", 66, 0.7, -40]] },
+  { x: "28%", h: "60%", bs: 76, bc: "#dcc489", gd: 0.7, sd: 1.2, petals: [[-95, 0.8, 0.9], [-48, 1, 0.8], [-4, 0.85, 1], [41, 1, 0.75], [96, 0.7, 0.9], [150, 0.6, 0.8]], leaves: [["r", 38, 1.3, -22]] },
+  { x: "45%", h: "36%", bs: 52, bc: "#9cc4a4", gd: 1.2, sd: 2, petals: [[-40, 1, 0.9], [18, 0.8, 1], [76, 0.95, 0.8]], leaves: [["l", 44, 0.9, -34], ["l", 24, 1.2, -16]] },
+  { x: "60%", h: "68%", bs: 88, bc: "#f1e9dc", gd: 0.5, sd: 0.8, petals: [[-100, 0.75, 0.85], [-58, 0.95, 0.9], [-12, 1, 0.8], [33, 0.82, 1], [78, 1, 0.7], [128, 0.7, 0.9], [-145, 0.6, 0.8]], leaves: [["r", 28, 1.2, -30], ["l", 46, 1, -10], ["r", 62, 0.7, -38]] },
+  { x: "75%", h: "48%", bs: 62, bc: "#c98f9a", gd: 1.5, sd: 1.6, petals: [[-62, 1, 0.8], [-8, 0.8, 0.95], [47, 0.95, 0.85], [104, 0.7, 0.8]], leaves: [["l", 34, 1, -24], ["r", 58, 0.9, -34]] },
+  { x: "89%", h: "56%", bs: 70, bc: "#9cc4a4", gd: 0.9, sd: 2.4, petals: [[-84, 0.85, 0.9], [-30, 1, 0.8], [22, 0.9, 1], [70, 0.75, 0.85], [118, 0.6, 0.9]], leaves: [["r", 30, 1.1, -14], ["r", 54, 0.8, -32], ["l", 42, 1.3, -26]] },
 ];
 
 const HEART =
@@ -28,6 +30,12 @@ export function AuthScene({ children }: { children: React.ReactNode }) {
   return (
     <div className="auth-stage">
       <div className="auth-night" aria-hidden="true">
+        <div className="auth-sky auth-sky--day" />
+        <div className="auth-sky auth-sky--sunset" />
+        <div className="auth-sky auth-sky--dusk" />
+        <div className="auth-sun" />
+        <div className="auth-moon" />
+        <div className="auth-stars">
         {Array.from({ length: 46 }, (_, i) => (
           <span
             key={i}
@@ -42,6 +50,8 @@ export function AuthScene({ children }: { children: React.ReactNode }) {
             }
           />
         ))}
+        </div>
+        <p className="auth-name">Nick &amp; Ellie</p>
         {HEARTS.map((h, i) => (
           <svg
             key={i}
@@ -52,6 +62,7 @@ export function AuthScene({ children }: { children: React.ReactNode }) {
             <path d={HEART} />
           </svg>
         ))}
+        <div className="auth-stars">
         {Array.from({ length: 9 }, (_, i) => (
           <span
             key={i}
@@ -68,6 +79,7 @@ export function AuthScene({ children }: { children: React.ReactNode }) {
             }
           />
         ))}
+        </div>
         <div className="auth-garden">
           {FLOWERS.map((f, i) => (
             <div
@@ -76,8 +88,13 @@ export function AuthScene({ children }: { children: React.ReactNode }) {
               style={{ "--x": f.x, "--h": f.h, "--gd": `${f.gd}s`, "--sd": `${f.sd}s`, "--bs": `${f.bs}px`, "--bc": f.bc } as React.CSSProperties}
             >
               <span className="auth-flower__stem" />
-              <span className="auth-flower__leaf auth-flower__leaf--l" />
-              <span className="auth-flower__leaf auth-flower__leaf--r" />
+              {f.leaves.map(([side, at, size, tilt], li) => (
+                <span
+                  key={li}
+                  className={`auth-flower__leaf auth-flower__leaf--${side}`}
+                  style={{ "--at": `${at}%`, "--ls": size, "--lr": `${tilt}deg`, "--ld": `${li * 0.25}s` } as React.CSSProperties}
+                />
+              ))}
               <span className="auth-flower__bloom">
                 {f.petals.map(([r, len, wid]) => (
                   <span key={r} className="auth-flower__petal" style={{ "--r": `${r}deg`, "--len": len, "--wid": wid } as React.CSSProperties} />

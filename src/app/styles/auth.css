@@ -132,16 +132,16 @@
 }
 .auth-flower__leaf {
   position: absolute;
-  bottom: 32%;
-  width: 26px;
-  height: 12px;
+  bottom: var(--at, 40%);
+  width: calc(26px * var(--ls, 1));
+  height: calc(12px * var(--ls, 1));
   border-radius: 100% 0;
   background: linear-gradient(135deg, #6aa77a, #2f5a3a);
   opacity: 0;
-  animation: auth-fade 1s ease-out calc(var(--gd, 0s) + 1.2s) forwards;
+  animation: auth-fade 1s ease-out calc(var(--gd, 0s) + 1.1s + var(--ld, 0s)) forwards;
 }
-.auth-flower__leaf--l { right: 1px; transform: rotate(-20deg) scaleX(-1); transform-origin: right center; }
-.auth-flower__leaf--r { left: 1px; transform: rotate(-20deg); transform-origin: left center; bottom: 48%; }
+.auth-flower__leaf--l { right: 1px; transform: rotate(var(--lr, -20deg)) scaleX(-1); transform-origin: right center; }
+.auth-flower__leaf--r { left: 1px; transform: rotate(var(--lr, -20deg)); transform-origin: left center; }
 .auth-flower__bloom {
   position: absolute;
   left: 0;
@@ -413,4 +413,75 @@
   .auth-flower__leaf { animation: none; opacity: 1; }
   .split-word__char { animation: none; }
   .whoosh__bar { animation: none; transform: scaleY(1); }
+}
+
+/* ── the sky: soft day, sunset, dusk, night, and back, every minute or so ── */
+.auth-night > * { z-index: 0; }
+.auth-sky { position: absolute; inset: 0; opacity: 0; animation: var(--sky) 30s ease-in-out infinite alternate; }
+.auth-sky--day { background: linear-gradient(180deg, #b9d3e8 0%, #d6e5ee 55%, #eceee2 100%); --sky: sky-day; }
+.auth-sky--sunset { background: linear-gradient(180deg, #9a8fb8 0%, #e8946a 50%, #f8c77c 100%); --sky: sky-sunset; }
+.auth-sky--dusk { background: linear-gradient(180deg, #2b2f55 0%, #5b4768 58%, #a8607a 100%); --sky: sky-dusk; }
+@keyframes sky-day { 0%, 8% { opacity: 1; } 30%, 100% { opacity: 0; } }
+@keyframes sky-sunset { 0%, 12% { opacity: 0; } 33%, 42% { opacity: 1; } 66%, 100% { opacity: 0; } }
+@keyframes sky-dusk { 0%, 38% { opacity: 0; } 65% { opacity: 1; } 92%, 100% { opacity: 0; } }
+
+.auth-sun, .auth-moon {
+  position: absolute;
+  top: 9%;
+  left: 12%;
+  width: clamp(90px, 14vw, 170px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+.auth-sun {
+  background: radial-gradient(circle, #fffbe8 0%, #fff0b8 30%, rgba(255, 226, 150, 0.55) 52%, transparent 72%);
+  animation: sun-arc 30s ease-in-out infinite alternate;
+}
+.auth-moon {
+  background: radial-gradient(circle at 38% 36%, #fbfaf3 0%, #e9e7da 55%, #cfd2cc 100%);
+  box-shadow: 0 0 40px 10px rgba(235, 238, 230, 0.3);
+  width: clamp(60px, 9vw, 110px);
+  margin: clamp(15px, 2.5vw, 30px);
+  opacity: 0;
+  animation: moon-rise 30s ease-in-out infinite alternate;
+}
+@keyframes sun-arc {
+  0%, 30% { opacity: 1; transform: translate(0, 0) scale(1); filter: none; }
+  55% { opacity: 0.9; transform: translate(4%, 70%) scale(1.15); filter: hue-rotate(-14deg) saturate(1.4); }
+  72%, 100% { opacity: 0; transform: translate(8%, 130%) scale(1.2); }
+}
+@keyframes moon-rise {
+  0%, 62% { opacity: 0; transform: translate(0, 40%); }
+  86%, 100% { opacity: 0.95; transform: translate(0, 0); }
+}
+
+.auth-stars { position: absolute; inset: 0; z-index: 2; opacity: 0; animation: stars-in 30s ease-in-out infinite alternate; pointer-events: none; }
+@keyframes stars-in { 0%, 30% { opacity: 0; } 62% { opacity: 0.55; } 90%, 100% { opacity: 1; } }
+
+/* "Nick & Ellie": behind the flowers and hearts, in front of the stars */
+.auth-name {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding-bottom: 18%;
+  font-family: var(--font-title), Georgia, serif;
+  font-size: clamp(15px, 1.7vw, 22px);
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: rgba(250, 247, 240, 0.82);
+  text-shadow: 0 1px 14px rgba(20, 30, 40, 0.35);
+}
+.auth-heart, .auth-firefly { z-index: 4; }
+.auth-garden { z-index: 5; }
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-sky, .auth-sun, .auth-moon { animation: none; }
+  .auth-sky--dusk { opacity: 1; }
+  .auth-sun { display: none; }
+  .auth-moon { opacity: 0.95; }
+  .auth-stars { animation: none; opacity: 1; }
 }
