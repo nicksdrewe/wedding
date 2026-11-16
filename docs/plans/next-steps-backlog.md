@@ -64,7 +64,7 @@ Each comparison group on `/project` (and the stag/hen pages) collapses to save s
 
 On Project (and the Groomsmen and Bridesmaids pages) replace the inline idea list with one bold, fun, animated "portal" button linking to that board's ideas page, using a few of the ideas' thumbnails as the button graphic. The groomsmen/bridesmaids pages need their own ideas page (today only the main board has `/project/ideas`; those two list ideas inline). Respect `prefers-reduced-motion`; keep the thumbnails cheap to load. **Sonnet** (design direction from #10 first if possible).
 
-## 8. Tasks as a mini kanban/priority board
+## 8. Tasks as a mini kanban/priority board — DONE (needs migration 0041)
 
 **Ask:** tasks (Project, and the groomsmen/bridesmaids pages) get a creation date, due date, a done date, and a priority flag from optional → not urgent → … → urgent; filter by urgency and by assignee; and the tasks section looks distinct (own background, 3D lift, animated corners).
 

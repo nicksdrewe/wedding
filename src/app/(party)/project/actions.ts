@@ -160,13 +160,21 @@ const taskSchema = z.object({
   title: z.string().min(1),
   ownerContactId: z.string().uuid().optional().or(z.literal("")),
   dueDate: z.string().optional().or(z.literal("")),
+  priority: z.coerce.number().int().min(0).max(4).default(2),
 });
+
+// Every page that lists tasks; a change on one must refresh the others.
+const TASK_PATHS = ["/project", "/project/groomsmen", "/project/bridesmaids"];
+function revalidateTasks() {
+  TASK_PATHS.forEach((p) => revalidatePath(p));
+}
 
 export async function addTask(formData: FormData) {
   const parsed = taskSchema.parse({
     title: formData.get("title"),
     ownerContactId: formData.get("ownerContactId") || "",
     dueDate: formData.get("dueDate") || "",
+    priority: formData.get("priority") ?? 2,
   });
 
   const supabase = await createClient();
@@ -174,19 +182,20 @@ export async function addTask(formData: FormData) {
     title: parsed.title,
     owner_contact_id: parsed.ownerContactId || null,
     due_date: parsed.dueDate || null,
+    priority: parsed.priority,
   });
 
-  revalidatePath("/project");
+  revalidateTasks();
 }
 
 export async function toggleTask(taskId: string, done: boolean) {
   const supabase = await createClient();
   await supabase
     .from("tasks")
-    .update({ status: done ? "done" : "todo" })
+    .update({ status: done ? "done" : "todo", done_at: done ? new Date().toISOString() : null })
     .eq("id", taskId);
 
-  revalidatePath("/project");
+  revalidateTasks();
 }
 
 const updateTaskSchema = z.object({
@@ -194,6 +203,7 @@ const updateTaskSchema = z.object({
   title: z.string().min(1),
   ownerContactId: z.string().uuid().optional().or(z.literal("")),
   dueDate: z.string().optional().or(z.literal("")),
+  priority: z.coerce.number().int().min(0).max(4).default(2),
 });
 
 export async function updateTask(formData: FormData) {
@@ -202,6 +212,7 @@ export async function updateTask(formData: FormData) {
     title: formData.get("title"),
     ownerContactId: formData.get("ownerContactId") || "",
     dueDate: formData.get("dueDate") || "",
+    priority: formData.get("priority") ?? 2,
   });
 
   const supabase = await createClient();
@@ -211,10 +222,11 @@ export async function updateTask(formData: FormData) {
       title: parsed.title,
       owner_contact_id: parsed.ownerContactId || null,
       due_date: parsed.dueDate || null,
+      priority: parsed.priority,
     })
     .eq("id", parsed.id);
 
-  revalidatePath("/project");
+  revalidateTasks();
   return { error: error?.message ?? null };
 }
 
@@ -223,7 +235,7 @@ export async function deleteTask(id: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("tasks").delete().eq("id", parsed);
 
-  revalidatePath("/project");
+  revalidateTasks();
   return { error: error?.message ?? null };
 }
 

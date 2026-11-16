@@ -10,8 +10,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { IdeaForm } from "./IdeaForm";
 import { IdeaCard } from "./IdeaCard";
-import { TaskForm } from "./TaskForm";
-import { TaskRow } from "./TaskRow";
+import { TaskBoard } from "./TaskBoard";
+import { TASK_SELECT, toBoardTask } from "@/lib/tasks/priority";
 import { NewOptionGroupForm } from "./NewOptionGroupForm";
 import { ProjectTabs } from "./ProjectTabs";
 import { OptionsCompareGroup, type CompareGroup } from "./OptionsCompareGroup";
@@ -53,7 +53,7 @@ export default async function ProjectPage() {
       .order("sort_order", { referencedTable: "idea_board_images", ascending: true }),
     supabase
       .from("tasks")
-      .select("id, title, notes, status, due_date, owner_contact_id, contacts(full_name)")
+      .select(TASK_SELECT)
       .is("visible_tag", null)
       .order("status")
       .order("due_date", { ascending: true, nullsFirst: false }),
@@ -183,33 +183,14 @@ export default async function ProjectPage() {
           )}
         </section>
 
-        <section>
-          <h2 className="font-serif text-[15px] font-semibold tracking-wide">Tasks</h2>
-          {canEdit && <TaskForm contacts={contacts ?? []} />}
-          <ul className="mt-4 flex flex-col gap-2">
-            {(tasks ?? []).map((t) => {
-              const owner = Array.isArray(t.contacts) ? t.contacts[0] : t.contacts;
-              return (
-                <TaskRow
-                  key={t.id}
-                  id={t.id}
-                  title={t.title}
-                  done={t.status === "done"}
-                  dueDate={t.due_date}
-                  ownerContactId={t.owner_contact_id}
-                  ownerName={owner?.full_name ?? null}
-                  contacts={contacts ?? []}
-                  feedback={taskFeedback[t.id]}
-                  canModerate={isCouple}
-                  revalidate={feedbackPath}
-                />
-              );
-            })}
-          </ul>
-          {(!tasks || tasks.length === 0) && (
-            <EmptyState className="mt-4" title="No tasks yet" />
-          )}
-        </section>
+        <TaskBoard
+          tasks={(tasks ?? []).map(toBoardTask)}
+          contacts={contacts ?? []}
+          canAdd={canEdit}
+          feedback={taskFeedback}
+          canModerate={isCouple}
+          revalidate={feedbackPath}
+        />
       </div>
 
       <section className="mt-12">

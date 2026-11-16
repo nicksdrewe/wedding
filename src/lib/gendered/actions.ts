@@ -69,6 +69,7 @@ const taskSchema = z.object({
   title: z.string().min(1),
   ownerContactId: z.string().uuid().optional().or(z.literal("")),
   dueDate: z.string().optional().or(z.literal("")),
+  priority: z.coerce.number().int().min(0).max(4).default(2),
 });
 
 export async function createGenderedTask(formData: FormData) {
@@ -77,6 +78,7 @@ export async function createGenderedTask(formData: FormData) {
     title: formData.get("title"),
     ownerContactId: formData.get("ownerContactId") || "",
     dueDate: formData.get("dueDate") || "",
+    priority: formData.get("priority") ?? 2,
   });
 
   const supabase = await createClient();
@@ -85,6 +87,7 @@ export async function createGenderedTask(formData: FormData) {
     title: parsed.title,
     owner_contact_id: parsed.ownerContactId || null,
     due_date: parsed.dueDate || null,
+    priority: parsed.priority,
   });
 
   revalidatePath(pathForTag(parsed.visibleTag));

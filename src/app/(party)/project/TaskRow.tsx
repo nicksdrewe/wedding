@@ -1,17 +1,18 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { Check } from "lucide-react";
 import { deleteTask, toggleTask, updateTask } from "./actions";
 import { Feedback } from "@/components/feedback/Feedback";
 import type { FeedbackData } from "@/lib/feedback/types";
+import { PRIORITIES, priorityLabel, priorityTone, type BoardTask } from "@/lib/tasks/priority";
+
+function shortDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
 
 export function TaskRow({
-  id,
-  title,
-  done,
-  dueDate,
-  ownerContactId,
-  ownerName,
+  task,
   contacts,
   canDelete = true,
   feedback,
@@ -19,12 +20,7 @@ export function TaskRow({
   canModerate = false,
   revalidate = "/project",
 }: {
-  id: string;
-  title: string;
-  done: boolean;
-  dueDate: string | null;
-  ownerContactId: string | null;
-  ownerName: string | null;
+  task: BoardTask;
   contacts: { id: string; full_name: string }[];
   // On a stag/hen board only the project's admin may delete a task
   // (0034_project_admins_and_budgets.sql); everyone on the board can still
@@ -36,6 +32,7 @@ export function TaskRow({
   canModerate?: boolean;
   revalidate?: string;
 }) {
+  const { id, title, done, priority, dueDate, createdAt, doneAt, ownerContactId, ownerName } = task;
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
   const [saving, startSaveTransition] = useTransition();
@@ -51,9 +48,11 @@ export function TaskRow({
     });
   }
 
+  const overdue = !done && !!dueDate && dueDate < new Date().toISOString().slice(0, 10);
+
   if (editing) {
     return (
-      <li className="rounded-[10px] border border-ink/10 bg-white px-4 py-3">
+      <li className="task-card task-card--edit">
         <form
           ref={formRef}
           action={(formData) =>
@@ -67,84 +66,101 @@ export function TaskRow({
               setEditing(false);
             })
           }
-          className="flex flex-wrap items-end gap-2"
+          className="grid grid-cols-1 gap-3 sm:grid-cols-2"
         >
           <input type="hidden" name="id" value={id} />
-          <input
-            name="title"
-            required
-            defaultValue={title}
-            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
-          />
-          <select
-            name="ownerContactId"
-            defaultValue={ownerContactId ?? ""}
-            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
-          >
-            <option value="">Unassigned</option>
-            {contacts.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.full_name}
-              </option>
-            ))}
-          </select>
-          <input
-            name="dueDate"
-            type="date"
-            defaultValue={dueDate ?? ""}
-            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
-          />
-          <button
-            type="submit"
-            disabled={saving}
-            className="rounded-full bg-ink px-5 py-2 text-sm text-cream transition hover:bg-ink-soft disabled:opacity-60"
-          >
-            {saving ? "Saving…" : "Save"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setEditing(false)}
-            className="rounded-full border border-ink/20 px-5 py-2 text-sm text-ink-soft transition hover:border-ink/40"
-          >
-            Cancel
-          </button>
-          {error && <p className="w-full font-reading text-xs text-alert">{error}</p>}
+          <label className="sm:col-span-2">
+            <span className="field-label">Task</span>
+            <input name="title" required defaultValue={title} className="field" />
+          </label>
+          <label>
+            <span className="field-label">Who</span>
+            <select name="ownerContactId" defaultValue={ownerContactId ?? ""} className="field">
+              <option value="">Unassigned</option>
+              {contacts.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.full_name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span className="field-label">Due</span>
+            <input name="dueDate" type="date" defaultValue={dueDate ?? ""} className="field" />
+          </label>
+          <label>
+            <span className="field-label">Priority</span>
+            <select name="priority" defaultValue={priority} className="field">
+              {PRIORITIES.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex items-end gap-2">
+            <button type="submit" disabled={saving} className="btn btn-sec flex-1">
+              {saving ? "Saving…" : "Save"}
+            </button>
+            <button type="button" onClick={() => setEditing(false)} className="btn btn-quiet">
+              Cancel
+            </button>
+          </div>
+          {error && <p className="font-reading text-xs text-alert sm:col-span-2">{error}</p>}
         </form>
       </li>
     );
   }
 
   return (
-    <li className="group flex flex-wrap items-center gap-3 rounded-[10px] border border-ink/10 bg-white px-4 py-3 font-serif text-[13px]">
-      <input
-        type="checkbox"
-        checked={done}
-        disabled={pending}
-        onChange={(e) => startTransition(() => toggleTask(id, e.target.checked))}
-      />
-      <span className={done ? "flex-1 text-ink-soft line-through" : "flex-1"}>
-        {title}
-      </span>
-      {ownerName && <span className="text-[11px] text-ink-soft">{ownerName}</span>}
-      {dueDate && <span className="text-[11px] text-ink-soft">{dueDate}</span>}
-      <div className="flex shrink-0 gap-2 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100">
+    <li className={`task-card group ${done ? "task-card--done" : ""} ${!done && priority === 4 ? "task-card--urgent" : ""}`}>
+      <div className="flex items-start gap-3">
         <button
           type="button"
-          onClick={() => setEditing(true)}
-          className="font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-accent"
+          role="checkbox"
+          aria-checked={done}
+          aria-label={done ? "Mark as not done" : "Mark as done"}
+          disabled={pending}
+          onClick={() => startTransition(() => toggleTask(id, !done))}
+          className="task-tick mt-0.5"
+          data-done={done}
         >
-          Edit
+          <Check className="h-4 w-4" strokeWidth={3} />
         </button>
-        {canDelete && (
+        <div className="min-w-0 flex-1">
+          <p className={`font-serif text-[15px] leading-snug ${done ? "text-ink-soft line-through" : "text-ink"}`}>{title}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            <span className={`chip ${priorityTone(priority)}`}>{priorityLabel(priority)}</span>
+            {ownerName && <span className="font-serif text-[12px] text-ink-soft">{ownerName}</span>}
+            {dueDate && (
+              <span className={`font-serif text-[12px] ${overdue ? "font-semibold text-alert" : "text-ink-soft"}`}>
+                {overdue ? "Overdue · " : "Due "}
+                {shortDate(dueDate)}
+              </span>
+            )}
+            {done && doneAt && <span className="font-serif text-[12px] text-accent">Done {shortDate(doneAt)}</span>}
+            <span className="font-serif text-[11px] text-ink-soft/60">Added {shortDate(createdAt)}</span>
+          </div>
+        </div>
+        <div className="flex shrink-0 gap-3 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-focus-within:opacity-100">
           <button
             type="button"
-            onClick={handleDelete}
-            disabled={pending}
-            className="font-serif text-[11px] tracking-[0.06em] text-alert/80 uppercase hover:text-alert"
+            onClick={() => setEditing(true)}
+            className="min-h-8 font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-sec"
           >
-            Delete
+            Edit
           </button>
-        )}
+          {canDelete && (
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={pending}
+              className="min-h-8 font-serif text-[11px] tracking-[0.06em] text-alert/80 uppercase hover:text-alert"
+            >
+              Delete
+            </button>
+          )}
+        </div>
       </div>
       <Feedback
         targetType="task"
@@ -154,9 +170,9 @@ export function TaskRow({
         canModerate={canModerate}
         revalidate={revalidate}
         showReactions={false}
-        className="w-full"
+        className="mt-2 w-full"
       />
-      {error && <p className="w-full font-reading text-xs text-alert">{error}</p>}
+      {error && <p className="mt-2 font-reading text-xs text-alert">{error}</p>}
     </li>
   );
 }
