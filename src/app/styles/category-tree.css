@@ -51,7 +51,7 @@
 @media (min-width: 1024px) {
   .cat-tree {
     overflow-x: auto;
-    padding: 4px 4px 18px;
+    padding: 14px 28px 34px;
   }
   .cat-tree > ul {
     display: flex;
@@ -150,4 +150,114 @@
   border-radius: 999px;
   background: var(--color-accent);
   transition: width var(--dur-slow) var(--ease-out);
+}
+
+/* ═══ The chosen route: a skill-tree glow ═══
+   Where a decision has been made, the path to it lights up: the connector
+   leading into a decided category turns green and light pulses along it; a
+   half-decided branch is dim green; undecided ones stay grey. data-lit on the
+   <li> (or its wrapper) is "true" (everything beneath is decided), "partial"
+   or "none". */
+.cat-tree, .route {
+  --route: #4f9d66;
+  --route-glow: #9fe3b4;
+}
+@keyframes routeGlow {
+  0%, 100% { box-shadow: var(--shadow-2), 0 0 0 1px var(--route), 0 0 14px color-mix(in srgb, var(--route-glow) 40%, transparent); }
+  50% { box-shadow: var(--shadow-3), 0 0 0 1px var(--route), 0 0 30px color-mix(in srgb, var(--route-glow) 80%, transparent); }
+}
+@keyframes routeFlow {
+  from { background-position: 0 100%; }
+  to { background-position: 0 0; }
+}
+@keyframes routePulse {
+  0%, 100% { filter: drop-shadow(0 0 1px color-mix(in srgb, var(--route-glow) 40%, transparent)); }
+  50% { filter: drop-shadow(0 0 6px var(--route-glow)); }
+}
+.route-glow { animation: routeGlow 3.2s ease-in-out infinite; }
+
+[data-lit="true"] > .cat-node > .surface {
+  border-color: var(--route);
+  animation: routeGlow 3.2s ease-in-out infinite;
+}
+[data-lit="partial"] > .cat-node > .surface {
+  border-color: color-mix(in srgb, var(--route) 50%, transparent);
+}
+
+/* phone: the spine and elbow of a decided child light up, light running down */
+@media (max-width: 1023px) {
+  .cat-tree ul ul > li[data-lit="true"]::before {
+    background: var(--route);
+    box-shadow: 0 0 8px var(--route-glow);
+  }
+  .cat-tree ul ul > li[data-lit="true"]::after {
+    background: linear-gradient(180deg, var(--route) 0%, var(--route) 38%, #fff 50%, var(--route) 62%, var(--route) 100%);
+    background-size: 100% 300%;
+    box-shadow: 0 0 8px var(--route-glow);
+    animation: routeFlow 3s linear infinite;
+  }
+  .cat-tree ul ul > li[data-lit="partial"]::before,
+  .cat-tree ul ul > li[data-lit="partial"]::after {
+    background: color-mix(in srgb, var(--route) 45%, transparent);
+  }
+}
+
+/* wide: the bar segment and drop into a decided child light up and pulse */
+@media (min-width: 1024px) {
+  .cat-tree ul ul > li[data-lit="true"]::before,
+  .cat-tree ul ul > li[data-lit="true"]::after {
+    border-color: var(--route);
+    animation: routePulse 3s ease-in-out infinite;
+  }
+  .cat-tree ul ul > li[data-lit="partial"]::before,
+  .cat-tree ul ul > li[data-lit="partial"]::after {
+    border-color: color-mix(in srgb, var(--route) 45%, transparent);
+  }
+  /* the parent's drop down to its children lights when it is fully decided */
+  .cat-tree li[data-lit="true"] > ul::before {
+    background: var(--route);
+    box-shadow: 0 0 8px var(--route-glow);
+    animation: routePulse 3s ease-in-out infinite;
+  }
+}
+
+/* The little route on a category's own page: category -> chosen option. */
+.route {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.route__node {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--color-paper);
+  border: 2px solid color-mix(in srgb, var(--route) 55%, transparent);
+  color: var(--color-ink);
+}
+.route__node--chosen {
+  border-color: var(--route);
+  color: #fff;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--route) 88%, #fff), var(--route));
+  animation: routeGlow 3.2s ease-in-out infinite;
+}
+.route__line {
+  position: relative;
+  display: block;
+  width: 3px;
+  height: 38px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--route) 0%, var(--route) 38%, #fff 50%, var(--route) 62%, var(--route) 100%);
+  background-size: 100% 300%;
+  box-shadow: 0 0 10px var(--route-glow);
+  animation: routeFlow 2.6s linear infinite;
 }

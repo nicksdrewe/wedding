@@ -208,3 +208,23 @@ export async function deleteContact(id: string) {
   revalidatePath("/guests");
   return { error: error?.message ?? null };
 }
+
+// Set (or clear, with null) the photo shown for a person on the guest list and
+// on the Groomsmen / Bridesmaids group charts. Whoever can edit contacts can
+// do this; the database decides (the update just matches nothing otherwise).
+export async function setContactPhoto(contactId: string, photoUrl: string | null) {
+  const parsed = z.object({ id: z.string().uuid(), url: z.string().min(1).max(2000).nullable() }).safeParse({ id: contactId, url: photoUrl });
+  if (!parsed.success) return { error: "That photo couldn't be saved." };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("contacts").update({ photo_url: parsed.data.url }).eq("id", parsed.data.id).select("id");
+  if (error) {
+    return { error: error.message.includes("photo_url") ? "Photos need one more database step (migration 0045) before they can be saved." : error.message };
+  }
+  if (!data || data.length === 0) return { error: "You can't change this person's photo." };
+
+  revalidatePath("/guests");
+  revalidatePath("/project/groomsmen");
+  revalidatePath("/project/bridesmaids");
+  return { error: null };
+}

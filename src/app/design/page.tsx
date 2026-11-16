@@ -182,21 +182,21 @@ export default async function DesignPage() {
           </div>
           <div className="cat-tree mb-12">
             <ul>
-              <li>
+              <li data-lit="partial">
                 <div className="cat-node cat-node--parent"><div className="surface p-4"><p className="font-title text-[20px] leading-tight">Catering</p><p className="mt-1 font-serif text-[13px] font-semibold tabular-nums">£4,200–£7,900</p></div></div>
                 <ul>
-                  <li>
+                  <li data-lit="partial">
                     <div className="cat-node cat-node--parent"><div className="surface p-4"><p className="font-title text-[20px] leading-tight">Food</p><p className="mt-1 font-serif text-[13px] font-semibold tabular-nums">£3,000–£5,400</p></div></div>
                     <ul>
-                      <li><div className="cat-node"><div className="surface p-4"><p className="font-title text-[20px] leading-tight">Friday breakfast</p><p className="mt-1 font-serif text-[13px] font-semibold tabular-nums">£300–£650</p></div></div></li>
-                      <li><div className="cat-node"><div className="surface p-4"><p className="font-title text-[20px] leading-tight">Wedding dinner</p><p className="mt-1 font-serif text-[13px] font-semibold tabular-nums">£2,400–£4,100</p></div></div></li>
+                      <li data-lit="true"><div className="cat-node"><div className="surface p-4"><p className="font-title text-[20px] leading-tight">Friday breakfast</p><p className="mt-1 font-serif text-[13px] font-semibold tabular-nums">£300–£650</p></div></div></li>
+                      <li data-lit="true"><div className="cat-node"><div className="surface p-4"><p className="font-title text-[20px] leading-tight">Wedding dinner</p><p className="mt-1 font-serif text-[13px] font-semibold tabular-nums">£2,400–£4,100</p></div></div></li>
                       <li><div className="cat-node"><div className="surface p-4"><p className="font-title text-[20px] leading-tight">Evening snacks</p><p className="mt-1 font-serif text-[13px] font-semibold tabular-nums">£300–£650</p></div></div></li>
                     </ul>
                   </li>
-                  <li>
+                  <li data-lit="true">
                     <div className="cat-node cat-node--parent"><div className="surface p-4"><p className="font-title text-[20px] leading-tight">Drink</p><p className="mt-1 font-serif text-[13px] font-semibold tabular-nums">£1,200–£2,500</p></div></div>
                     <ul>
-                      <li><div className="cat-node"><div className="surface p-4"><p className="font-title text-[20px] leading-tight">Bar</p><p className="mt-1 font-serif text-[13px] font-semibold tabular-nums">£1,200–£2,500</p></div></div></li>
+                      <li data-lit="true"><div className="cat-node"><div className="surface p-4"><p className="font-title text-[20px] leading-tight">Bar</p><p className="mt-1 font-serif text-[13px] font-semibold tabular-nums">£1,200–£2,500</p></div></div></li>
                     </ul>
                   </li>
                 </ul>
@@ -212,9 +212,9 @@ export default async function DesignPage() {
             <GroupChart
               kind="groomsman"
               data={{
-                head: { id: "h", name: "Nick Drewe", first: "Nick" },
-                lead: [{ id: "l", name: "Alex Cummings", first: "Alex" }],
-                members: [{ id: "a", name: "Sam Hughes", first: "Sam" }, { id: "b", name: "Tom Reed", first: "Tom" }, { id: "c", name: "Joe Patel", first: "Joe" }, { id: "d", name: "Max Allen", first: "Max" }, { id: "e", name: "Ben Ward", first: "Ben" }],
+                head: { id: "h", name: "Nick Drewe", first: "Nick", photo: null },
+                lead: [{ id: "l", name: "Alex Cummings", first: "Alex", photo: null }],
+                members: [{ id: "a", name: "Sam Hughes", first: "Sam", photo: null }, { id: "b", name: "Tom Reed", first: "Tom", photo: null }, { id: "c", name: "Joe Patel", first: "Joe", photo: null }, { id: "d", name: "Max Allen", first: "Max", photo: null }, { id: "e", name: "Ben Ward", first: "Ben", photo: null }],
               }}
             />
           </div>

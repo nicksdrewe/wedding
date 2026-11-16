@@ -2,7 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { CornerDownRight, Mail, Phone, UserPlus } from "lucide-react";
-import { addChildContact, deleteContact, updateContact } from "./actions";
+import { addChildContact, deleteContact, setContactPhoto, updateContact } from "./actions";
+import { ImageUpload } from "@/components/ImageUpload";
+import { toDriveImageUrl } from "@/lib/google/image-url";
 import { ROLE_BADGE, ROLE_LABEL, RSVP_STYLE } from "./badges";
 import type { GuestListEvent } from "./GuestTable";
 import { TagPicker } from "./TagPicker";
@@ -27,6 +29,8 @@ export type Contact = {
   // small indicator dot so the couple/family know to open the row rather
   // than shown inline in full (keeps the table compact).
   guest_note: string | null;
+  // Picture shown on the group charts (0045_contact_photos.sql).
+  photo_url?: string | null;
   eventRsvpStatuses: Record<string, "pending" | "attending" | "declined">;
 };
 
@@ -67,6 +71,15 @@ export function EditableGuestRow({
   const [addingChild, setAddingChild] = useState(false);
   const [deletePending, startDeleteTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [photoPending, startPhotoTransition] = useTransition();
+
+  function savePhoto(url: string | null) {
+    setError(null);
+    startPhotoTransition(async () => {
+      const result = await setContactPhoto(contact.id, url);
+      if (result?.error) setError(result.error);
+    });
+  }
 
   function handleDelete() {
     if (!window.confirm(DELETE_WARNING)) return;
@@ -120,7 +133,23 @@ export function EditableGuestRow({
             aria-hidden="true"
           />
         )}
-        {contact.full_name}
+        <span className="inline-flex items-center gap-3">
+          <Avatar name={contact.full_name} url={contact.photo_url ?? null} />
+          <span>
+            {contact.full_name}
+            {isCouple && !isChild && (
+              <span className="mt-0.5 flex items-center gap-2 font-serif text-[11px] font-normal text-ink-soft">
+                <ImageUpload small onUploaded={savePhoto} label={contact.photo_url ? "Change photo" : "Add photo"} className="!flex-row" />
+                {contact.photo_url && (
+                  <button type="button" onClick={() => savePhoto(null)} disabled={photoPending} className="min-h-8 text-alert/80 hover:text-alert">
+                    Remove
+                  </button>
+                )}
+              </span>
+            )}
+            {error && <span className="block font-reading text-xs text-alert">{error}</span>}
+          </span>
+        </span>
         {contact.guest_note && (
           <span
             aria-hidden="true"
@@ -539,5 +568,24 @@ function AddChildForm({
       </div>
       {error && <p className="mt-3 font-reading text-xs text-alert">{error}</p>}
     </form>
+  );
+}
+
+// Round picture, or initials on a soft colour when there is no photo.
+function Avatar({ name, url }: { name: string; url: string | null }) {
+  const initials = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]!.toUpperCase())
+    .join("");
+  if (url) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={toDriveImageUrl(url)} alt="" loading="lazy" className="h-10 w-10 shrink-0 rounded-full object-cover shadow-[var(--shadow-1)]" />;
+  }
+  return (
+    <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sec-tint font-title text-[15px] text-sec">
+      {initials}
+    </span>
   );
 }

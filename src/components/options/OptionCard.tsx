@@ -121,7 +121,7 @@ export function OptionCard({
       open={open}
       onOpenChange={setOpen}
       className={`surface overflow-hidden transition-[box-shadow,border-color] duration-200 ${
-        option.is_winner ? "!border-2 !border-accent shadow-[0_16px_40px_rgba(76,107,82,0.25)]" : ""
+        option.is_winner ? "route-glow !border-2 !border-accent" : ""
       }`}
     >
       <DisclosureTrigger>

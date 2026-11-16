@@ -9,7 +9,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export type GroupKind = "groomsman" | "bridesmaid";
 
-export type GroupMember = { id: string; name: string; first: string };
+export type GroupMember = { id: string; name: string; first: string; photo: string | null };
 export type GroupChartData = {
   head: GroupMember | null; // groom or bride
   lead: GroupMember[]; // best man / maid of honour
@@ -20,19 +20,24 @@ export type GroupChartData = {
 const HEAD_FIRST_NAME: Record<GroupKind, string> = { groomsman: "nick", bridesmaid: "ellie" };
 const LEAD_TAG: Record<GroupKind, string> = { groomsman: "best_man", bridesmaid: "maid_of_honour" };
 
-function toMember(c: { id: string; full_name: string }): GroupMember {
+function toMember(c: { id: string; full_name: string; photo_url?: string | null }): GroupMember {
   const name = c.full_name.trim();
-  return { id: c.id, name, first: name.split(/\s+/)[0] ?? name };
+  return { id: c.id, name, first: name.split(/\s+/)[0] ?? name, photo: c.photo_url ?? null };
 }
 
 export async function loadGroupChart(kind: GroupKind): Promise<GroupChartData> {
   const admin = createAdminClient();
-  const { data } = await admin
-    .from("contacts")
-    .select("id, full_name, role, tags")
-    .is("parent_contact_id", null)
-    .or(`role.eq.couple,tags.cs.{${kind}},tags.cs.{${LEAD_TAG[kind]}}`)
-    .order("full_name");
+  const query = (cols: string) =>
+    admin
+      .from("contacts")
+      .select(cols)
+      .is("parent_contact_id", null)
+      .or(`role.eq.couple,tags.cs.{${kind}},tags.cs.{${LEAD_TAG[kind]}}`)
+      .order("full_name");
+  // With photos once migration 0045 has been run; without them until then.
+  let res = await query("id, full_name, role, tags, photo_url");
+  if (res.error) res = await query("id, full_name, role, tags");
+  const data = (res.data ?? []) as unknown as { id: string; full_name: string; role: string; tags: string[] | null; photo_url?: string | null }[];
 
   const rows = data ?? [];
   const lead = rows.filter((r) => r.role !== "couple" && (r.tags ?? []).includes(LEAD_TAG[kind])).map(toMember);

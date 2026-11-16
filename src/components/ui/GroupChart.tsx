@@ -1,3 +1,4 @@
+import { toDriveImageUrl } from "@/lib/google/image-url";
 import type { GroupChartData, GroupKind, GroupMember } from "@/lib/party/group";
 
 // The little family tree under a group page's title, drawn on the dark
@@ -25,7 +26,12 @@ function Badge({ person, title, index, big }: { person: GroupMember; title: stri
   return (
     <li className="gc-person" style={{ "--i": index, "--hue": h } as React.CSSProperties}>
       <span className={`gc-badge ${big ? "gc-badge--big" : ""}`} aria-hidden="true">
-        {initials}
+        {person.photo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={toDriveImageUrl(person.photo)} alt="" loading="lazy" decoding="async" className="gc-photo" />
+        ) : (
+          initials
+        )}
       </span>
       <span className="gc-name">{person.first}</span>
       <span className="gc-title">{title}</span>

@@ -80,7 +80,7 @@ export function OptionsGrid({
 
   function cardClasses(o: OptionRow) {
     if (o.is_winner) {
-      return "border-2 border-accent bg-paper shadow-[0_18px_44px_rgba(76,107,82,0.28)] scale-100 opacity-100";
+      return "route-glow border-2 border-accent bg-paper scale-100 opacity-100";
     }
     if (hasWinner) {
       return "border border-ink/10 bg-cream-deep opacity-50 scale-[0.97] shadow-none";

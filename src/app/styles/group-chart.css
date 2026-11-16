@@ -133,3 +133,6 @@
   font-size: 14px;
   color: rgba(244, 241, 236, 0.7);
 }
+
+.gc-badge { overflow: hidden; }
+.gc-photo { height: 100%; width: 100%; object-fit: cover; border-radius: 50%; }

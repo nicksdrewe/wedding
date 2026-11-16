@@ -110,8 +110,14 @@ export default async function GuestsPage({
   // it just needs each flagged event's status pre-computed and merged
   // onto each contact rather than kept as a separate lookup, since it
   // filters and sorts these as plain objects.
+  // Photos come from their own small query, so the list still loads before
+  // migration 0045 (which adds the column) has been run.
+  const { data: photoRows } = await supabase.from("contacts").select("id, photo_url");
+  const photoById = new Map((photoRows ?? []).map((r) => [r.id, r.photo_url as string | null]));
+
   const guestTableContacts: GuestTableContact[] = (contacts ?? []).map((c) => ({
     ...c,
+    photo_url: photoById.get(c.id) ?? null,
     eventRsvpStatuses: Object.fromEntries(events.map((e) => [e.id, rsvpStatusFor(c.rsvps, e.id)])),
   }));
 

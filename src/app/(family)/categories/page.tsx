@@ -32,8 +32,11 @@ export default async function CategoriesPage() {
     <CategoryCard category={toCardData(node)} isCouple={isCouple} moveTargets={isCouple ? moveTargetsFor(roots, node) : []} />
   );
 
+  // How far a branch has been decided (drives the glowing route).
+  const lit = (n: CategoryNode) => (n.decisions === 0 ? "none" : n.decided === n.decisions ? "true" : n.decided > 0 ? "partial" : "none");
+
   const branch = (node: CategoryNode) => (
-    <li key={node.id}>
+    <li key={node.id} data-lit={lit(node)}>
       <div className={`cat-node ${node.children.length > 0 ? "cat-node--parent" : ""}`}>{card(node)}</div>
       {node.children.length > 0 && <ul>{node.children.map(branch)}</ul>}
     </li>
@@ -75,8 +78,8 @@ export default async function CategoriesPage() {
               )}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                 {singles.map((node, i) => (
-                  <div key={node.id} className="rise" style={{ "--i": Math.min(i, 8) } as React.CSSProperties}>
-                    {card(node)}
+                  <div key={node.id} className="rise" data-lit={lit(node)} style={{ "--i": Math.min(i, 8) } as React.CSSProperties}>
+                    <div className="cat-node">{card(node)}</div>
                   </div>
                 ))}
               </div>

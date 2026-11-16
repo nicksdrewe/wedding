@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
 import { getEffectivePermission } from "@/lib/permissions/actions";
@@ -138,6 +139,17 @@ export default async function CategoryDetailPage({
       </nav>
 
       <PageHeader eyebrow={trail.length > 0 ? trail[trail.length - 1].title : "Planning"} title={page.title} />
+
+      {node && children.length === 0 && node.winners.length > 0 && permission.dataAccess && (
+        <div className="route" data-lit="true" aria-label={`Chosen: ${node.winners.join(", ")}`}>
+          <span className="route__node">{page.title}</span>
+          <span className="route__line" aria-hidden="true" />
+          <span className="route__node route__node--chosen">
+            <Check className="h-4 w-4" strokeWidth={3} aria-hidden="true" />
+            {node.winners.join(" + ")}
+          </span>
+        </div>
+      )}
 
       {canSeeCosts && node?.total && (
         <section className="surface surface-tint mb-6 p-6">

@@ -17,7 +17,9 @@ export function ImageUpload({
   label = "Add photo",
   className,
   children,
+  small = false,
 }: {
+  small?: boolean;
   onUploaded: (url: string) => void;
   label?: string;
   className?: string;
@@ -81,7 +83,7 @@ export function ImageUpload({
 
   return (
     <div className={`flex flex-col gap-1.5 ${className ?? ""}`}>
-      <label className="btn btn-quiet w-fit">
+      <label className={`btn btn-quiet w-fit ${small ? "btn-sm" : ""}`}>
         {input}
         {busy ? "Uploading…" : label}
       </label>
