@@ -179,7 +179,7 @@ export async function CategoryDetail({ slug, board = null }: { slug: string; boa
 
       <PageHeader eyebrow={trail.length > 0 ? trail[trail.length - 1].title : board ? BOARDS[board].label : "Planning"} title={page.title} />
 
-      {board && node && (
+      {board && node && node.feedbackEnabled !== false && (
         <div className="surface mb-6 p-4">
           <p className="mb-2 font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft/70 uppercase">
             What do you think of {page.title}?

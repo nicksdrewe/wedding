@@ -25,6 +25,8 @@ export type CategoryCardData = {
   latitude?: number | null;
   longitude?: number | null;
   hasPin?: boolean;
+  // Whether it invites votes and comments (0051).
+  feedbackEnabled?: boolean;
   // False when this viewer isn't allowed to see this category's prices.
   showCost: boolean;
   total: { min: number; max: number; actual: number | null } | null;
@@ -156,6 +158,13 @@ export function CategoryCard({
           </p>
         </div>
         )}
+        {board && (
+          <label className="flex items-center gap-2 font-reading text-[13px] text-ink">
+            <input type="hidden" name="feedbackPresent" value="1" />
+            <input type="checkbox" name="feedbackEnabled" defaultChecked={category.feedbackEnabled !== false} />
+            Allow votes and comments on this
+          </label>
+        )}
         <label>
           <span className="field-label">Kind of options</span>
           <select name="optionKind" defaultValue={category.optionKind ?? "general"} className="field">
@@ -233,9 +242,9 @@ export function CategoryCard({
             const list = winner && !showAll ? [winner] : opts;
             return (
               <>
-                <ul className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-1.5">
                   {list.map((o) => (
-                    <li key={o.id} data-lit={o.isWinner ? "true" : undefined} className={`flex items-center gap-2 rounded-lg p-1.5 ${o.isWinner ? "bg-accent/10 ring-1 ring-accent/40" : ""}`}>
+                    <div key={o.id} data-lit={o.isWinner ? "true" : undefined} className={`flex items-center gap-2 rounded-lg p-1.5 ${o.isWinner ? "bg-accent/10 ring-1 ring-accent/40" : ""}`}>
                       {o.coverImageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={o.coverImageUrl} alt="" className={`${o.isWinner ? "h-14 w-14" : "h-8 w-8"} shrink-0 rounded-md object-cover`} />
@@ -261,9 +270,9 @@ export function CategoryCard({
                           {o.isWinner ? "Remove" : "Choose"}
                         </button>
                       )}
-                    </li>
+                    </div>
                   ))}
-                </ul>
+                </div>
                 {winner && opts.length > 1 && (
                   <button type="button" onClick={() => setShowAll((v) => !v)} className="mt-1 font-serif text-[10px] tracking-[0.06em] text-ink-soft uppercase hover:text-sec">
                     {showAll ? "Hide others" : `${opts.length - 1} other ${opts.length === 2 ? "option" : "options"}`}
@@ -275,7 +284,7 @@ export function CategoryCard({
         </div>
       )}
 
-      {board && (
+      {board && category.feedbackEnabled !== false && (
         <div className="border-t border-ink/8 px-3 py-2">
           <Feedback
             targetType="category"

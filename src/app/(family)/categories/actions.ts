@@ -143,16 +143,18 @@ export async function updateCategoryPage(formData: FormData) {
   const latitude = num(formData.get("latitude"));
   const longitude = num(formData.get("longitude"));
   const hasLocationFields = formData.has("latitude");
+  const feedbackEnabled = formData.has("feedbackPresent") ? formData.get("feedbackEnabled") === "on" : null;
   const { error } = await supabase
     .from("category_pages")
     .update({
       title: parsed.title,
       ...(optionKind ? { option_kind: optionKind } : {}),
       ...(hasLocationFields ? { latitude, longitude } : {}),
+      ...(feedbackEnabled !== null ? { feedback_enabled: feedbackEnabled } : {}),
     })
     .eq("id", parsed.id);
   // Before migration 0046 the kind column isn't there; still let the rename through.
-  if (error && (error.message.includes("option_kind") || error.message.includes("latitude") || error.message.includes("longitude"))) {
+  if (error && (error.message.includes("option_kind") || error.message.includes("latitude") || error.message.includes("longitude") || error.message.includes("feedback_enabled"))) {
     const retry = await supabase.from("category_pages").update({ title: parsed.title }).eq("id", parsed.id);
     revalidatePath("/categories", "layout");
     return { error: retry.error?.message ?? null };

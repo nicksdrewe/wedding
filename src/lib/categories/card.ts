@@ -13,6 +13,7 @@ export function toCardData(node: CategoryNode) {
     latitude: node.latitude ?? null,
     longitude: node.longitude ?? null,
     hasPin: node.pin != null,
+    feedbackEnabled: node.feedbackEnabled !== false,
     showCost: node.costAccess,
     total: node.total,
     partial: node.partial,

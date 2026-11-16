@@ -60,6 +60,8 @@ export async function loadCategoryTree(profile: Profile | null, board: BoardKey 
   // Category pins (0048) come from their own small query for the same reason.
   const { data: locRows } = await supabase.from("category_pages").select("id, latitude, longitude");
   const locById = new Map((locRows ?? []).map((r) => [r.id, r as { latitude?: number | null; longitude?: number | null }]));
+  const { data: fbRows } = await supabase.from("category_pages").select("id, feedback_enabled");
+  const fbById = new Map((fbRows ?? []).map((r) => [r.id, (r as { feedback_enabled?: boolean }).feedback_enabled]));
   const kindById = new Map((kindRows ?? []).map((r) => [r.id, (r as { option_kind?: string | null }).option_kind ?? null]));
 
   // Access rules for every category at once.
@@ -140,6 +142,7 @@ export async function loadCategoryTree(profile: Profile | null, board: BoardKey 
       parentId: c.parent_id,
       sortOrder: c.sort_order ?? 0,
       optionKind: kindById.get(c.id) ?? null,
+      feedbackEnabled: fbById.get(c.id) !== false,
       latitude: locById.get(c.id)?.latitude ?? null,
       longitude: locById.get(c.id)?.longitude ?? null,
       costAccess: permissions.get(c.id)?.costAccess ?? false,
