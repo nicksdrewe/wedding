@@ -26,6 +26,45 @@ const HEARTS = [
   { l: "80%", s: 14, d: 13, dl: 6, x: -26, c: "#c98f9a" },
 ];
 
+// A small, cheerful bee that flies once across the whole screen, over the split,
+// a few seconds into each sky cycle (see .auth-bee in auth.css).
+function Bee() {
+  return (
+    <div className="auth-bee" aria-hidden="true">
+      <div className="auth-bee__path">
+        <div className="auth-bee__wander">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <span key={i} className="auth-bee__dot" style={{ "--i": i } as React.CSSProperties} />
+          ))}
+          <div className="auth-bee__bob">
+            <svg viewBox="0 0 60 44" width="46" height="34">
+              <defs>
+                <clipPath id="beeBody">
+                  <ellipse cx="30" cy="27" rx="19" ry="14" />
+                </clipPath>
+              </defs>
+              <ellipse className="auth-bee__wing" cx="24" cy="13" rx="8" ry="12" style={{ "--wr": "-18deg" } as React.CSSProperties} fill="#ffffff" opacity="0.8" />
+              <ellipse className="auth-bee__wing auth-bee__wing--2" cx="35" cy="12" rx="8" ry="12" style={{ "--wr": "14deg" } as React.CSSProperties} fill="#ffffff" opacity="0.7" />
+              <path d="M12 24 L4 27 L12 30 Z" fill="#3b2f2a" />
+              <ellipse cx="30" cy="27" rx="19" ry="14" fill="#f2c14e" />
+              <g clipPath="url(#beeBody)" fill="#3b2f2a">
+                <rect x="21" y="10" width="5" height="34" />
+                <rect x="31" y="10" width="5" height="34" />
+              </g>
+              <path d="M43 15 Q45 8 51 8" stroke="#3b2f2a" strokeWidth="1.6" fill="none" strokeLinecap="round" />
+              <circle cx="51.5" cy="8" r="1.8" fill="#3b2f2a" />
+              <circle cx="45" cy="24" r="2.3" fill="#3b2f2a" />
+              <circle cx="45.7" cy="23.3" r="0.8" fill="#fff" />
+              <circle cx="46" cy="30" r="2.6" fill="#f0a9b4" opacity="0.85" />
+              <path d="M41 31 Q43.5 33.5 46 32" stroke="#3b2f2a" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AuthScene({ children }: { children: React.ReactNode }) {
   return (
     <div className="auth-stage">
@@ -107,6 +146,7 @@ export function AuthScene({ children }: { children: React.ReactNode }) {
       </div>
 
       <div className="auth-paper">{children}</div>
+      <Bee />
     </div>
   );
 }
