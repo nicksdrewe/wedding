@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Check, FolderTree } from "lucide-react";
 import { formatCostRange, formatCurrency } from "@/lib/currency/format";
+import { OPTION_KINDS } from "@/lib/options/kinds";
 import { createCategoryPage, deleteCategoryPage, moveCategoryPage, updateCategoryPage } from "./actions";
 
 // One category in the tree. Its cost is never typed in — it arrives already
@@ -14,6 +15,8 @@ export type CategoryCardData = {
   slug: string;
   title: string;
   parentId: string | null;
+  // What kind of options it holds (0046): decides which boxes the option forms show.
+  optionKind?: string | null;
   // False when this viewer isn't allowed to see this category's prices.
   showCost: boolean;
   total: { min: number; max: number; actual: number | null } | null;
@@ -91,6 +94,16 @@ export function CategoryCard({
             {moveTargets.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span className="field-label">Kind of options</span>
+          <select name="optionKind" defaultValue={category.optionKind ?? "general"} className="field">
+            {OPTION_KINDS.map((k) => (
+              <option key={k.value} value={k.value}>
+                {k.label} ({k.hint})
               </option>
             ))}
           </select>

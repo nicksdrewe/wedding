@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { createCategoryPage } from "./actions";
+import { OPTION_KINDS } from "@/lib/options/kinds";
 
 export function NewCategoryForm({ parentId, label = "New category" }: { parentId?: string; label?: string } = {}) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -35,6 +36,18 @@ export function NewCategoryForm({ parentId, label = "New category" }: { parentId
           placeholder="e.g. Venue"
           className="field w-auto"
         />
+      </div>
+      <div className="flex flex-col gap-1">
+        <label htmlFor={`kind-${parentId ?? "top"}`} className="font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
+          Kind of options
+        </label>
+        <select id={`kind-${parentId ?? "top"}`} name="optionKind" defaultValue="general" className="field w-auto">
+          {OPTION_KINDS.map((k) => (
+            <option key={k.value} value={k.value}>
+              {k.label}
+            </option>
+          ))}
+        </select>
       </div>
       <button
         type="submit"

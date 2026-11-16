@@ -1,11 +1,18 @@
 /* The group chart in a page header (components/ui/GroupChart.tsx). Sits on the
-   dark canopy, so text is cream. */
+   dark canopy, so text is cream. Built like the category org chart: every
+   connector is drawn by the people themselves, so lines always meet.
+   One shared heartbeat (3.2s) drives every glow, so the whole tree pulses
+   together instead of each line doing its own thing. */
 .gc {
+  --gc-line: color-mix(in srgb, var(--sec-glow) 62%, transparent);
+  --gc-drop: 26px;
   position: relative;
   margin-top: 26px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  overflow-x: auto;
+  padding: 4px 4px 8px;
 }
 .gc-tier {
   list-style: none;
@@ -13,82 +20,85 @@
   padding: 0;
   display: flex;
   justify-content: center;
-  gap: 18px;
+  margin-inline: auto;
+  width: max-content;
+  max-width: none;
 }
-.gc-tier--row {
-  flex-wrap: wrap;
-  gap: 14px 16px;
-  max-width: 920px;
-  position: relative;
-  padding-top: 18px;
-}
-/* the root-like line: a soft glowing thread with light pulsing down it */
+/* the connector from one tier down to the next */
 .gc-root {
   position: relative;
   display: block;
+  flex: 0 0 auto;
   width: 3px;
-  height: 34px;
-  margin: 4px 0;
+  height: var(--gc-drop);
   border-radius: 3px;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--sec-glow) 35%, transparent), color-mix(in srgb, var(--sec-glow) 70%, transparent));
-  box-shadow: 0 0 12px 1px color-mix(in srgb, var(--sec-glow) 55%, transparent);
+  background: var(--gc-line);
+  animation: gcBeat 3.2s ease-in-out infinite;
 }
+/* light running down the line, timed to the heartbeat */
 .gc-root::after {
   content: "";
   position: absolute;
-  left: -2px;
-  right: -2px;
-  height: 12px;
-  border-radius: 6px;
-  background: radial-gradient(closest-side, #fff, color-mix(in srgb, var(--sec-glow) 80%, transparent) 55%, transparent);
-  animation: gcPulse 2.8s ease-in-out infinite;
+  left: -3px;
+  right: -3px;
+  height: 14px;
+  border-radius: 7px;
+  background: radial-gradient(closest-side, #fff, color-mix(in srgb, var(--sec-glow) 85%, transparent) 55%, transparent);
+  animation: gcTravel 3.2s ease-in-out infinite;
 }
-@keyframes gcPulse {
-  0% { top: -6px; opacity: 0; }
-  20% { opacity: 1; }
-  80% { opacity: 1; }
-  100% { top: 30px; opacity: 0; }
+@keyframes gcBeat {
+  0%, 45% { filter: drop-shadow(0 0 2px color-mix(in srgb, var(--sec-glow) 35%, transparent)); }
+  70% { filter: drop-shadow(0 0 7px color-mix(in srgb, var(--sec-glow) 90%, transparent)); }
+  100% { filter: drop-shadow(0 0 2px color-mix(in srgb, var(--sec-glow) 35%, transparent)); }
 }
-/* the bar across the group, with a short stub down to each person */
-.gc-tier--row::before {
+@keyframes gcTravel {
+  0% { top: -7px; opacity: 0; }
+  10% { opacity: 1; }
+  55% { top: calc(var(--gc-drop) - 7px); opacity: 1; }
+  65%, 100% { top: calc(var(--gc-drop) - 7px); opacity: 0; }
+}
+
+/* the row: each person draws the half-bars either side of them and a drop to
+   themselves, exactly like the category chart */
+.gc-tier--row .gc-person {
+  padding: var(--gc-drop) 9px 0;
+}
+.gc-tier--row .gc-person::before,
+.gc-tier--row .gc-person::after {
   content: "";
   position: absolute;
   top: 0;
-  left: 8%;
-  right: 8%;
-  height: 3px;
-  border-radius: 3px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--sec-glow) 70%, transparent) 15%, color-mix(in srgb, var(--sec-glow) 70%, transparent) 85%, transparent);
-  box-shadow: 0 0 12px 1px color-mix(in srgb, var(--sec-glow) 45%, transparent);
-  animation: glowPulse 3.4s ease-in-out infinite;
+  width: 50%;
+  height: var(--gc-drop);
+  border-top: 3px solid var(--gc-line);
+  animation: gcBeat 3.2s ease-in-out infinite;
 }
-.gc-tier--row .gc-person::before {
-  content: "";
-  position: absolute;
-  top: -18px;
+.gc-tier--row .gc-person::before { left: 0; }
+.gc-tier--row .gc-person::after {
   left: 50%;
-  width: 2px;
-  height: 18px;
-  margin-left: -1px;
-  background: color-mix(in srgb, var(--sec-glow) 55%, transparent);
+  border-left: 3px solid var(--gc-line);
 }
+.gc-tier--row .gc-person:first-child::before { border-top: 0; }
+.gc-tier--row .gc-person:first-child::after { border-top-left-radius: 10px; }
+.gc-tier--row .gc-person:last-child::after { border-top: 0; border-left: 0; }
+.gc-tier--row .gc-person:last-child::before { border-right: 3px solid var(--gc-line); border-top-right-radius: 10px; }
+.gc-tier--row .gc-person:only-child::before { border: 0; }
+.gc-tier--row .gc-person:only-child::after { border-top: 0; border-left: 3px solid var(--gc-line); border-radius: 0; }
+
 .gc-person {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 84px;
+  width: 92px;
+  box-sizing: border-box;
   text-align: center;
-  animation: gcPop 700ms var(--ease-out) both, gcFloat 7s ease-in-out infinite;
-  animation-delay: calc(var(--i, 0) * 80ms), calc(var(--i, 0) * -1.1s);
+  animation: gcPop 700ms var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
 }
 @keyframes gcPop {
-  from { opacity: 0; transform: translateY(14px) scale(0.7); }
+  from { opacity: 0; transform: translateY(12px) scale(0.8); }
   to { opacity: 1; transform: translateY(0) scale(1); }
-}
-@keyframes gcFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
 }
 .gc-badge {
   display: flex;
@@ -96,18 +106,20 @@
   width: 52px;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
   border-radius: 50%;
   font-family: var(--font-title), Georgia, serif;
   font-size: 18px;
   color: #fff;
   background: radial-gradient(circle at 30% 25%, hsl(var(--hue) 55% 62%), hsl(var(--hue) 45% 34%));
   border: 2px solid rgba(255, 253, 249, 0.85);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4), 0 0 18px color-mix(in srgb, var(--sec-glow) 35%, transparent);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4), 0 0 14px color-mix(in srgb, var(--sec-glow) 28%, transparent);
   transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
 }
 .gc-badge--big { height: 64px; width: 64px; font-size: 22px; }
+.gc-photo { height: 100%; width: 100%; object-fit: cover; border-radius: 50%; }
 @media (hover: hover) {
-  .gc-person:hover .gc-badge { transform: scale(1.12); box-shadow: 0 12px 26px rgba(0, 0, 0, 0.45), 0 0 26px color-mix(in srgb, var(--sec-glow) 70%, transparent); }
+  .gc-person:hover .gc-badge { transform: translateY(-3px) scale(1.08); box-shadow: 0 10px 22px rgba(0, 0, 0, 0.45), 0 0 24px color-mix(in srgb, var(--sec-glow) 65%, transparent); }
 }
 .gc-name {
   margin-top: 7px;
@@ -133,6 +145,3 @@
   font-size: 14px;
   color: rgba(244, 241, 236, 0.7);
 }
-
-.gc-badge { overflow: hidden; }
-.gc-photo { height: 100%; width: 100%; object-fit: cover; border-radius: 50%; }

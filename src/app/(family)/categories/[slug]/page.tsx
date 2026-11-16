@@ -96,6 +96,10 @@ export default async function CategoryDetailPage({
     // The whole tree, with costs rolled up — this page shows its own slice.
     loadCategoryTree(profile),
   ]);
+  // Read apart from the main query so the page still works before migration
+  // 0046 (which adds the column); no kind means every box is shown.
+  const { data: kindRow } = await supabase.from("category_pages").select("option_kind").eq("id", page.id).maybeSingle();
+  const optionKind = (kindRow as { option_kind?: string } | null)?.option_kind ?? null;
   const node = findNode(roots, page.id);
   const trail = ancestorsOf(roots, page.id);
   const children = node?.children ?? [];
@@ -233,6 +237,7 @@ export default async function CategoryDetailPage({
                 isRealCouple={isRealCouple}
                 costAccess={canSeeCosts}
                 showCommsLink
+                optionKind={optionKind}
               />
             </div>
           </>

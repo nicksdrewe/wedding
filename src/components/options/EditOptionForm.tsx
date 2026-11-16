@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { updateOption } from "@/lib/options/actions";
 import type { OptionDetail } from "./OptionCard";
+import type { OptionFields } from "@/lib/options/kinds";
 
 // Full edit form for one option — every field, including description and
 // web_link which AddOptionForm never exposed. Same rounded-full inputs and
@@ -11,11 +12,14 @@ import type { OptionDetail } from "./OptionCard";
 export function EditOptionForm({
   option,
   revalidate,
+  fields = { location: true, stay: true },
   onCancel,
   onSaved,
 }: {
   option: OptionDetail;
   revalidate: string;
+  // Which boxes this kind of option needs (see lib/options/kinds.ts).
+  fields?: OptionFields;
   onCancel: () => void;
   onSaved: () => void;
 }) {
@@ -118,7 +122,23 @@ export function EditOptionForm({
         />
       </div>
 
+      {/* Hidden boxes keep what is already stored, so changing a category's kind never wipes data. */}
+      {!fields.location && (
+        <>
+          <input type="hidden" name="latitude" value={option.latitude ?? ""} />
+          <input type="hidden" name="longitude" value={option.longitude ?? ""} />
+        </>
+      )}
+      {!fields.stay && (
+        <>
+          <input type="hidden" name="nights" value={option.nights ?? ""} />
+          <input type="hidden" name="sleeps" value={option.sleeps ?? ""} />
+        </>
+      )}
+      {(fields.location || fields.stay) && (
       <div className="flex flex-wrap gap-2">
+        {fields.location && (
+          <>
         <input
           name="latitude"
           type="number"
@@ -139,6 +159,10 @@ export function EditOptionForm({
           placeholder="Longitude"
           className="field w-32"
         />
+          </>
+        )}
+        {fields.stay && (
+          <>
         <input
           name="nights"
           type="number"
@@ -157,7 +181,10 @@ export function EditOptionForm({
           placeholder="Sleeps"
           className="field w-24"
         />
+          </>
+        )}
       </div>
+      )}
 
       <input
         name="webLink"

@@ -47,6 +47,9 @@ export async function loadCategoryTree(profile: Profile | null): Promise<Categor
   ]);
 
   const categories = cats ?? [];
+  // Kinds come from their own small query so a missing column never breaks the tree.
+  const { data: kindRows } = await supabase.from("category_pages").select("id, option_kind");
+  const kindById = new Map((kindRows ?? []).map((r) => [r.id, (r as { option_kind?: string | null }).option_kind ?? null]));
 
   // Access rules for every category at once.
   const permissions = new Map<string, ResolvedPermission>();
@@ -122,6 +125,7 @@ export async function loadCategoryTree(profile: Profile | null): Promise<Categor
       title: c.title,
       parentId: c.parent_id,
       sortOrder: c.sort_order ?? 0,
+      optionKind: kindById.get(c.id) ?? null,
       costAccess: permissions.get(c.id)?.costAccess ?? false,
       options: optionsByCategory.get(c.id) ?? [],
       legacy: lo != null && hi != null ? { min: lo, max: hi, actual: lActual } : null,

@@ -9,6 +9,7 @@ export function toCardData(node: CategoryNode) {
     slug: node.slug,
     title: node.title,
     parentId: node.parentId,
+    optionKind: node.optionKind ?? null,
     showCost: node.costAccess,
     total: node.total,
     partial: node.partial,

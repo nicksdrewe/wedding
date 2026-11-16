@@ -3,6 +3,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { AddOptionForm } from "./AddOptionForm";
 import { OptionCard, type OptionDetail } from "./OptionCard";
 import { categoryPathLabels } from "@/lib/categories/tree";
+import { optionFieldsFor } from "@/lib/options/kinds";
 import type { CostItemRow, CostItemLinkInfo } from "./CostItemsPanel";
 import { OPTION_COSTS_EMBED, readOptionCosts } from "@/lib/options/costs";
 import { getCurrentProfile } from "@/lib/auth/roles";
@@ -25,7 +26,10 @@ export async function OptionsBoard({
   isRealCouple = isCouple,
   costAccess,
   showCommsLink = false,
+  optionKind = null,
 }: {
+  // The category's kind of options (0046); null shows every box.
+  optionKind?: string | null;
   groupId: string;
   categoryPageId: string | null;
   revalidate: string;
@@ -150,6 +154,7 @@ export async function OptionsBoard({
               revalidate={revalidate}
               showCommsLink={showCommsLink}
               moveTargets={otherCategories}
+              fields={optionFieldsFor(optionKind)}
               costItems={costItemsByOption[option.id] ?? []}
               linkableCategories={otherCategories}
               linksByItem={linksByItem}
@@ -159,7 +164,7 @@ export async function OptionsBoard({
       )}
       {isCouple && (
         <div className="mt-4">
-          <AddOptionForm groupId={groupId} revalidate={revalidate} showCosts={costAccess} />
+          <AddOptionForm groupId={groupId} revalidate={revalidate} showCosts={costAccess} fields={optionFieldsFor(optionKind)} />
         </div>
       )}
     </div>

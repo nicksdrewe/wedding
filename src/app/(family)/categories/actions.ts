@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
+import { parseOptionKind } from "@/lib/options/kinds";
 
 function slugify(title: string) {
   return title
@@ -17,6 +18,9 @@ export async function createCategoryPage(formData: FormData) {
   const title = z.string().min(1).parse(formData.get("title"));
   // Optional: the category this new one sits inside (0042_nested_categories).
   const parentId = z.string().uuid().nullable().parse(formData.get("parentId") || null);
+  // What kind of options it holds (0046). Only sent when it isn't the default,
+  // so creating a plain category works before that migration is run.
+  const optionKind = parseOptionKind(formData.get("optionKind"));
   const supabase = await createClient();
 
   // slug has a unique constraint (0001_init.sql) — two titles that
@@ -41,7 +45,7 @@ export async function createCategoryPage(formData: FormData) {
 
   const { data: page, error } = await supabase
     .from("category_pages")
-    .insert({ title, slug, parent_id: parentId })
+    .insert({ title, slug, parent_id: parentId, ...(optionKind && optionKind !== "general" ? { option_kind: optionKind } : {}) })
     .select("id")
     .single();
 
@@ -125,10 +129,17 @@ export async function updateCategoryPage(formData: FormData) {
   const supabase = await createClient();
   // Slug is left untouched on edit (unlike create's dedupe dance) so the
   // category's URL — and anything already linking to it — keeps working.
+  const optionKind = parseOptionKind(formData.get("optionKind"));
   const { error } = await supabase
     .from("category_pages")
-    .update({ title: parsed.title })
+    .update({ title: parsed.title, ...(optionKind ? { option_kind: optionKind } : {}) })
     .eq("id", parsed.id);
+  // Before migration 0046 the kind column isn't there; still let the rename through.
+  if (error && optionKind && error.message.includes("option_kind")) {
+    const retry = await supabase.from("category_pages").update({ title: parsed.title }).eq("id", parsed.id);
+    revalidatePath("/categories", "layout");
+    return { error: retry.error?.message ?? null };
+  }
 
   revalidatePath("/categories", "layout");
   return { error: error?.message ?? null };

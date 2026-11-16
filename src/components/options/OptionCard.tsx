@@ -35,6 +35,7 @@ import { computeOptionTotals } from "@/lib/options/totals";
 import { normalizeExternalUrl } from "@/lib/url";
 import { CostItemsPanel, type CostItemRow, type LinkableCategory, type CostItemLinkInfo } from "./CostItemsPanel";
 import { EditOptionForm } from "./EditOptionForm";
+import type { OptionFields } from "@/lib/options/kinds";
 import { Feedback, FeedbackSummary } from "@/components/feedback/Feedback";
 import type { FeedbackData } from "@/lib/feedback/types";
 
@@ -83,7 +84,10 @@ export function OptionCard({
   linksByItem = {},
   showCommsLink = false,
   moveTargets = [],
+  fields,
 }: {
+  // Which boxes this kind of option needs (see lib/options/kinds.ts).
+  fields?: OptionFields;
   // Adds a "Comms" link to this option's organising-comms entries.
   showCommsLink?: boolean;
   // Other categories this option could be moved to (couple only).
@@ -117,13 +121,14 @@ export function OptionCard({
   const totals = computeOptionTotals(option, costItems);
 
   return (
-    <Disclosure
-      open={open}
-      onOpenChange={setOpen}
+    <div
       className={`surface overflow-hidden transition-[box-shadow,border-color] duration-200 ${
         option.is_winner ? "route-glow !border-2 !border-accent" : ""
       }`}
     >
+      {/* Disclosure renders only its first two children (trigger + content), so
+          anything else lives outside it. */}
+      <Disclosure open={open} onOpenChange={setOpen}>
       <DisclosureTrigger>
         <div className="cursor-pointer select-none" role="button" aria-label={`View details for ${option.name}`}>
           <div className="relative aspect-[4/3] w-full bg-cream-deep">
@@ -176,6 +181,25 @@ export function OptionCard({
           </div>
         </div>
       </DisclosureTrigger>
+      <DisclosureContent>
+        <OptionDetailPanel
+          option={option}
+          isCouple={isCouple}
+          canDelete={canDelete}
+          canPickWinner={canPickWinner}
+          revalidate={revalidate}
+          costItems={costItems}
+          linkableCategories={linkableCategories}
+          linksByItem={linksByItem}
+          totals={totals}
+          feedback={feedback}
+          canInteract={canInteract}
+          canModerateFeedback={canModerateFeedback}
+          editSignal={editSignal}
+          fields={fields}
+        />
+      </DisclosureContent>
+      </Disclosure>
       {(isCouple || showCommsLink || canMove) && (
         <div className="flex flex-wrap items-center gap-2 px-4 pb-3">
           {isCouple && (
@@ -238,24 +262,7 @@ export function OptionCard({
           )}
         </div>
       )}
-      <DisclosureContent>
-        <OptionDetailPanel
-          option={option}
-          isCouple={isCouple}
-          canDelete={canDelete}
-          canPickWinner={canPickWinner}
-          revalidate={revalidate}
-          costItems={costItems}
-          linkableCategories={linkableCategories}
-          linksByItem={linksByItem}
-          totals={totals}
-          feedback={feedback}
-          canInteract={canInteract}
-          canModerateFeedback={canModerateFeedback}
-          editSignal={editSignal}
-        />
-      </DisclosureContent>
-    </Disclosure>
+    </div>
   );
 }
 
@@ -273,7 +280,9 @@ function OptionDetailPanel({
   canInteract,
   canModerateFeedback,
   editSignal = 0,
+  fields,
 }: {
+  fields?: OptionFields;
   // Bumped by the card's Edit button to open the editor.
   editSignal?: number;
   feedback?: FeedbackData;
@@ -440,6 +449,7 @@ function OptionDetailPanel({
           <EditOptionForm
             option={option}
             revalidate={revalidate}
+            fields={fields}
             onCancel={() => setEditing(false)}
             onSaved={() => setEditing(false)}
           />

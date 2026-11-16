@@ -1,12 +1,14 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import type { OptionFields } from "@/lib/options/kinds";
 import { addOption } from "@/lib/options/actions";
 
 export function AddOptionForm({
   groupId,
   revalidate,
   showCosts = true,
+  fields = { location: true, stay: true },
 }: {
   groupId: string;
   revalidate: string;
@@ -14,6 +16,8 @@ export function AddOptionForm({
   // here (cost_access, 0031_cost_access.sql) — the cost inputs are then left
   // out entirely and addOption doesn't touch the option's costs.
   showCosts?: boolean;
+  // Which boxes this kind of option needs (see lib/options/kinds.ts).
+  fields?: OptionFields;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, startTransition] = useTransition();
@@ -98,6 +102,8 @@ export function AddOptionForm({
         placeholder="Contact email"
         className="field w-auto"
       />
+      {fields.location && (
+        <>
       <input
         name="latitude"
         type="number"
@@ -116,6 +122,10 @@ export function AddOptionForm({
         placeholder="Longitude"
         className="field w-28"
       />
+        </>
+      )}
+      {fields.stay && (
+        <>
       <input
         name="nights"
         type="number"
@@ -132,6 +142,8 @@ export function AddOptionForm({
         placeholder="Sleeps"
         className="field w-24"
       />
+        </>
+      )}
       <button
         type="submit"
         disabled={pending}

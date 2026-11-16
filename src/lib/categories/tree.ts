@@ -29,6 +29,8 @@ export type CategoryInput = {
   title: string;
   parentId: string | null;
   sortOrder: number;
+  // What kind of options it holds (0046), if known.
+  optionKind?: string | null;
   // Whether this viewer may see prices here at all.
   costAccess: boolean;
   options: OptionFigure[];
@@ -131,8 +133,13 @@ export function buildCategoryTree(inputs: CategoryInput[]): CategoryNode[] {
 
     node.winners = node.options.filter((o) => o.isWinner).map((o) => o.name);
     const hiddenHere = !node.costAccess || node.options.some((o) => o.costsHidden);
-    node.own = node.costAccess ? ownRange(node.options, node.legacy) : null;
-    node.total = node.children.reduce<Range | null>((sum, c) => add(sum, c.total), node.own);
+    // What this category's own options say (no typed figure involved), then
+    // everything beneath it. A figure typed in before costs became automatic
+    // is only ever a fallback for a category with neither: adding it to what
+    // is worked out would count the same money twice.
+    node.own = node.costAccess ? ownRange(node.options, null) : null;
+    const beneath = node.children.reduce<Range | null>((sum, c) => add(sum, c.total), null);
+    node.total = add(node.own, beneath) ?? (node.costAccess ? node.legacy : null);
     node.partial = hiddenHere || node.children.some((c) => c.partial);
     const hasDecision = node.options.length > 0;
     node.decisions = (hasDecision ? 1 : 0) + node.children.reduce((s, c) => s + c.decisions, 0);
