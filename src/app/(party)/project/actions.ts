@@ -80,6 +80,13 @@ const updateIdeaSchema = z.object({
   tags: z.string().optional(),
 });
 
+// Every page that shows ideas; an edit on one must refresh the others.
+function revalidateIdeas() {
+  ["/project", "/project/ideas", "/project/groomsmen", "/project/groomsmen/ideas", "/project/bridesmaids", "/project/bridesmaids/ideas"].forEach((p) =>
+    revalidatePath(p)
+  );
+}
+
 export async function updateIdea(formData: FormData) {
   const parsed = updateIdeaSchema.parse({
     id: formData.get("id"),
@@ -94,7 +101,7 @@ export async function updateIdea(formData: FormData) {
     .update({ title: parsed.title, body: parsed.body ?? null, tags: tagsToArray(parsed.tags) })
     .eq("id", parsed.id);
 
-  revalidatePath("/project");
+  revalidateIdeas();
   return { error: error?.message ?? null };
 }
 
@@ -103,7 +110,7 @@ export async function deleteIdea(id: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("idea_boards").delete().eq("id", parsed);
 
-  revalidatePath("/project");
+  revalidateIdeas();
   return { error: error?.message ?? null };
 }
 
@@ -141,7 +148,7 @@ export async function addIdeaImage(ideaId: string, imageUrl: string) {
   });
   if (error) return { error: error.message };
 
-  revalidatePath("/project");
+  revalidateIdeas();
   return { error: null };
 }
 
@@ -152,7 +159,7 @@ export async function removeIdeaImage(imageId: string) {
   const { error } = await supabase.from("idea_board_images").delete().eq("id", parsed);
   if (error) return { error: error.message };
 
-  revalidatePath("/project");
+  revalidateIdeas();
   return { error: null };
 }
 

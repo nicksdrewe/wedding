@@ -15,6 +15,8 @@ export type PageHeaderProps = {
   /** Buttons/links shown on the right of the band. They sit on a dark
    *  background — use the `btn btn-on-dark` classes. */
   actions?: React.ReactNode;
+  /** Extra content drawn inside the band, under the title (e.g. a group chart). */
+  children?: React.ReactNode;
 };
 
 function seedFrom(text: string) {
@@ -23,7 +25,7 @@ function seedFrom(text: string) {
   return h + 1;
 }
 
-export function PageHeader({ eyebrow, title, infoText, actions }: PageHeaderProps) {
+export function PageHeader({ eyebrow, title, infoText, actions, children }: PageHeaderProps) {
   const seed = seedFrom(title);
   return (
     <header className="canopy mb-8">
@@ -42,6 +44,7 @@ export function PageHeader({ eyebrow, title, infoText, actions }: PageHeaderProp
         </div>
         {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
       </div>
+      {children}
     </header>
   );
 }

@@ -2,6 +2,7 @@
 @import "./styles/timeline.css" layer(components);
 @import "./styles/big-day.css" layer(components);
 @import "./styles/category-tree.css" layer(components);
+@import "./styles/group-chart.css" layer(components);
 
 :root {
   /* Belt-and-suspenders alongside the colorScheme viewport export in

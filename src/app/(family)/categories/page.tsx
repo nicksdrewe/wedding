@@ -73,7 +73,7 @@ export default async function CategoriesPage() {
                   <span className="section-head__rule" />
                 </div>
               )}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                 {singles.map((node, i) => (
                   <div key={node.id} className="rise" style={{ "--i": Math.min(i, 8) } as React.CSSProperties}>
                     {card(node)}

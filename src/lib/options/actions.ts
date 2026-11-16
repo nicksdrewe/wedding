@@ -528,3 +528,39 @@ export async function removeOptionImage(imageId: string) {
   revalidatePath("/project");
   return { error: null };
 }
+
+// Move an option to a different category (e.g. "Baked goods" from Monday
+// breakfast to Sunday breakfast) without duplicating it: its photos, prices,
+// cost lines, votes and comments all travel with it. It stops being the
+// winner (that was a choice about the old category); organising-comms
+// entries about it follow it to the new category. Couple only on a category
+// board, because both categories' decisions change.
+export async function moveOption(optionId: string, targetCategoryId: string, revalidate: string) {
+  const ids = z.object({ optionId: z.string().uuid(), targetCategoryId: z.string().uuid() }).parse({ optionId, targetCategoryId });
+  const supabase = await createClient();
+
+  const { data: group } = await supabase
+    .from("option_groups")
+    .select("id")
+    .eq("category_page_id", ids.targetCategoryId)
+    .maybeSingle();
+  if (!group) return { error: "That category has no options board yet." };
+
+  const { data: moved, error } = await supabase
+    .from("page_options")
+    .update({ option_group_id: group.id, is_winner: false })
+    .eq("id", ids.optionId)
+    .select("id");
+  if (error) return { error: error.message };
+  if (!moved || moved.length === 0) return { error: "You can't move this option." };
+
+  // Best effort: comms tagged to this option now belong to the new category.
+  await supabase.from("org_comms").update({ category_page_id: ids.targetCategoryId }).eq("page_option_id", ids.optionId);
+
+  revalidatePath(revalidate);
+  revalidatePath("/categories", "layout");
+  revalidatePath("/budget");
+  revalidatePath("/project");
+  revalidatePath("/organising");
+  return { error: null };
+}

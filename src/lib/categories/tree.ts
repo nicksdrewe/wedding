@@ -176,3 +176,24 @@ export function ancestorsOf(roots: CategoryNode[], id: string): CategoryNode[] {
 export function subtreeIds(node: CategoryNode): string[] {
   return flattenTree([node]).map((n) => n.id);
 }
+
+// "Monday breakfast" and "Sunday breakfast" can both contain "Baked goods", so
+// anywhere categories are picked from a list they are labelled by their full
+// path: "Catering / Food / Monday breakfast". Takes the flat rows, sorted by
+// path.
+export function categoryPathLabels(
+  rows: { id: string; title: string; parent_id: string | null }[]
+): { id: string; label: string }[] {
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  const label = (r: { id: string; title: string; parent_id: string | null }) => {
+    const parts = [r.title];
+    let cursor = r.parent_id ? byId.get(r.parent_id) : undefined;
+    let guard = 0;
+    while (cursor && guard++ < 10) {
+      parts.unshift(cursor.title);
+      cursor = cursor.parent_id ? byId.get(cursor.parent_id) : undefined;
+    }
+    return parts.join(" / ");
+  };
+  return rows.map((r) => ({ id: r.id, label: label(r) })).sort((a, b) => a.label.localeCompare(b.label));
+}

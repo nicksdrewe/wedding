@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import {
   Check,
@@ -9,6 +9,8 @@ import {
   Loader2,
   Mail,
   MessagesSquare,
+  MoveRight,
+  Pencil,
   Phone,
   Plus,
   X,
@@ -22,6 +24,7 @@ import {
   addOptionImage,
   deleteOption,
   markOptionWinner,
+  moveOption,
   removeOptionImage,
 } from "@/lib/options/actions";
 import { ImageUpload } from "@/components/ImageUpload";
@@ -79,9 +82,12 @@ export function OptionCard({
   linkableCategories = [],
   linksByItem = {},
   showCommsLink = false,
+  moveTargets = [],
 }: {
   // Adds a "Comms" link to this option's organising-comms entries.
   showCommsLink?: boolean;
+  // Other categories this option could be moved to (couple only).
+  moveTargets?: { id: string; title: string }[];
   option: OptionDetail;
   // "May add to and edit this option" (photos, details, and — where prices
   // are visible — costs). Deleting the option and choosing the winner are
@@ -100,6 +106,13 @@ export function OptionCard({
   linksByItem?: Record<string, CostItemLinkInfo[]>;
 }) {
   const [open, setOpen] = useState(false);
+  // Bumped by the always-visible Edit button to open the editor inside the panel.
+  const [editSignal, setEditSignal] = useState(0);
+  const [moving, setMoving] = useState(false);
+  const [moveTo, setMoveTo] = useState("");
+  const [movePending, startMove] = useTransition();
+  const [moveError, setMoveError] = useState<string | null>(null);
+  const canMove = canDelete && moveTargets.length > 0;
   const cover = option.images[0];
   const totals = computeOptionTotals(option, costItems);
 
@@ -163,12 +176,66 @@ export function OptionCard({
           </div>
         </div>
       </DisclosureTrigger>
-      {showCommsLink && (
-        <div className="px-4 pb-2">
-          <Link href={`/organising?option=${option.id}`} className="btn btn-quiet btn-sm min-h-11">
-            <MessagesSquare className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-            Comms
-          </Link>
+      {(isCouple || showCommsLink || canMove) && (
+        <div className="flex flex-wrap items-center gap-2 px-4 pb-3">
+          {isCouple && (
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(true);
+                setEditSignal((n) => n + 1);
+              }}
+              className="btn btn-quiet btn-sm min-h-11"
+            >
+              <Pencil className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+              Edit
+            </button>
+          )}
+          {canMove && (
+            <button type="button" onClick={() => setMoving((m) => !m)} aria-expanded={moving} className="btn btn-quiet btn-sm min-h-11">
+              <MoveRight className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+              Move
+            </button>
+          )}
+          {showCommsLink && (
+            <Link href={`/organising?option=${option.id}`} className="btn btn-quiet btn-sm min-h-11">
+              <MessagesSquare className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+              Comms
+            </Link>
+          )}
+          {moving && (
+            <form
+              className="flex w-full flex-wrap items-end gap-2"
+              action={() =>
+                startMove(async () => {
+                  setMoveError(null);
+                  if (!moveTo) return setMoveError("Pick a category to move it to.");
+                  const result = await moveOption(option.id, moveTo, revalidate);
+                  if (result.error) return setMoveError(result.error);
+                  setMoving(false);
+                })
+              }
+            >
+              <label className="min-w-[14rem] flex-1">
+                <span className="field-label">Move &ldquo;{option.name}&rdquo; to</span>
+                <select value={moveTo} onChange={(e) => setMoveTo(e.target.value)} className="field">
+                  <option value="">Choose a category…</option>
+                  {moveTargets.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button type="submit" disabled={movePending} className="btn btn-sec btn-sm">
+                {movePending ? "Moving…" : "Move"}
+              </button>
+              <p className="w-full font-reading text-[12px] text-ink-soft">
+                Its photos, prices, notes and comments move with it. It stops being the winner here.
+              </p>
+              {moveError && <p className="w-full font-reading text-xs text-alert">{moveError}</p>}
+            </form>
+          )}
         </div>
       )}
       <DisclosureContent>
@@ -185,6 +252,7 @@ export function OptionCard({
           feedback={feedback}
           canInteract={canInteract}
           canModerateFeedback={canModerateFeedback}
+          editSignal={editSignal}
         />
       </DisclosureContent>
     </Disclosure>
@@ -204,7 +272,10 @@ function OptionDetailPanel({
   feedback,
   canInteract,
   canModerateFeedback,
+  editSignal = 0,
 }: {
+  // Bumped by the card's Edit button to open the editor.
+  editSignal?: number;
   feedback?: FeedbackData;
   canInteract: boolean;
   canModerateFeedback: boolean;
@@ -222,6 +293,9 @@ function OptionDetailPanel({
   const [imageUrl, setImageUrl] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const [editing, setEditing] = useState(false);
+  useEffect(() => {
+    if (editSignal > 0) setEditing(true);
+  }, [editSignal]);
   const [winnerPending, startWinnerTransition] = useTransition();
   const [imagePending, startImageTransition] = useTransition();
   const [removingId, setRemovingId] = useState<string | null>(null);

@@ -25,7 +25,10 @@ export function IdeaCard({
   canInteract = true,
   canModerate = false,
   revalidate = "/project",
+  hideFeedback = false,
 }: {
+  // The idea wall shows votes and comments under each tile already.
+  hideFeedback?: boolean;
   id: string;
   title: string;
   body: string | null;
@@ -202,7 +205,7 @@ export function IdeaCard({
         <p className="mt-1 font-reading text-[11px] text-ink-soft/60 italic">Uploading…</p>
       )}
 
-      <Feedback
+      {!hideFeedback && <Feedback
         targetType="idea"
         targetId={id}
         data={feedback}
@@ -210,7 +213,7 @@ export function IdeaCard({
         canModerate={canModerate}
         revalidate={revalidate}
         className="mt-3"
-      />
+      />}
 
       {error && <p className="mt-1.5 font-reading text-xs text-alert">{error}</p>}
     </li>

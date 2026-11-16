@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { EmptyState } from "@/components/EmptyState";
 import { AddOptionForm } from "./AddOptionForm";
 import { OptionCard, type OptionDetail } from "./OptionCard";
+import { categoryPathLabels } from "@/lib/categories/tree";
 import type { CostItemRow, CostItemLinkInfo } from "./CostItemsPanel";
 import { OPTION_COSTS_EMBED, readOptionCosts } from "@/lib/options/costs";
 import { getCurrentProfile } from "@/lib/auth/roles";
@@ -80,7 +81,7 @@ export async function OptionsBoard({
   if (categoryPageId && isRealCouple) {
     const costItemIds = (costItemRows ?? []).map((i) => i.id);
     const [{ data: categories }, { data: links }] = await Promise.all([
-      supabase.from("category_pages").select("id, title").neq("id", categoryPageId).order("title"),
+      supabase.from("category_pages").select("id, title, parent_id").order("title"),
       costItemIds.length > 0
         ? supabase
             .from("cost_item_links")
@@ -88,7 +89,9 @@ export async function OptionsBoard({
             .in("source_cost_item_id", costItemIds)
         : Promise.resolve({ data: [] }),
     ]);
-    otherCategories = categories ?? [];
+    // Labelled by full path so two "Breakfast"s are told apart.
+    const labelled = categoryPathLabels(categories ?? []);
+    otherCategories = labelled.filter((c) => c.id !== categoryPageId).map((c) => ({ id: c.id, title: c.label }));
     linksByItem = (links ?? []).reduce<Record<string, CostItemLinkInfo[]>>((acc, l) => {
       const category = Array.isArray(l.category_pages) ? l.category_pages[0] : l.category_pages;
       const entry = { id: l.id, categoryTitle: category?.title ?? "Unknown" };
@@ -146,6 +149,7 @@ export async function OptionsBoard({
               canModerateFeedback={isRealCouple}
               revalidate={revalidate}
               showCommsLink={showCommsLink}
+              moveTargets={otherCategories}
               costItems={costItemsByOption[option.id] ?? []}
               linkableCategories={otherCategories}
               linksByItem={linksByItem}

@@ -7,6 +7,8 @@ import { OPTION_COSTS_EMBED, readOptionCosts } from "@/lib/options/costs";
 import { loadFeedback } from "@/lib/feedback/load";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
+import { GroupChart } from "@/components/ui/GroupChart";
+import { loadGroupChart } from "@/lib/party/group";
 import { EmptyState } from "@/components/EmptyState";
 import { OPTION_COVER_EMBED, coverImageOf } from "@/lib/options/cover";
 import { IdeaPortal, portalThumbs } from "@/components/ui/IdeaPortal";
@@ -136,7 +138,9 @@ export default async function GroomsmenProjectPage() {
         eyebrow="Planning"
         title="Groomsmen"
         infoText="Ideas, plans, and comparisons just for the groomsmen."
-      />
+      >
+        <GroupChart kind="groomsman" data={await loadGroupChart("groomsman")} />
+      </PageHeader>
 
       <div className="flex flex-col gap-8">
         <IdeaPortal

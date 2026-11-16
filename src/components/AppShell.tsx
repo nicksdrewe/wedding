@@ -296,7 +296,7 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
           light shows through it and it casts its own shadow, which is the
           first cue that things here sit in layers. */}
       <header className="sticky top-0 z-40 px-3 pt-3">
-        <div className="surface surface-glass surface-raised mx-auto flex h-14 max-w-6xl items-center justify-between !rounded-full px-4 sm:px-5">
+        <div className="surface surface-glass surface-raised mx-auto flex h-14 max-w-[1760px] items-center justify-between !rounded-full px-4 sm:px-5">
           {/* Left: wordmark — this IS the "back to landing" affordance. */}
           <Link href="/" className="flex shrink-0 items-center gap-2">
             <Botanical
@@ -386,7 +386,7 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-16 sm:px-6 md:px-10">
+      <main className="relative z-10 mx-auto w-full max-w-[1760px] flex-1 px-4 pt-6 pb-16 sm:px-6 md:px-10 2xl:px-14">
         {children}
       </main>
 

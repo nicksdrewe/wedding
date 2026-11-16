@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { SectionSwitcher } from "./SectionSwitcher";
 import { IdeaPortal } from "@/components/ui/IdeaPortal";
+import { GroupChart } from "@/components/ui/GroupChart";
 
 export const metadata: Metadata = { title: "Design system — Nick & Ellie" };
 
@@ -201,6 +202,21 @@ export default async function DesignPage() {
                 </ul>
               </li>
             </ul>
+          </div>
+          <div className="section-head">
+            <h2 className="section-head__title">Group chart</h2>
+            <span className="section-head__rule" />
+          </div>
+          <div className="canopy mb-12">
+            <p className="canopy__title">Groomsmen</p>
+            <GroupChart
+              kind="groomsman"
+              data={{
+                head: { id: "h", name: "Nick Drewe", first: "Nick" },
+                lead: [{ id: "l", name: "Alex Cummings", first: "Alex" }],
+                members: [{ id: "a", name: "Sam Hughes", first: "Sam" }, { id: "b", name: "Tom Reed", first: "Tom" }, { id: "c", name: "Joe Patel", first: "Joe" }, { id: "d", name: "Max Allen", first: "Max" }, { id: "e", name: "Ben Ward", first: "Ben" }],
+              }}
+            />
           </div>
           <div className="section-head">
             <h2 className="section-head__title">Portal</h2>

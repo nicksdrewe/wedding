@@ -56,7 +56,7 @@ export default async function IdeaBoardPage() {
         </section>
       )}
 
-      <IdeaBoardWall ideas={ideas} canContribute={canContribute} canModerate={profile?.role === "couple"} revalidate="/project/ideas" />
+      <IdeaBoardWall canEditIdea={(i) => profile?.role === "couple" || (canContribute && i.createdBy === profile?.id)} ideas={ideas} canContribute={canContribute} canModerate={profile?.role === "couple"} revalidate="/project/ideas" />
     </div>
   );
 }

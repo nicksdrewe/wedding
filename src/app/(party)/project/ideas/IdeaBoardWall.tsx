@@ -1,4 +1,5 @@
 import { ImageOff } from "lucide-react";
+import { IdeaEditor } from "./IdeaEditor";
 import { EmptyState } from "@/components/EmptyState";
 import { InView } from "@/components/motion-primitives/in-view";
 import { toDriveImageUrl } from "@/lib/google/image-url";
@@ -17,10 +18,11 @@ const EASE = [0.22, 1, 0.36, 1] as [number, number, number, number];
 // visible tag list (filtered below) and rendered last, labelled "Untagged".
 const UNTAGGED = "__untagged__";
 
-type IdeaImage = { image_url: string; sort_order: number };
+type IdeaImage = { id: string; image_url: string; sort_order: number };
 
 type BoardIdea = {
   id: string;
+  createdBy: string | null;
   title: string;
   body: string | null;
   tags: string[];
@@ -36,7 +38,7 @@ export async function loadBoardIdeas(
 ): Promise<BoardIdea[]> {
   const base = supabase
     .from("idea_boards")
-    .select("id, title, body, tags, created_at, idea_board_images(image_url, sort_order)");
+    .select("id, title, body, tags, created_at, created_by, idea_board_images(id, image_url, sort_order)");
   const scoped = visibleTag ? base.eq("visible_tag", visibleTag) : base.eq("tier", "wedding_party").is("visible_tag", null);
   const { data } = await scoped
     .order("created_at", { ascending: false })
@@ -45,6 +47,7 @@ export async function loadBoardIdeas(
   const feedbackByIdea = await loadFeedback(supabase, "idea", (data ?? []).map((r) => r.id), viewerId);
   return (data ?? []).map((row) => ({
     id: row.id,
+    createdBy: row.created_by ?? null,
     title: row.title,
     body: row.body,
     tags: (row.tags ?? []) as string[],
@@ -58,7 +61,10 @@ export function IdeaBoardWall({
   canContribute,
   canModerate,
   revalidate,
+  canEditIdea,
 }: {
+  // Whether this viewer may edit or delete a given idea.
+  canEditIdea: (idea: { id: string; createdBy: string | null }) => boolean;
   ideas: BoardIdea[];
   canContribute: boolean;
   canModerate: boolean;
@@ -89,7 +95,7 @@ export function IdeaBoardWall({
   return (
     <>
       {orderedTags.map((tag, i) => (
-        <TagSection key={tag} tag={tag} ideas={sections.get(tag)!} sectionIndex={i} canModerate={canModerate} revalidate={revalidate} />
+        <TagSection key={tag} tag={tag} ideas={sections.get(tag)!} sectionIndex={i} canModerate={canModerate} revalidate={revalidate} canEditIdea={canEditIdea} />
       ))}
     </>
   );
@@ -101,7 +107,9 @@ function TagSection({
   sectionIndex,
   canModerate,
   revalidate,
+  canEditIdea,
 }: {
+  canEditIdea: (idea: { id: string; createdBy: string | null }) => boolean;
   tag: string;
   ideas: BoardIdea[];
   sectionIndex: number;
@@ -134,6 +142,12 @@ function TagSection({
             className="mb-4 break-inside-avoid"
           >
             <IdeaTile idea={idea} />
+            {canEditIdea(idea) && (
+              <IdeaEditor
+                idea={{ id: idea.id, title: idea.title, body: idea.body, tags: idea.tags, images: idea.images }}
+                revalidate={revalidate}
+              />
+            )}
             {/* Under the tile, not on it: the tile's own text sits on a dark
                 scrim over the photo. Plain guests can't reach this page. */}
             <Feedback
