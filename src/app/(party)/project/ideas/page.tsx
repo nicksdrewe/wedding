@@ -1,43 +1,18 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, ImageOff } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentContactTags, getCurrentProfile } from "@/lib/auth/roles";
 import { IdeaForm } from "../IdeaForm";
 import { getEffectivePermission } from "@/lib/permissions/actions";
 import { PageHeader } from "@/components/PageHeader";
-import { EmptyState } from "@/components/EmptyState";
-import { InView } from "@/components/motion-primitives/in-view";
-import { toDriveImageUrl } from "@/lib/google/image-url";
-import { Feedback } from "@/components/feedback/Feedback";
-import { loadFeedback } from "@/lib/feedback/load";
-import type { FeedbackData } from "@/lib/feedback/types";
-
-const EASE = [0.22, 1, 0.36, 1] as [number, number, number, number];
-
-// Ideas with no tags land here instead of being dropped — kept out of the
-// visible tag list (filtered below) and rendered last, labelled "Untagged".
-const UNTAGGED = "__untagged__";
-
-type IdeaImage = { image_url: string; sort_order: number };
-
-type BoardIdea = {
-  id: string;
-  title: string;
-  body: string | null;
-  tags: string[];
-  images: IdeaImage[];
-  feedback?: FeedbackData;
-};
+import { IdeaBoardWall, loadBoardIdeas } from "./IdeaBoardWall";
 
 export default async function IdeaBoardPage() {
   // Blocks a PLAIN wedding_party member specifically — the (party) layout
   // admits couple/wedding_party/family broadly, so this page_access check
   // (page_access=false on "project:ideas" for plain wedding_party, per
-  // 0028) is what actually enforces the narrower rule here. This board is
-  // read-only for everyone who reaches it (no idea-creation form lives on
-  // this page — that's on /project itself, gated there by edit_access), so
-  // there's no edit-affordance to additionally gate.
+  // 0028) is what actually enforces the narrower rule here.
   const profile = await getCurrentProfile();
   const permission = await getEffectivePermission("project:ideas", profile);
   if (!permission.pageAccess) redirect("/no-access");
@@ -53,68 +28,27 @@ export default async function IdeaBoardPage() {
     myTags.includes("best_man") ||
     myTags.includes("maid_of_honour");
 
-  // Same source query as /project (tier: "wedding_party", RLS-gated), just
-  // extended with tags + the one-to-many idea_board_images child rows
-  // (0010) needed to render this as an image board instead of a text list.
-  const { data } = await supabase
-    .from("idea_boards")
-    .select("id, title, body, tags, created_at, idea_board_images(image_url, sort_order)")
-    .eq("tier", "wedding_party")
-    // Stag/hen ideas belong to their own boards, not this shared one.
-    .is("visible_tag", null)
-    .order("created_at", { ascending: false })
-    .order("sort_order", { ascending: true, referencedTable: "idea_board_images" });
-
-  // Votes and comments for every tile, in two queries. Only what this
-  // viewer may see comes back.
-  const feedbackByIdea = await loadFeedback(supabase, "idea", (data ?? []).map((r) => r.id), profile?.id ?? null);
-
-  const ideas: BoardIdea[] = (data ?? []).map((row) => ({
-    id: row.id,
-    title: row.title,
-    body: row.body,
-    tags: (row.tags ?? []) as string[],
-    images: (row.idea_board_images ?? []) as IdeaImage[],
-    feedback: feedbackByIdea[row.id],
-  }));
-
-  // Group by tag — an idea with several tags reasonably shows up in each
-  // of those sections, since it belongs to all of them at once.
-  const sections = new Map<string, BoardIdea[]>();
-  for (const idea of ideas) {
-    const tags = idea.tags.length > 0 ? idea.tags : [UNTAGGED];
-    for (const tag of tags) {
-      if (!sections.has(tag)) sections.set(tag, []);
-      sections.get(tag)!.push(idea);
-    }
-  }
-
-  const orderedTags = [...sections.keys()]
-    .filter((t) => t !== UNTAGGED)
-    .sort((a, b) => a.localeCompare(b));
-  if (sections.has(UNTAGGED)) orderedTags.push(UNTAGGED);
+  const ideas = await loadBoardIdeas(supabase, null, profile?.id ?? null);
 
   return (
     <div>
       <Link
         href="/project"
-        className="inline-flex items-center gap-1.5 font-serif text-xs tracking-wide text-ink-soft transition-colors hover:text-accent"
+        className="inline-flex min-h-11 items-center gap-1.5 font-serif text-xs tracking-wide text-ink-soft transition-colors hover:text-sec"
       >
         <ArrowLeft className="h-3 w-3" strokeWidth={2.5} aria-hidden="true" />
         Back to Project
       </Link>
 
-      <div className="mt-4">
-        <PageHeader
-          eyebrow="Planning"
-          title="Idea Board"
-          infoText="Every idea the wedding party has dropped in, grouped by tag — a private Pinterest, just for us."
-        />
-      </div>
+      <PageHeader
+        eyebrow="Planning"
+        title="Idea Board"
+        infoText="Every idea the wedding party has dropped in, grouped by tag — a private Pinterest, just for us."
+      />
 
       {canContribute && (
-        <section className="mt-6 max-w-xl rounded-[10px] border border-ink/10 bg-white p-5">
-          <h2 className="font-serif text-[15px] font-semibold tracking-wide">Add to the board</h2>
+        <section className="surface surface-raised max-w-xl p-5">
+          <h2 className="font-title text-[20px] tracking-tight">Add to the board</h2>
           <p className="mt-1 font-reading text-[13px] text-ink-soft">
             Drop in a photo, a link idea or a note — it appears here straight away.
           </p>
@@ -122,134 +56,7 @@ export default async function IdeaBoardPage() {
         </section>
       )}
 
-      {orderedTags.length === 0 ? (
-        <EmptyState
-          className="mt-4"
-          title="No ideas yet"
-          hint={canContribute ? "Be the first to add one above." : "Ideas added to the board will show up here."}
-        />
-      ) : (
-        orderedTags.map((tag, i) => (
-          <TagSection key={tag} tag={tag} ideas={sections.get(tag)!} sectionIndex={i} isCouple={profile?.role === "couple"} />
-        ))
-      )}
-    </div>
-  );
-}
-
-function TagSection({
-  tag,
-  ideas,
-  sectionIndex,
-  isCouple,
-}: {
-  tag: string;
-  ideas: BoardIdea[];
-  sectionIndex: number;
-  isCouple: boolean;
-}) {
-  const label = tag === UNTAGGED ? "Untagged" : tag;
-
-  return (
-    <section className={sectionIndex === 0 ? "mt-10" : "mt-14"}>
-      <div className="flex items-center gap-3">
-        <h2 className="font-serif text-[13px] font-semibold tracking-[0.16em] text-ink uppercase">
-          {label}
-        </h2>
-        <div className="h-px flex-1 bg-ink/10" />
-        <span className="font-reading text-xs text-ink-soft/60 italic">
-          {ideas.length} {ideas.length === 1 ? "idea" : "ideas"}
-        </span>
-      </div>
-
-      <div className="mt-5 columns-2 gap-4 sm:columns-3 lg:columns-4">
-        {ideas.map((idea, i) => (
-          <InView
-            key={`${tag}-${idea.id}`}
-            as="div"
-            once
-            viewOptions={{ margin: "-60px" }}
-            variants={{ hidden: { opacity: 0, y: 22 }, visible: { opacity: 1, y: 0 } }}
-            transition={{ duration: 0.5, delay: Math.min(i, 8) * 0.05, ease: EASE }}
-            className="mb-4 break-inside-avoid"
-          >
-            <IdeaTile idea={idea} />
-            {/* Under the tile, not on it: the tile's own text sits on a dark
-                scrim over the photo. Plain guests can't reach this page. */}
-            <Feedback
-              targetType="idea"
-              targetId={idea.id}
-              data={idea.feedback}
-              canInteract
-              canModerate={isCouple}
-              revalidate="/project/ideas"
-              className="mt-2"
-            />
-          </InView>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-// Text-over-image pin: the idea's title (and the start of its body) sits in
-// a bottom scrim over the cover image, Pinterest-style, rather than as a
-// caption below it. An idea can hold several images (0010's
-// idea_board_images), but only the first (by sort_order) is used as the
-// pin here — a "+N" badge hints at the rest without turning one idea into
-// several competing tiles in the grid.
-function IdeaTile({ idea }: { idea: BoardIdea }) {
-  const cover = idea.images[0];
-  const extra = idea.images.length - 1;
-
-  if (!cover) {
-    return (
-      <div className="flex aspect-[4/5] flex-col justify-between gap-6 rounded-[10px] border border-dashed border-ink/15 bg-white/50 p-5">
-        <ImageOff className="h-5 w-5 text-ink-soft/40" strokeWidth={1.5} aria-hidden="true" />
-        <div>
-          <p className="font-serif text-sm font-semibold text-ink">{idea.title}</p>
-          {idea.body && (
-            <p className="mt-1.5 font-reading text-[12px] text-ink-soft line-clamp-4">
-              {idea.body}
-            </p>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="group relative overflow-hidden rounded-[10px] bg-cream-deep shadow-[0_10px_26px_rgba(35,37,32,0.14)] ring-1 ring-ink/5">
-      {/* Arbitrary hosts (Drive-served images) — same reasoning as
-          OptionCard/EngagementPageClient: next/image needs a per-domain
-          remotePatterns allowlist, which doesn't fit "any URL pasted in". */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={toDriveImageUrl(cover.image_url)}
-        alt={idea.title}
-        className="block h-auto w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-      />
-      {extra > 0 && (
-        <span className="absolute top-2.5 right-2.5 rounded-full bg-ink/70 px-2 py-0.5 font-serif text-[10px] tracking-wide text-cream">
-          +{extra}
-        </span>
-      )}
-      {/* Literal rgba() gradient, not a theme-token utility — arbitrary
-          gradient utilities don't reliably compile in this project. */}
-      <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 px-4 pt-14 pb-4"
-        style={{
-          background:
-            "linear-gradient(to top, rgba(35,37,32,0.92) 0%, rgba(35,37,32,0.6) 48%, rgba(35,37,32,0) 100%)",
-        }}
-      >
-        <p className="font-serif text-[13px] font-semibold text-cream">{idea.title}</p>
-        {idea.body && (
-          <p className="mt-1 font-reading text-[11.5px] text-cream/85 line-clamp-2">
-            {idea.body}
-          </p>
-        )}
-      </div>
+      <IdeaBoardWall ideas={ideas} canContribute={canContribute} canModerate={profile?.role === "couple"} revalidate="/project/ideas" />
     </div>
   );
 }

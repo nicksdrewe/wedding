@@ -8,12 +8,12 @@ import { loadFeedback } from "@/lib/feedback/load";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
-import { IdeaCard } from "../IdeaCard";
+import { OPTION_COVER_EMBED, coverImageOf } from "@/lib/options/cover";
+import { IdeaPortal, portalThumbs } from "@/components/ui/IdeaPortal";
 import { TaskBoard } from "../TaskBoard";
 import { TASK_SELECT, toBoardTask } from "@/lib/tasks/priority";
 import { OptionsCompareGroup, type CompareGroup } from "../OptionsCompareGroup";
 import { ProjectBudget, type ChosenOption } from "../ProjectBudget";
-import { GenderedIdeaForm } from "./GenderedIdeaForm";
 import { GenderedOptionGroupForm } from "./GenderedOptionGroupForm";
 
 // Near-duplicate of ../page.tsx (Project Management), scoped to
@@ -61,7 +61,7 @@ export default async function GroomsmenProjectPage() {
     supabase
       .from("option_groups")
       .select(
-        `id, title, category_page_id, category_pages(title, slug), page_options(id, name, is_winner, ${OPTION_COSTS_EMBED})`
+        `id, title, category_page_id, category_pages(title, slug), page_options(id, name, is_winner, ${OPTION_COVER_EMBED}, ${OPTION_COSTS_EMBED})`
       )
       .eq("visible_tag", "groomsman")
       .is("category_page_id", null)
@@ -75,8 +75,7 @@ export default async function GroomsmenProjectPage() {
   const optionIds = (optionGroups ?? []).flatMap((g) =>
     (Array.isArray(g.page_options) ? g.page_options : g.page_options ? [g.page_options] : []).map((o) => o.id)
   );
-  const [ideaFeedback, taskFeedback, optionFeedback] = await Promise.all([
-    loadFeedback(supabase, "idea", (ideas ?? []).map((i) => i.id), profile?.id ?? null),
+  const [taskFeedback, optionFeedback] = await Promise.all([
     loadFeedback(supabase, "task", (tasks ?? []).map((t) => t.id), profile?.id ?? null),
     loadFeedback(supabase, "page_option", optionIds, profile?.id ?? null),
   ]);
@@ -90,6 +89,7 @@ export default async function GroomsmenProjectPage() {
       name: o.name,
       is_winner: o.is_winner,
       feedback: optionFeedback[o.id],
+      coverImageUrl: coverImageOf(o),
       ...readOptionCosts(o),
     }));
     return {
@@ -138,34 +138,14 @@ export default async function GroomsmenProjectPage() {
         infoText="Ideas, plans, and comparisons just for the groomsmen."
       />
 
-      <div className="mt-9 grid grid-cols-1 gap-10 md:grid-cols-2">
-        <section>
-          <h2 className="font-serif text-[15px] font-semibold tracking-wide">Idea board</h2>
-          {permission.editAccess && <GenderedIdeaForm visibleTag="groomsman" />}
-          <ul className="mt-4 flex flex-col gap-2.5">
-            {(ideas ?? []).map((idea) => (
-              <IdeaCard
-                key={idea.id}
-                id={idea.id}
-                title={idea.title}
-                body={idea.body}
-                tags={idea.tags ?? []}
-                images={idea.idea_board_images ?? []}
-                canEdit={permission.editAccess && (isAdmin || idea.created_by === profile?.id)}
-                feedback={ideaFeedback[idea.id]}
-                canModerate={isAdmin}
-                revalidate={feedbackPath}
-              />
-            ))}
-          </ul>
-          {(!ideas || ideas.length === 0) && (
-            <EmptyState
-              className="mt-4"
-              title="No ideas yet"
-              hint={permission.editAccess ? "Add the first one above." : undefined}
-            />
-          )}
-        </section>
+      <div className="flex flex-col gap-8">
+        <IdeaPortal
+          href="/project/groomsmen/ideas"
+          title="Groomsmen ideas"
+          count={(ideas ?? []).length}
+          thumbs={portalThumbs((ideas ?? []).map((i) => ({ images: i.idea_board_images ?? [] })))}
+          blurb="Stag plans, outfits, anything the lads have found."
+        />
 
         <TaskBoard
           tasks={(tasks ?? []).map(toBoardTask)}

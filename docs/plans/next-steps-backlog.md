@@ -56,11 +56,11 @@ The mobile bottom tab bar in `src/components/AppShell.tsx` now carries too many 
 
 **Suggested model:** Fable for the table + RLS + diary link; Sonnet for screens.
 
-## 6. Project Management: collapsible comparisons with thumbnails
+## 6. Project Management: collapsible comparisons with thumbnails — DONE
 
 Each comparison group on `/project` (and the stag/hen pages) collapses to save space, and every option row shows its cover thumbnail beside the title. Reuse `OptionsCompareGroup`; thumbnails come from `page_option_images` (first by sort order). Remember the Drive image proxy (`toDriveImageUrl`). **Sonnet.**
 
-## 7. Idea board as a bold animated portal button
+## 7. Idea board as a bold animated portal button — DONE (own idea pages at /project/groomsmen/ideas and /project/bridesmaids/ideas)
 
 On Project (and the Groomsmen and Bridesmaids pages) replace the inline idea list with one bold, fun, animated "portal" button linking to that board's ideas page, using a few of the ideas' thumbnails as the button graphic. The groomsmen/bridesmaids pages need their own ideas page (today only the main board has `/project/ideas`; those two list ideas inline). Respect `prefers-reduced-motion`; keep the thumbnails cheap to load. **Sonnet** (design direction from #10 first if possible).
 

@@ -583,3 +583,75 @@ body {
 .task-tick { position: relative; }
 .task-tick[data-done="true"] { background: var(--color-accent); border-color: var(--color-accent); color: #fff; }
 .task-tick:active { transform: scale(0.88); }
+
+/* ═══════════════ Idea portal ═══════════════ */
+@keyframes portalSpin { to { transform: rotate(360deg); } }
+@keyframes portalFloat {
+  0%, 100% { transform: translateY(0) rotate(var(--rot, 0deg)); }
+  50% { transform: translateY(-9px) rotate(calc(var(--rot, 0deg) + 2deg)); }
+}
+.portal {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  min-height: 230px;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  padding: 24px 22px;
+  color: var(--color-cream);
+  background:
+    radial-gradient(80% 120% at 85% 50%, color-mix(in srgb, var(--sec-glow) 34%, transparent), transparent 65%),
+    linear-gradient(135deg, var(--color-forest), var(--color-night) 80%);
+  box-shadow: var(--shadow-3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
+}
+@media (min-width: 640px) {
+  .portal { flex-direction: row; align-items: stretch; padding: 30px 36px; min-height: 250px; }
+}
+@media (hover: hover) {
+  .portal:hover { transform: translateY(-4px); box-shadow: var(--shadow-4), inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+}
+.portal:active { transform: scale(0.99); }
+.portal__ring {
+  position: absolute;
+  z-index: -1;
+  right: -90px;
+  top: 50%;
+  width: 360px;
+  height: 360px;
+  margin-top: -180px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0 55%, color-mix(in srgb, var(--sec-glow) 70%, transparent) 78%, transparent 100%);
+  -webkit-mask: radial-gradient(closest-side, transparent 80%, #000 81%, #000 86%, transparent 87%);
+  mask: radial-gradient(closest-side, transparent 80%, #000 81%, #000 86%, transparent 87%);
+  animation: portalSpin 14s linear infinite;
+}
+.portal__ring--b {
+  width: 260px;
+  height: 260px;
+  margin-top: -130px;
+  right: -40px;
+  opacity: 0.7;
+  animation-duration: 22s;
+  animation-direction: reverse;
+}
+.portal__stage {
+  position: relative;
+  min-height: 170px;
+  flex: 1;
+}
+@media (min-width: 640px) {
+  .portal__stage { min-height: 0; max-width: 300px; }
+}
+.portal__photo {
+  position: absolute;
+  border-radius: 18px;
+  object-fit: cover;
+  border: 3px solid rgba(255, 253, 249, 0.92);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.4);
+  transform: rotate(var(--rot, 0deg));
+  animation: portalFloat 7s ease-in-out infinite;
+}
+.portal__empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }

@@ -1,6 +1,4 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import { Images } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentContactTags, getCurrentProfile } from "@/lib/auth/roles";
 import { getEffectivePermission } from "@/lib/permissions/actions";
@@ -8,8 +6,8 @@ import { OPTION_COSTS_EMBED, readOptionCosts } from "@/lib/options/costs";
 import { loadFeedback } from "@/lib/feedback/load";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
-import { IdeaForm } from "./IdeaForm";
-import { IdeaCard } from "./IdeaCard";
+import { OPTION_COVER_EMBED, coverImageOf } from "@/lib/options/cover";
+import { IdeaPortal, portalThumbs } from "@/components/ui/IdeaPortal";
 import { TaskBoard } from "./TaskBoard";
 import { TASK_SELECT, toBoardTask } from "@/lib/tasks/priority";
 import { NewOptionGroupForm } from "./NewOptionGroupForm";
@@ -31,15 +29,6 @@ export default async function ProjectPage() {
   // 0028), so their visibility follows edit_access rather than "anyone who
   // reached this page can post".
   const canEdit = permission.editAccess;
-  // Who may add to the main moodboard (0038_moodboard_contributors.sql): the
-  // couple, family, best man and maid of honour — family included even though
-  // they can't edit the rest of this page.
-  const myTagsForBoard = await getCurrentContactTags(profile);
-  const canContribute =
-    isCouple ||
-    profile?.role === "family" ||
-    myTagsForBoard.includes("best_man") ||
-    myTagsForBoard.includes("maid_of_honour");
 
   const [{ data: ideas }, { data: tasks }, { data: contacts }, { data: optionGroups }] = await Promise.all([
     supabase
@@ -69,7 +58,7 @@ export default async function ProjectPage() {
     supabase
       .from("option_groups")
       .select(
-        `id, title, category_page_id, visible_tag, category_pages(title, slug), page_options(id, name, is_winner, ${OPTION_COSTS_EMBED})`
+        `id, title, category_page_id, visible_tag, category_pages(title, slug), page_options(id, name, is_winner, ${OPTION_COVER_EMBED}, ${OPTION_COSTS_EMBED})`
       )
       .order("created_at", { ascending: false })
       .order("created_at", { ascending: true, referencedTable: "page_options" }),
@@ -104,8 +93,7 @@ export default async function ProjectPage() {
   const optionIds = (optionGroups ?? []).flatMap((g) =>
     (Array.isArray(g.page_options) ? g.page_options : g.page_options ? [g.page_options] : []).map((o) => o.id)
   );
-  const [ideaFeedback, taskFeedback, optionFeedback] = await Promise.all([
-    loadFeedback(supabase, "idea", (ideas ?? []).map((i) => i.id), profile?.id ?? null),
+  const [taskFeedback, optionFeedback] = await Promise.all([
     loadFeedback(supabase, "task", (tasks ?? []).map((t) => t.id), profile?.id ?? null),
     loadFeedback(supabase, "page_option", optionIds, profile?.id ?? null),
   ]);
@@ -119,6 +107,7 @@ export default async function ProjectPage() {
       name: o.name,
       is_winner: o.is_winner,
       feedback: optionFeedback[o.id],
+      coverImageUrl: coverImageOf(o),
       ...readOptionCosts(o),
     }));
     return {
@@ -148,40 +137,14 @@ export default async function ProjectPage() {
 
       <ProjectTabs active="project" />
 
-      <div className="mt-9 grid grid-cols-1 gap-10 md:grid-cols-2">
-        <section>
-          <Link
-            href="/project/ideas"
-            className="group inline-flex items-center gap-1.5 font-serif text-[15px] font-semibold tracking-wide transition-colors hover:text-accent"
-          >
-            Idea board
-            <Images className="h-3.5 w-3.5 text-ink-soft/50 transition-colors group-hover:text-accent" strokeWidth={2} aria-hidden="true" />
-          </Link>
-          {canContribute && <IdeaForm />}
-          <ul className="mt-4 flex flex-col gap-2.5">
-            {(ideas ?? []).map((idea) => (
-              <IdeaCard
-                key={idea.id}
-                id={idea.id}
-                title={idea.title}
-                body={idea.body}
-                tags={idea.tags ?? []}
-                images={idea.idea_board_images ?? []}
-                canEdit={isCouple || idea.created_by === profile?.id}
-                feedback={ideaFeedback[idea.id]}
-                canModerate={isCouple}
-                revalidate={feedbackPath}
-              />
-            ))}
-          </ul>
-          {(!ideas || ideas.length === 0) && (
-            <EmptyState
-              className="mt-4"
-              title="No ideas yet"
-              hint="Add the first one above."
-            />
-          )}
-        </section>
+      <div className="flex flex-col gap-8">
+        <IdeaPortal
+          href="/project/ideas"
+          title="The Idea Board"
+          count={(ideas ?? []).length}
+          thumbs={portalThumbs((ideas ?? []).map((i) => ({ images: i.idea_board_images ?? [] })))}
+          blurb="Photos, links and notes from everyone. Add yours, and vote on theirs."
+        />
 
         <TaskBoard
           tasks={(tasks ?? []).map(toBoardTask)}

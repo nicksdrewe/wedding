@@ -7,6 +7,7 @@ import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { SectionSwitcher } from "./SectionSwitcher";
+import { IdeaPortal } from "@/components/ui/IdeaPortal";
 
 export const metadata: Metadata = { title: "Design system — Nick & Ellie" };
 
@@ -174,6 +175,14 @@ export default async function DesignPage() {
         </section>
 
         <section className="rise" style={{ "--i": 5 } as React.CSSProperties}>
+          <div className="section-head">
+            <h2 className="section-head__title">Portal</h2>
+            <span className="section-head__rule" />
+          </div>
+          <IdeaPortal href="/design" title="The Idea Board" count={12} thumbs={["/icon.svg", "/icon.svg", "/icon.svg"]} blurb="Photos, links and notes from everyone. Add yours, and vote on theirs." />
+        </section>
+
+        <section className="rise" style={{ "--i": 6 } as React.CSSProperties}>
           <div className="section-head">
             <h2 className="section-head__title">Numbers &amp; empty states</h2>
             <span className="section-head__rule" />

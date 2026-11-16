@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { ChevronDown, ImageIcon } from "lucide-react";
+import { toDriveImageUrl } from "@/lib/google/image-url";
 import { markOptionWinner } from "@/lib/options/actions";
 import { AddOptionForm } from "@/components/options/AddOptionForm";
 import { CostRange } from "@/components/CostRange";
@@ -26,6 +28,8 @@ export type CompareOption = {
   // RLS withheld this option's prices from the viewer (lib/options/costs.ts).
   costs_hidden: boolean;
   is_winner: boolean;
+  // First picture of the option, if it has one.
+  coverImageUrl?: string | null;
   // Votes and comments (0037) — filled in by the page.
   feedback?: FeedbackData;
 };
@@ -62,6 +66,11 @@ export function OptionsCompareGroup({ group }: { group: CompareGroup }) {
   const [error, setError] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState(false);
   const [groupPending, startGroupTransition] = useTransition();
+  // Collapsed by default: the page lists every comparison running, so the
+  // closed row has to say enough (how many options, who is winning) to skip it.
+  const [open, setOpen] = useState(false);
+  const winner = group.options.find((o) => o.is_winner) ?? null;
+  const thumbs = group.options.filter((o) => o.coverImageUrl).slice(0, 3);
 
   // Only a standalone comparison's own title/existence is editable here —
   // a category-linked group (Venue, Flowers...) lives on that category's
@@ -93,8 +102,8 @@ export function OptionsCompareGroup({ group }: { group: CompareGroup }) {
   }
 
   return (
-    <div className="overflow-hidden rounded-[10px] border border-ink/10 bg-white">
-      <div className="group flex items-center justify-between gap-3 bg-cream-deep px-5 py-3">
+    <div className="surface overflow-hidden">
+      <div className="group flex items-center justify-between gap-3 bg-sec-tint/60 px-3 py-2 sm:px-4">
         {editingTitle ? (
           <form
             action={(formData) =>
@@ -115,25 +124,47 @@ export function OptionsCompareGroup({ group }: { group: CompareGroup }) {
               name="title"
               required
               defaultValue={group.title}
-              className="flex-1 rounded-full border border-ink/20 bg-cream px-4 py-1.5 text-sm outline-none focus:border-accent"
+              className="field flex-1"
             />
             <button
               type="submit"
               disabled={groupPending}
-              className="rounded-full bg-ink px-4 py-1.5 font-serif text-xs text-cream transition hover:bg-ink-soft disabled:opacity-60"
+              className="btn btn-sm btn-primary"
             >
               {groupPending ? "Saving…" : "Save"}
             </button>
             <button
               type="button"
               onClick={() => setEditingTitle(false)}
-              className="rounded-full border border-ink/20 px-4 py-1.5 font-serif text-xs text-ink-soft transition hover:border-ink/40"
+              className="btn btn-sm btn-quiet"
             >
               Cancel
             </button>
           </form>
         ) : (
-          <h3 className="font-serif text-sm font-semibold">{group.title}</h3>
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            aria-expanded={open}
+            className="flex min-h-12 min-w-0 flex-1 items-center gap-3 text-left"
+          >
+            <ChevronDown className={`h-5 w-5 shrink-0 text-sec transition-transform duration-200 ${open ? "rotate-180" : ""}`} strokeWidth={2} />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-title text-[18px] leading-tight tracking-tight">{group.title}</span>
+              <span className="block truncate font-serif text-[12px] text-ink-soft">
+                {group.options.length} {group.options.length === 1 ? "option" : "options"}
+                {winner && <> · <span className="font-semibold text-accent">Winner: {winner.name}</span></>}
+              </span>
+            </span>
+            {!open && thumbs.length > 0 && (
+              <span className="hidden shrink-0 -space-x-2 sm:flex" aria-hidden="true">
+                {thumbs.map((o) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={o.id} src={toDriveImageUrl(o.coverImageUrl!)} alt="" className="h-9 w-9 rounded-full border-2 border-paper object-cover" />
+                ))}
+              </span>
+            )}
+          </button>
         )}
         {!editingTitle && (
           <div className="flex shrink-0 items-center gap-3">
@@ -164,9 +195,7 @@ export function OptionsCompareGroup({ group }: { group: CompareGroup }) {
                 {group.categoryTitle} →
               </Link>
             ) : (
-              <span className="shrink-0 rounded-full bg-white px-2 py-0.5 font-serif text-[10px] tracking-[0.06em] text-ink-soft/70 uppercase">
-                Standalone
-              </span>
+              <span className="chip shrink-0 !text-[10px] tracking-[0.06em] uppercase">Standalone</span>
             )}
           </div>
         )}
@@ -178,6 +207,8 @@ export function OptionsCompareGroup({ group }: { group: CompareGroup }) {
         </p>
       )}
 
+      {open && (
+        <div className="rise">
       {group.options.length === 0 ? (
         <p className="px-5 py-4 font-reading text-[13px] text-ink-soft">
           No options logged yet.
@@ -188,13 +219,21 @@ export function OptionsCompareGroup({ group }: { group: CompareGroup }) {
             <tbody>
               {group.options.map((o) => (
                 <tr key={o.id} className="border-t border-ink/8">
-                  <td className="px-5 py-3 align-middle">
-                    <span className="font-semibold">{o.name}</span>
-                    {o.is_winner && (
-                      <span className="ml-2 rounded-full bg-accent px-2 py-0.5 font-serif text-[10px] tracking-wide text-cream uppercase">
-                        Winner
-                      </span>
-                    )}
+                  <td className="px-4 py-3 align-middle">
+                    <div className="flex items-center gap-3">
+                      {o.coverImageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={toDriveImageUrl(o.coverImageUrl)} alt="" loading="lazy" className="h-14 w-14 shrink-0 rounded-[12px] object-cover shadow-[var(--shadow-1)]" />
+                      ) : (
+                        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[12px] bg-sec-tint text-sec/60" aria-hidden="true">
+                          <ImageIcon className="h-5 w-5" strokeWidth={1.75} />
+                        </span>
+                      )}
+                      <div className="min-w-0">
+                        <span className="font-semibold">{o.name}</span>
+                        {o.is_winner && <span className="chip ml-2 !bg-accent !text-cream !text-[10px] tracking-wide uppercase">Winner</span>}
+                      </div>
+                    </div>
                     <Feedback
                       targetType="page_option"
                       targetId={o.id}
@@ -205,7 +244,7 @@ export function OptionsCompareGroup({ group }: { group: CompareGroup }) {
                       className="mt-2 font-normal"
                     />
                   </td>
-                  <td className="px-5 py-3 align-middle font-reading text-ink-soft tabular-nums">
+                  <td className="px-4 py-3 align-middle font-reading text-ink-soft tabular-nums">
                     {!o.costs_hidden && (
                       <CostRange
                         predictedMin={o.predicted_cost_min}
@@ -215,13 +254,13 @@ export function OptionsCompareGroup({ group }: { group: CompareGroup }) {
                       />
                     )}
                   </td>
-                  <td className="px-5 py-3 text-right align-middle">
+                  <td className="px-4 py-3 text-right align-middle">
                     {!o.is_winner && group.canPickWinner && (
                       <button
                         type="button"
                         disabled={isPending}
                         onClick={() => pick(o.id)}
-                        className="rounded-full border border-ink/20 px-4 py-1.5 font-serif text-xs text-ink-soft transition hover:border-ink/40 disabled:opacity-60"
+                        className="btn btn-sm btn-quiet"
                       >
                         {pendingId === o.id ? "Marking…" : "Mark as winner"}
                       </button>
@@ -238,8 +277,10 @@ export function OptionsCompareGroup({ group }: { group: CompareGroup }) {
           board (the full detail view); standalone groups (stag/hen...) have
           no such page, so this stays their only way to log an option. */}
       {!group.categoryTitle && (
-        <div className="border-t border-ink/8 px-5 py-4">
+        <div className="border-t border-ink/8 px-4 py-4">
           <AddOptionForm groupId={group.id} revalidate="/project" showCosts={group.showCosts} />
+        </div>
+      )}
         </div>
       )}
     </div>
