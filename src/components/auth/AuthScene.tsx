@@ -1,81 +1,28 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-
 // The night garden (left) and the paper page (right) with a flower standing
 // across the split. Purely decorative; the form is passed in as children.
 
-const FLOWERS = [
-  { x: "12%", h: "46%", bs: 64, bc: "#f0a9b4", gd: 0.2, sd: 0.4 },
-  { x: "27%", h: "62%", bs: 84, bc: "#ecc566", gd: 0.7, sd: 1.2 },
-  { x: "43%", h: "38%", bs: 58, bc: "#d3a6e2", gd: 1.2, sd: 2 },
-  { x: "58%", h: "70%", bs: 96, bc: "#f0a9b4", gd: 0.5, sd: 0.8 },
-  { x: "74%", h: "50%", bs: 70, bc: "#86d0cb", gd: 1.5, sd: 1.6 },
-  { x: "88%", h: "58%", bs: 78, bc: "#ecc566", gd: 0.9, sd: 2.4 },
+// Each flower has its own uneven set of petals (angle, length, width), so none
+// is a perfect wheel. Colours are the site's own: sage, cream, dusky rose, soft gold.
+type Petal = [number, number, number];
+const FLOWERS: { x: string; h: string; bs: number; bc: string; gd: number; sd: number; petals: Petal[] }[] = [
+  { x: "11%", h: "44%", bs: 58, bc: "#c98f9a", gd: 0.2, sd: 0.4, petals: [[-70, 0.9, 0.8], [-22, 1, 1], [30, 0.78, 0.9], [84, 0.95, 0.7]] },
+  { x: "28%", h: "60%", bs: 76, bc: "#dcc489", gd: 0.7, sd: 1.2, petals: [[-95, 0.8, 0.9], [-48, 1, 0.8], [-4, 0.85, 1], [41, 1, 0.75], [96, 0.7, 0.9], [150, 0.6, 0.8]] },
+  { x: "45%", h: "36%", bs: 52, bc: "#9cc4a4", gd: 1.2, sd: 2, petals: [[-40, 1, 0.9], [18, 0.8, 1], [76, 0.95, 0.8]] },
+  { x: "60%", h: "68%", bs: 88, bc: "#f1e9dc", gd: 0.5, sd: 0.8, petals: [[-100, 0.75, 0.85], [-58, 0.95, 0.9], [-12, 1, 0.8], [33, 0.82, 1], [78, 1, 0.7], [128, 0.7, 0.9], [-145, 0.6, 0.8]] },
+  { x: "75%", h: "48%", bs: 62, bc: "#c98f9a", gd: 1.5, sd: 1.6, petals: [[-62, 1, 0.8], [-8, 0.8, 0.95], [47, 0.95, 0.85], [104, 0.7, 0.8]] },
+  { x: "89%", h: "56%", bs: 70, bc: "#9cc4a4", gd: 0.9, sd: 2.4, petals: [[-84, 0.85, 0.9], [-30, 1, 0.8], [22, 0.9, 1], [70, 0.75, 0.85], [118, 0.6, 0.9]] },
 ];
 
 const HEART =
   "M23.6 2c-3.363 0-6.258 2.736-7.599 5.594-1.342-2.858-4.237-5.594-7.601-5.594-4.637 0-8.4 3.764-8.4 8.401 0 9.433 9.516 11.906 16.001 21.232 6.13-9.268 15.999-12.1 15.999-21.232 0-4.637-3.763-8.401-8.4-8.401z";
 const HEARTS = [
-  { l: "18%", s: 12, d: 12, dl: 2.5, x: 24, c: "#f0a9b4" },
-  { l: "40%", s: 16, d: 14, dl: 4.5, x: -18, c: "#ecc566" },
-  { l: "62%", s: 11, d: 11, dl: 3.2, x: 30, c: "#d3a6e2" },
-  { l: "80%", s: 14, d: 13, dl: 6, x: -26, c: "#f0a9b4" },
+  { l: "18%", s: 12, d: 12, dl: 2.5, x: 24, c: "#c98f9a" },
+  { l: "40%", s: 16, d: 14, dl: 4.5, x: -18, c: "#dcc489" },
+  { l: "62%", s: 11, d: 11, dl: 3.2, x: 30, c: "#9cc4a4" },
+  { l: "80%", s: 14, d: 13, dl: 6, x: -26, c: "#c98f9a" },
 ];
-
-// The frames of the landing page's blooming flower, played once on arrival.
-// Every few frames, so the whole thing stays light.
-const FRAMES = Array.from({ length: 18 }, (_, i) => 1 + i * 4);
-const FRAME_SRC = (n: number) => `/hero-frames/frame-${String(n).padStart(4, "0")}.jpg`;
-
-function Medallion() {
-  const ref = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    canvas.width = 720;
-    canvas.height = 720;
-    const images: HTMLImageElement[] = [];
-    let alive = true;
-    let timer: number | undefined;
-    let loaded = 0;
-    const draw = (img: HTMLImageElement) => {
-      // The flower sits in the middle of a wider picture: crop a square round it.
-      const side = img.naturalHeight * 0.92;
-      ctx.drawImage(img, img.naturalWidth / 2 - side / 2, img.naturalHeight * 0.04, side, side, 0, 0, 720, 720);
-    };
-    const play = () => {
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      let i = reduce ? images.length - 1 : 0;
-      const step = () => {
-        if (!alive) return;
-        draw(images[i]);
-        if (i < images.length - 1) {
-          i += 1;
-          timer = window.setTimeout(step, 95);
-        }
-      };
-      step();
-    };
-    FRAMES.forEach((n, idx) => {
-      const img = new Image();
-      img.onload = () => {
-        loaded += 1;
-        if (idx === 0) draw(img);
-        if (loaded === FRAMES.length) play();
-      };
-      img.src = FRAME_SRC(n);
-      images[idx] = img;
-    });
-    return () => {
-      alive = false;
-      if (timer) window.clearTimeout(timer);
-    };
-  }, []);
-  return <canvas ref={ref} aria-hidden="true" />;
-}
 
 export function AuthScene({ children }: { children: React.ReactNode }) {
   return (
@@ -132,19 +79,14 @@ export function AuthScene({ children }: { children: React.ReactNode }) {
               <span className="auth-flower__leaf auth-flower__leaf--l" />
               <span className="auth-flower__leaf auth-flower__leaf--r" />
               <span className="auth-flower__bloom">
-                {[0, 72, 144, 216, 288].map((r) => (
-                  <span key={r} className="auth-flower__petal" style={{ "--r": `${r}deg` } as React.CSSProperties} />
+                {f.petals.map(([r, len, wid]) => (
+                  <span key={r} className="auth-flower__petal" style={{ "--r": `${r}deg`, "--len": len, "--wid": wid } as React.CSSProperties} />
                 ))}
                 <span className="auth-flower__core" />
               </span>
             </div>
           ))}
         </div>
-      </div>
-
-      <div className="auth-medallion-glow" aria-hidden="true" />
-      <div className="auth-medallion">
-        <Medallion />
       </div>
 
       <div className="auth-paper">{children}</div>
