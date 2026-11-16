@@ -519,11 +519,12 @@
 @keyframes bee-path {
   0%, 4.6% { opacity: 0; transform: translate(-8vw, var(--y0)); }
   5.4% { opacity: 1; transform: translate(-3vw, var(--y0)); }
-  11% { transform: translate(18vw, var(--y1)); }
-  17% { transform: translate(40vw, var(--y2)); }
-  23% { transform: translate(66vw, var(--y3)); }
-  29.4% { opacity: 1; transform: translate(98vw, var(--y4)); }
-  30.2%, 100% { opacity: 0; transform: translate(110vw, var(--y4)); }
+  11% { transform: translate(21vw, var(--y1)); }
+  17% { transform: translate(47vw, var(--y2)); }
+  23% { transform: translate(73vw, var(--y3)); }
+  29% { transform: translate(98.5vw, var(--y4)); }
+  31.5% { opacity: 1; transform: translate(109vw, var(--y4)); }
+  31.7%, 100% { opacity: 0; transform: translate(110vw, var(--y4)); }
 }
 .auth-bee__wander {
   position: relative;
@@ -551,22 +552,21 @@
   from { transform: rotate(var(--wr, 0deg)) scaleY(1); }
   to { transform: rotate(var(--wr, 0deg)) scaleY(0.45); }
 }
-/* the dotted trail: each dot repeats the bee's bob a moment later, so the
-   line wiggles along the path and fades away quickly */
+/* the dotted trail: small puffs leave the bee's bum, drift back, shrink and fade */
 .auth-bee__dot {
   position: absolute;
-  top: 15px;
-  left: calc(-10px - var(--i) * 11px);
-  width: calc(6px - var(--i) * 0.7px);
-  height: calc(6px - var(--i) * 0.7px);
+  top: 19px;
+  left: 2px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
   background: #6b5a3a;
-  opacity: calc(0.65 - var(--i) * 0.11);
-  animation: bee-dot 1.5s ease-in-out calc(var(--i) * 0.11s) infinite alternate;
+  opacity: 0;
+  animation: bee-puff 1s ease-out calc(var(--i) * 0.17s) infinite;
 }
-@keyframes bee-dot {
-  from { transform: translateY(-9px); }
-  to { transform: translateY(9px); }
+@keyframes bee-puff {
+  0% { opacity: 0.7; transform: translate(0, 0) scale(1); }
+  100% { opacity: 0; transform: translate(-44px, calc((var(--i) - 2.5) * 2px)) scale(0.3); }
 }
 @media (prefers-reduced-motion: reduce) {
   .auth-bee { display: none; }
