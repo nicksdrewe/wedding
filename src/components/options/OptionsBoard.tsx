@@ -23,6 +23,7 @@ export async function OptionsBoard({
   isCouple,
   isRealCouple = isCouple,
   costAccess,
+  showCommsLink = false,
 }: {
   groupId: string;
   categoryPageId: string | null;
@@ -37,6 +38,8 @@ export async function OptionsBoard({
   // cost_access) — decides whether the add-option form offers cost inputs.
   // Each card additionally hides its own costs when RLS withheld them.
   costAccess: boolean;
+  // Offer each option's link to its organising-comms entries (0043).
+  showCommsLink?: boolean;
 }) {
   const supabase = await createClient();
   const { data } = await supabase
@@ -142,6 +145,7 @@ export async function OptionsBoard({
               canInteract={!!profile && profile.role !== "guest"}
               canModerateFeedback={isRealCouple}
               revalidate={revalidate}
+              showCommsLink={showCommsLink}
               costItems={costItemsByOption[option.id] ?? []}
               linkableCategories={otherCategories}
               linksByItem={linksByItem}

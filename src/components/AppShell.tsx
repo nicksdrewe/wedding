@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   BookOpen,
+  CalendarHeart,
+  ClipboardList,
   ChevronDown,
   FolderKanban,
   LayoutGrid,
@@ -106,7 +108,16 @@ const NAV_LINKS: NavLink[] = [
     viewOnlyRoles: ["family"],
     group: "People",
   },
-  { href: "/comms", label: "Comms", icon: Mail, roles: ["couple"], group: "People" },
+  { href: "/comms", label: "Guest Comms", icon: Mail, roles: ["couple"], group: "Comms" },
+  // The organising log (0043): couple, family, best man and maid of honour.
+  {
+    href: "/organising",
+    label: "Organising",
+    icon: ClipboardList,
+    roles: ["couple", "family"],
+    tags: ["best_man", "maid_of_honour"],
+    group: "Comms",
+  },
   {
     href: "/budget",
     label: "Budget",
@@ -120,6 +131,8 @@ const NAV_LINKS: NavLink[] = [
   // page every account tier (down to a plain guest) gets, per the
   // account-capabilities brief.
   { href: "/diary", label: "Diary", icon: BookOpen, roles: ["couple", "family", "wedding_party", "guest"] },
+  // The schedule for the wedding days themselves (0044). Guests get it once it is published.
+  { href: "/big-day", label: "The Big Day", icon: CalendarHeart, roles: ["couple", "family", "wedding_party"] },
   // "Edit my page" — the guest/wedding_party self-service surface. Couple
   // and family don't need this in nav (they're not personally RSVPing).
   { href: "/account", label: "My Details", icon: User, roles: ["guest", "wedding_party"] },
@@ -127,7 +140,7 @@ const NAV_LINKS: NavLink[] = [
 
 // Desktop nav order: grouped dropdowns first (Planning, then People, each
 // in NAV_LINKS' own order), then every ungrouped link in NAV_LINKS order.
-const GROUP_ORDER = ["Planning", "People"];
+const GROUP_ORDER = ["Planning", "People", "Comms"];
 
 const ROLE_LABEL: Record<RoleTier, string> = {
   couple: "Couple",

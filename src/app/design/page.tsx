@@ -176,6 +176,33 @@ export default async function DesignPage() {
 
         <section className="rise" style={{ "--i": 5 } as React.CSSProperties}>
           <div className="section-head">
+            <h2 className="section-head__title">Category tree</h2>
+            <span className="section-head__rule" />
+          </div>
+          <div className="cat-tree mb-12">
+            <ul>
+              <li>
+                <div className="cat-node cat-node--parent"><div className="surface p-4"><p className="font-title text-[20px] leading-tight">Catering</p><p className="mt-1 font-serif text-[13px] font-semibold tabular-nums">£4,200–£7,900</p></div></div>
+                <ul>
+                  <li>
+                    <div className="cat-node cat-node--parent"><div className="surface p-4"><p className="font-title text-[20px] leading-tight">Food</p><p className="mt-1 font-serif text-[13px] font-semibold tabular-nums">£3,000–£5,400</p></div></div>
+                    <ul>
+                      <li><div className="cat-node"><div className="surface p-4"><p className="font-title text-[20px] leading-tight">Friday breakfast</p><p className="mt-1 font-serif text-[13px] font-semibold tabular-nums">£300–£650</p></div></div></li>
+                      <li><div className="cat-node"><div className="surface p-4"><p className="font-title text-[20px] leading-tight">Wedding dinner</p><p className="mt-1 font-serif text-[13px] font-semibold tabular-nums">£2,400–£4,100</p></div></div></li>
+                      <li><div className="cat-node"><div className="surface p-4"><p className="font-title text-[20px] leading-tight">Evening snacks</p><p className="mt-1 font-serif text-[13px] font-semibold tabular-nums">£300–£650</p></div></div></li>
+                    </ul>
+                  </li>
+                  <li>
+                    <div className="cat-node cat-node--parent"><div className="surface p-4"><p className="font-title text-[20px] leading-tight">Drink</p><p className="mt-1 font-serif text-[13px] font-semibold tabular-nums">£1,200–£2,500</p></div></div>
+                    <ul>
+                      <li><div className="cat-node"><div className="surface p-4"><p className="font-title text-[20px] leading-tight">Bar</p><p className="mt-1 font-serif text-[13px] font-semibold tabular-nums">£1,200–£2,500</p></div></div></li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+          <div className="section-head">
             <h2 className="section-head__title">Portal</h2>
             <span className="section-head__rule" />
           </div>

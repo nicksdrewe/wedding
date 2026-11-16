@@ -1,0 +1,153 @@
+/* Category family tree. Phones: an indented tree with a spine and elbows.
+   Wide screens: an org chart, children side by side under their parent.
+   Same markup for both: .cat-tree > ul > li > (.cat-node, ul > li ...). */
+
+.cat-tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.cat-tree li {
+  position: relative;
+}
+.cat-node {
+  position: relative;
+}
+
+/* ── phone / tablet: indented ── */
+.cat-tree ul ul {
+  margin-left: 16px;
+  padding-left: 20px;
+}
+.cat-tree ul ul > li {
+  padding-top: 12px;
+}
+/* elbow into each child */
+.cat-tree ul ul > li::before {
+  content: "";
+  position: absolute;
+  left: -20px;
+  top: 44px;
+  width: 20px;
+  height: 2px;
+  background: color-mix(in srgb, var(--sec) 30%, transparent);
+}
+/* the spine: full height beside every child except the last, where it stops at the elbow */
+.cat-tree ul ul > li::after {
+  content: "";
+  position: absolute;
+  left: -20px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: color-mix(in srgb, var(--sec) 30%, transparent);
+}
+.cat-tree ul ul > li:last-child::after {
+  bottom: auto;
+  height: 46px;
+}
+
+/* ── wide: org chart ── */
+@media (min-width: 1024px) {
+  .cat-tree {
+    overflow-x: auto;
+    padding: 4px 4px 18px;
+  }
+  .cat-tree > ul {
+    display: flex;
+    justify-content: center;
+    min-width: max-content;
+  }
+  .cat-tree ul ul {
+    display: flex;
+    justify-content: center;
+    margin: 0;
+    padding: 24px 0 0;
+    border: 0;
+    position: relative;
+  }
+  .cat-tree li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 8px;
+  }
+  .cat-tree ul ul > li {
+    padding: 24px 8px 0;
+  }
+  .cat-node {
+    width: 216px;
+  }
+  /* the horizontal bar across siblings, and each child's drop */
+  .cat-tree ul ul > li::before,
+  .cat-tree ul ul > li::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: auto;
+    width: 50%;
+    height: 24px;
+    background: none;
+    border-top: 2px solid color-mix(in srgb, var(--sec) 35%, transparent);
+    border-left: 0;
+  }
+  .cat-tree ul ul > li::before {
+    left: 0;
+    right: auto;
+  }
+  .cat-tree ul ul > li::after,
+  .cat-tree ul ul > li:last-child::after {
+    left: 50%;
+    right: auto;
+    border-left: 2px solid color-mix(in srgb, var(--sec) 35%, transparent);
+  }
+  .cat-tree ul ul > li:first-child::before,
+  .cat-tree ul ul > li:last-child::after {
+    border-top: 0;
+  }
+  .cat-tree ul ul > li:first-child::after {
+    border-top-left-radius: 10px;
+  }
+  .cat-tree ul ul > li:last-child::before {
+    border-right: 2px solid color-mix(in srgb, var(--sec) 35%, transparent);
+    border-top-right-radius: 10px;
+  }
+  .cat-tree ul ul > li:last-child::after {
+    border-left: 0;
+  }
+  .cat-tree ul ul > li:only-child::before {
+    border-top: 0;
+    border-right: 2px solid color-mix(in srgb, var(--sec) 35%, transparent);
+    border-radius: 0;
+  }
+  /* the parent's drop down to the bar */
+  .cat-tree ul ul::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 50%;
+    margin-left: -1px;
+    width: 2px;
+    height: 24px;
+    background: color-mix(in srgb, var(--sec) 35%, transparent);
+  }
+}
+
+/* A parent's card carries a little more weight than a leaf's. */
+.cat-node--parent > .surface {
+  background: linear-gradient(165deg, var(--sec-tint), var(--color-paper) 75%);
+  box-shadow: var(--shadow-2);
+}
+.cat-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(35, 37, 32, 0.08);
+  overflow: hidden;
+}
+.cat-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--color-accent);
+  transition: width var(--dur-slow) var(--ease-out);
+}

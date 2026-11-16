@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
@@ -7,11 +8,15 @@ import { OptionsMapLoader } from "@/components/options/OptionsMapLoader";
 import type { MapOption } from "@/components/options/OptionsMap";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
-import { CostRange } from "@/components/CostRange";
+import { formatCostRange, formatCurrency } from "@/lib/currency/format";
+import { loadCategoryTree } from "@/lib/categories/load";
+import { ancestorsOf, findNode } from "@/lib/categories/tree";
+import { moveTargetsFor, toCardData } from "@/lib/categories/card";
+import { CategoryCard } from "../CategoryCard";
+import { NewCategoryForm } from "../NewCategoryForm";
 import { getLinkedCostItemsForCategory } from "@/lib/costs/links";
 import { OPTION_COSTS_EMBED, readOptionCosts } from "@/lib/options/costs";
 import { LinkedCostItems } from "./LinkedCostItems";
-import { CostForm } from "./CostForm";
 import { ContactForm } from "./ContactForm";
 import { ContactRow } from "./ContactRow";
 import { DateForm } from "./DateForm";
@@ -75,12 +80,7 @@ export default async function CategoryDetailPage({
     : [];
   const hasPinnedOptions = mapOptions.some((o) => o.latitude != null && o.longitude != null);
 
-  const [{ data: cost }, { data: contacts }, { data: dates }, linkedCostItems] = await Promise.all([
-    supabase
-      .from("category_costs")
-      .select("predicted_cost_min, predicted_cost_max, actual_cost, currency")
-      .eq("category_page_id", page.id)
-      .maybeSingle(),
+  const [{ data: contacts }, { data: dates }, linkedCostItems, { roots }] = await Promise.all([
     supabase
       .from("category_contacts")
       .select("id, name, role, phone, email")
@@ -92,7 +92,15 @@ export default async function CategoryDetailPage({
       .eq("category_page_id", page.id)
       .order("entry_date"),
     getLinkedCostItemsForCategory(page.id),
+    // The whole tree, with costs rolled up — this page shows its own slice.
+    loadCategoryTree(profile),
   ]);
+  const node = findNode(roots, page.id);
+  const trail = ancestorsOf(roots, page.id);
+  const children = node?.children ?? [];
+  // Options are decided at the lowest level. A category that only groups
+  // others doesn't offer its own board unless it already has options.
+  const showOptions = children.length === 0 || (node?.options.length ?? 0) > 0;
 
   // Edit UI on this page is now driven by the resolved edit_access for
   // this exact category page (couple always true; family true/false per
@@ -112,12 +120,69 @@ export default async function CategoryDetailPage({
   // from rendering. Whoever can both see the prices and edit the category may
   // set its headline cost (matches category_costs' write policies).
   const canSeeCosts = permission.costAccess;
-  const canEditCategoryCost = isRealCouple || (permission.costAccess && permission.editAccess);
 
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader eyebrow="Planning" title={page.title} />
+      <nav aria-label="Where this sits" className="mb-1 flex flex-wrap items-center gap-x-1.5 font-serif text-xs text-ink-soft">
+        <Link href="/categories" className="inline-flex min-h-11 items-center hover:text-sec">
+          Categories
+        </Link>
+        {trail.map((a) => (
+          <span key={a.id} className="inline-flex items-center gap-1.5">
+            <span aria-hidden="true">/</span>
+            <Link href={`/categories/${a.slug}`} className="inline-flex min-h-11 items-center hover:text-sec">
+              {a.title}
+            </Link>
+          </span>
+        ))}
+      </nav>
 
+      <PageHeader eyebrow={trail.length > 0 ? trail[trail.length - 1].title : "Planning"} title={page.title} />
+
+      {canSeeCosts && node?.total && (
+        <section className="surface surface-tint mb-6 p-6">
+          <p className="stat__label">{node.winners.length > 0 && children.length === 0 ? "Cost" : "Predicted cost"}</p>
+          <p className="stat__value">{formatCostRange(node.total.min, node.total.max, "GBP")}</p>
+          {node.total.actual != null && (
+            <p className="mt-1.5 font-serif text-[13px] font-semibold text-accent">
+              {formatCurrency(node.total.actual, "GBP")} actual so far
+            </p>
+          )}
+          <p className="mt-2 font-reading text-[13px] text-ink-soft">
+            {children.length > 0
+              ? "Added up from everything inside this category."
+              : node.winners.length > 0
+                ? `From the chosen option: ${node.winners.join(", ")}.`
+                : node.options.length > 0
+                  ? "From the cheapest option to the dearest. It narrows once a winner is chosen."
+                  : "Entered before costs became automatic. Add options to replace it."}
+            {node.partial && " Some prices are hidden from your account, so this may be incomplete."}
+          </p>
+        </section>
+      )}
+
+      {(children.length > 0 || isRealCouple) && (
+        <section className="mb-6">
+          <div className="section-head">
+            <h2 className="section-head__title">Inside {page.title}</h2>
+            <span className="section-head__rule" />
+          </div>
+          {children.length > 0 ? (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {children.map((c) => (
+                <CategoryCard key={c.id} category={toCardData(c)} isCouple={isRealCouple} moveTargets={isRealCouple ? moveTargetsFor(roots, c) : []} />
+              ))}
+            </div>
+          ) : (
+            <p className="font-reading text-[13px] text-ink-soft">
+              Nothing inside yet. Split this category into parts (for Catering: Food, Drink) and each part gets its own options.
+            </p>
+          )}
+          {isRealCouple && <NewCategoryForm parentId={page.id} label={`New category inside ${page.title}`} />}
+        </section>
+      )}
+
+      {showOptions && (
       <section className="surface p-6">
         <div className="flex items-center justify-between gap-4">
           <h2 className="font-serif text-[15px] font-semibold">Options</h2>
@@ -155,6 +220,7 @@ export default async function CategoryDetailPage({
                 isCouple={isCouple}
                 isRealCouple={isRealCouple}
                 costAccess={canSeeCosts}
+                showCommsLink
               />
             </div>
           </>
@@ -165,31 +231,8 @@ export default async function CategoryDetailPage({
           </p>
         )}
       </section>
-
-      {canSeeCosts && (
-      <section className="surface mt-6 p-6">
-        <h2 className="font-serif text-[15px] font-semibold">Costs</h2>
-        {canEditCategoryCost ? (
-          <div className="mt-2">
-            <CostForm
-              categoryPageId={page.id}
-              predictedCostMin={cost?.predicted_cost_min ?? ""}
-              predictedCostMax={cost?.predicted_cost_max ?? ""}
-              actualCost={cost?.actual_cost ?? ""}
-              currency={cost?.currency ?? "GBP"}
-            />
-          </div>
-        ) : (
-          <CostRange
-            className="mt-2 block font-reading text-[15px] text-ink-soft"
-            predictedMin={cost?.predicted_cost_min ?? null}
-            predictedMax={cost?.predicted_cost_max ?? null}
-            actual={cost?.actual_cost ?? null}
-            currency={cost?.currency ?? "GBP"}
-          />
-        )}
-      </section>
       )}
+
 
       {canSeeCosts && linkedCostItems.length > 0 && (
         <section className="surface mt-6 p-6">

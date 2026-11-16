@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { ChevronDown, ImageIcon } from "lucide-react";
+import { ChevronDown, ImageIcon, MessagesSquare } from "lucide-react";
 import { toDriveImageUrl } from "@/lib/google/image-url";
 import { markOptionWinner } from "@/lib/options/actions";
 import { AddOptionForm } from "@/components/options/AddOptionForm";
@@ -60,7 +60,7 @@ export type CompareGroup = {
   canInteractFeedback: boolean;
 };
 
-export function OptionsCompareGroup({ group }: { group: CompareGroup }) {
+export function OptionsCompareGroup({ group, showCommsLink = false }: { group: CompareGroup; showCommsLink?: boolean }) {
   const [isPending, startTransition] = useTransition();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -255,6 +255,12 @@ export function OptionsCompareGroup({ group }: { group: CompareGroup }) {
                     )}
                   </td>
                   <td className="px-4 py-3 text-right align-middle">
+                    {showCommsLink && (
+                      <Link href={`/organising?option=${o.id}`} className="btn btn-sm btn-quiet min-h-11">
+                        <MessagesSquare className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+                        Comms
+                      </Link>
+                    )}
                     {!o.is_winner && group.canPickWinner && (
                       <button
                         type="button"

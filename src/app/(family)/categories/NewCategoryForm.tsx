@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { createCategoryPage } from "./actions";
 
-export function NewCategoryForm() {
+export function NewCategoryForm({ parentId, label = "New category" }: { parentId?: string; label?: string } = {}) {
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -26,8 +26,9 @@ export function NewCategoryForm() {
     >
       <div className="flex flex-col gap-1">
         <label className="font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
-          New category
+          {label}
         </label>
+        {parentId && <input type="hidden" name="parentId" value={parentId} />}
         <input
           name="title"
           required

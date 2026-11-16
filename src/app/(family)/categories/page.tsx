@@ -1,43 +1,42 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
 import { getEffectivePermission } from "@/lib/permissions/actions";
-import { InView } from "@/components/motion-primitives/in-view";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
+import { loadCategoryTree } from "@/lib/categories/load";
+import { moveTargetsFor, toCardData } from "@/lib/categories/card";
+import type { CategoryNode } from "@/lib/categories/tree";
 import { NewCategoryForm } from "./NewCategoryForm";
 import { CategoryCard } from "./CategoryCard";
 
 export default async function CategoriesPage() {
   const profile = await getCurrentProfile();
-  // This list page is already reachable by family via the (family) layout
-  // (unchanged) — edit UI (new-category form, per-card edit/delete) is
-  // gated by the resolved edit_access for "categories" instead of a
-  // hardcoded role check, so it follows the same couple-configurable rule
-  // as the category detail pages.
   const permission = await getEffectivePermission("categories", profile);
   if (!permission.pageAccess) redirect("/no-access");
-  // Creating, renaming and deleting whole categories is the couple's alone
-  // (category_pages' write policies) — NOT edit_access, which best man /
+  // Creating, renaming, moving and deleting whole categories is the couple's
+  // alone (category_pages' write policies) — NOT edit_access, which best man /
   // maid of honour also hold and which only covers a category's contents.
   const isCouple = profile?.role === "couple";
-  const supabase = await createClient();
 
-  const { data: pages } = await supabase
-    .from("category_pages")
-    .select("id, slug, title, category_costs(predicted_cost_min, predicted_cost_max, actual_cost, currency)")
-    .order("title");
+  // Every category this person can see, as a tree, with costs already rolled
+  // up from options (lib/categories). Prices a viewer may not see are simply
+  // absent.
+  const { roots } = await loadCategoryTree(profile);
 
-  const hasCategories = !!pages && pages.length > 0;
+  // Categories with something inside get their own family tree; ones on
+  // their own sit together in a grid underneath.
+  const families = roots.filter((r) => r.children.length > 0);
+  const singles = roots.filter((r) => r.children.length === 0);
 
-  // Prices can be hidden per category (0031_cost_access.sql). RLS already
-  // returns no cost row for a hidden one; resolving the flag here lets the
-  // card leave the cost line out rather than show a misleading "no cost".
-  const costAccessBySlug: Record<string, boolean> = {};
-  await Promise.all(
-    (pages ?? []).map(async (p) => {
-      costAccessBySlug[p.slug] = (await getEffectivePermission(`categories:${p.slug}`, profile)).costAccess;
-    })
+  const card = (node: CategoryNode) => (
+    <CategoryCard category={toCardData(node)} isCouple={isCouple} moveTargets={isCouple ? moveTargetsFor(roots, node) : []} />
+  );
+
+  const branch = (node: CategoryNode) => (
+    <li key={node.id}>
+      <div className={`cat-node ${node.children.length > 0 ? "cat-node--parent" : ""}`}>{card(node)}</div>
+      {node.children.length > 0 && <ul>{node.children.map(branch)}</ul>}
+    </li>
   );
 
   return (
@@ -45,48 +44,45 @@ export default async function CategoriesPage() {
       <PageHeader
         eyebrow="Planning"
         title="Categories"
-        infoText="Venue, outfits, flowers, catering — everything with a cost, a contact, or a date lives here."
+        infoText="Everything with a cost, a contact or a date. Categories can sit inside each other; each one's cost is worked out from its options and everything inside it."
       />
 
       {isCouple && <NewCategoryForm />}
 
-      {hasCategories ? (
-        <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
-          {pages.map((p, i) => {
-            const cost = Array.isArray(p.category_costs)
-              ? p.category_costs[0]
-              : p.category_costs;
-            return (
-              <InView
-                key={p.id}
-                as="div"
-                once
-                variants={{ hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }}
-                transition={{ duration: 0.4, delay: i * 0.05, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <CategoryCard
-                  category={{
-                    id: p.id,
-                    slug: p.slug,
-                    title: p.title,
-                    predictedCostMin: cost?.predicted_cost_min ?? null,
-                    predictedCostMax: cost?.predicted_cost_max ?? null,
-                    actualCost: cost?.actual_cost ?? null,
-                    currency: cost?.currency ?? "GBP",
-                    showCost: costAccessBySlug[p.slug] ?? false,
-                  }}
-                  isCouple={isCouple}
-                />
-              </InView>
-            );
-          })}
-        </div>
-      ) : (
+      {roots.length === 0 ? (
         <EmptyState
           className="mt-8"
           title="No categories yet"
-          hint="Add your first one above to start tracking costs, contacts, and dates."
+          hint={isCouple ? "Add your first one above." : "Categories shared with you will appear here."}
         />
+      ) : (
+        <>
+          {families.map((root, i) => (
+            <section key={root.id} className="rise mt-8" style={{ "--i": Math.min(i, 6) } as React.CSSProperties}>
+              <div className="cat-tree">
+                <ul>{branch(root)}</ul>
+              </div>
+            </section>
+          ))}
+
+          {singles.length > 0 && (
+            <section className="mt-10">
+              {families.length > 0 && (
+                <div className="section-head">
+                  <h2 className="section-head__title">On their own</h2>
+                  <span className="section-head__rule" />
+                </div>
+              )}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+                {singles.map((node, i) => (
+                  <div key={node.id} className="rise" style={{ "--i": Math.min(i, 8) } as React.CSSProperties}>
+                    {card(node)}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+        </>
       )}
     </div>
   );

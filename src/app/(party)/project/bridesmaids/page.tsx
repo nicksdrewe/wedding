@@ -168,7 +168,7 @@ export default async function BridesmaidsProjectPage() {
 
         <div className="mt-5 flex flex-col gap-5">
           {compareGroups.map((g) => (
-            <OptionsCompareGroup key={g.id} group={g} />
+            <OptionsCompareGroup key={g.id} group={g} showCommsLink={isAdmin} />
           ))}
           {compareGroups.length === 0 && (
             <EmptyState

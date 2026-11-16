@@ -6,7 +6,7 @@ Conventions that still apply to all of it: new numbered migration files only (ne
 
 ---
 
-## 1. Nested categories (any depth, shown as a tree)
+## 1. Nested categories (any depth, shown as a tree) — DONE (migration 0042; lib/categories)
 
 **Ask:** categories can nest to any depth (L1 Catering → L2.1 Food / L2.2 Drink → L2.1.1 Friday breakfast → L2.1.1.x Boulangerie…). A leaf is where options live and where one is chosen as the winner. A parent can have several chosen routes, whose costs become actuals. Must also work for stag, hen and outfits (stag → locations → housing, etc.). Shown on the Categories page like a family tree / org chart.
 
@@ -20,7 +20,7 @@ Conventions that still apply to all of it: new numbered migration files only (ne
 
 **Suggested model:** Fable (data model, roll-up logic, permission inheritance, RLS). UI afterwards on Sonnet.
 
-## 2. Predicted values computed, not typed
+## 2. Predicted values computed, not typed — DONE (lib/categories/tree.ts; the typed cost form is gone, old typed figures are used only while a category has no priced options)
 
 **Ask:** categories have no predicted figure of their own; it is calculated from what's nested under them. Example: Venue's predicted cost ranges from the cheapest option to the most expensive option in it.
 
@@ -41,7 +41,7 @@ Likely cause: the category detail page wraps its content in `max-w-3xl` without 
 
 The mobile bottom tab bar in `src/components/AppShell.tsx` now carries too many links. Replace with a compact top bar and a burger menu that opens a full-screen / slide-in panel, grouped like the desktop dropdowns (Planning, People, Comms…). Keep tap targets ≥ 44px, close on navigation, and keep the role label, account and sign-out in the panel. **Sonnet.**
 
-## 5. "Organising comms" (a log of things done and said while organising)
+## 5. "Organising comms" (a log of things done and said while organising) — DONE (migration 0043; /organising; diary timeline rebuilt)
 
 **Ask:** a new page for family and best man / maid of honour (and the couple) to paste in or log: emails from a venue, caterer, photographer; or a quick "committed an update". Then:
 - **A)** shows as a list on a Comms-section page, each entry tagged to a category or specific option (e.g. venue; the Boulangerie option under Friday breakfast);
@@ -70,7 +70,7 @@ On Project (and the Groomsmen and Bridesmaids pages) replace the inline idea lis
 
 **Touches:** `tasks` table gets `priority` and `done_at` (creation date already exists as `created_at`); update `toggleTask` to stamp/clear `done_at`; filters in the UI; new visual treatment. Votes/comments (0037) already attach to tasks. **Schema + actions: Sonnet is fine (small). Visual treatment: with #10.**
 
-## 9. THE BIG DAY page (flexible multi-day planner)
+## 9. THE BIG DAY page (flexible multi-day planner) — DONE for the wedding party (migration 0044; /big-day). Still to do: the guest-facing published view.
 
 **Ask:** a diary-style page with a sidebar of draggable items, and day columns for however many days are chosen (Friday–Monday, or a whole week). Items can be: a selected planning option (cost moves across with it), an idea, or a custom trigger/event. Each is colour-coded, titled, has start/end, and a thumbnail (inherited from the option/idea, or added). Everyone with back-end rights can see it. Examples: the boys' cycle at 8am; evening snacks from the ideas board; the winning photographer's on-duty hours.
 

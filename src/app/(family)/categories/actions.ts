@@ -15,6 +15,8 @@ function slugify(title: string) {
 
 export async function createCategoryPage(formData: FormData) {
   const title = z.string().min(1).parse(formData.get("title"));
+  // Optional: the category this new one sits inside (0042_nested_categories).
+  const parentId = z.string().uuid().nullable().parse(formData.get("parentId") || null);
   const supabase = await createClient();
 
   // slug has a unique constraint (0001_init.sql) — two titles that
@@ -39,7 +41,7 @@ export async function createCategoryPage(formData: FormData) {
 
   const { data: page, error } = await supabase
     .from("category_pages")
-    .insert({ title, slug })
+    .insert({ title, slug, parent_id: parentId })
     .select("id")
     .single();
 
@@ -52,9 +54,16 @@ export async function createCategoryPage(formData: FormData) {
   // 0025_page_permissions.sql) from the moment it exists — not fatal if it
   // fails, since fn_resolve_data_access/getEffectivePermission both default
   // to "allowed" for a page_key with no registry row at all.
+  // The registry's parent mirrors the tree so Roles & Access lists it in the
+  // right place; the access rules themselves read the tree directly.
+  let parentKey = "categories";
+  if (parentId) {
+    const { data: parent } = await supabase.from("category_pages").select("slug").eq("id", parentId).maybeSingle();
+    if (parent) parentKey = `categories:${parent.slug}`;
+  }
   await supabase
     .from("page_registry")
-    .insert({ page_key: `categories:${slug}`, parent_page_key: "categories", label: title, default_min_role: "family" });
+    .insert({ page_key: `categories:${slug}`, parent_page_key: parentKey, label: title, default_min_role: "family" });
 
   // Every category gets its options board from the moment it exists —
   // there's no real reason for a category to ever NOT have one (see
@@ -67,7 +76,38 @@ export async function createCategoryPage(formData: FormData) {
     .from("option_groups")
     .insert({ category_page_id: page.id, title, created_by: profile?.id ?? null });
 
-  revalidatePath("/categories");
+  revalidatePath("/categories", "layout");
+  revalidatePath("/budget");
+  return { error: null };
+}
+
+// Move a category under another one, or back to the top level (parentId
+// empty). Couple only (category_pages' update policy); the database refuses a
+// move that would put a category inside itself.
+export async function moveCategoryPage(formData: FormData) {
+  const parsed = z
+    .object({ id: z.string().uuid(), parentId: z.string().uuid().nullable() })
+    .parse({ id: formData.get("id"), parentId: formData.get("parentId") || null });
+
+  const supabase = await createClient();
+  const { data: moved, error } = await supabase
+    .from("category_pages")
+    .update({ parent_id: parsed.parentId })
+    .eq("id", parsed.id)
+    .select("slug")
+    .maybeSingle();
+  if (error) return { error: error.message.includes("inside itself") ? "A category can't be moved inside itself." : error.message };
+  if (!moved) return { error: "Only the couple can move a category." };
+
+  let parentKey = "categories";
+  if (parsed.parentId) {
+    const { data: parent } = await supabase.from("category_pages").select("slug").eq("id", parsed.parentId).maybeSingle();
+    if (parent) parentKey = `categories:${parent.slug}`;
+  }
+  await supabase.from("page_registry").update({ parent_page_key: parentKey }).eq("page_key", `categories:${moved.slug}`);
+
+  revalidatePath("/categories", "layout");
+  revalidatePath("/budget");
   return { error: null };
 }
 
@@ -90,7 +130,7 @@ export async function updateCategoryPage(formData: FormData) {
     .update({ title: parsed.title })
     .eq("id", parsed.id);
 
-  revalidatePath("/categories");
+  revalidatePath("/categories", "layout");
   return { error: error?.message ?? null };
 }
 
@@ -98,9 +138,10 @@ export async function deleteCategoryPage(id: string) {
   const parsed = z.string().uuid().parse(id);
   const supabase = await createClient();
 
-  // Cascades (0001/0004): page_options (via option_groups), category_costs,
-  // category_contacts, diary_entries, and the option_groups row itself all
-  // go with it — the caller's confirm copy must say so explicitly.
+  // Cascades (0001/0004/0042): every category nested inside it, plus
+  // page_options (via option_groups), category_costs, category_contacts,
+  // diary_entries and the option_groups row itself all go with it — the
+  // caller's confirm copy must say so explicitly.
   const { error } = await supabase.from("category_pages").delete().eq("id", parsed);
 
   revalidatePath("/categories");

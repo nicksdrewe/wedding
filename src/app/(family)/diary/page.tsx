@@ -1,15 +1,18 @@
 import Link from "next/link";
-import { Calendar, Check, Plus } from "lucide-react";
+import { Calendar, Check, Flag, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
 import { getEffectivePermission } from "@/lib/permissions/actions";
-import { InView } from "@/components/motion-primitives/in-view";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
+import { Timeline, type TimelineEntry } from "@/components/timeline/Timeline";
+import { CommKindIcon } from "@/lib/org-comms/kind-icon";
+import { commShortTitle, importanceToTier } from "@/lib/org-comms/types";
 
-type TimelineItem =
+type DiaryItem =
   | { kind: "event"; id: string; date: string; title: string; slug: string; isPast: boolean }
-  | { kind: "milestone"; id: string; date: string; title: string; fromDecision: boolean; source: string; categoryTitle: string | null };
+  | { kind: "milestone"; id: string; date: string; title: string; fromDecision: boolean; source: string; categoryTitle: string | null }
+  | { kind: "comm"; id: string; date: string; title: string; commKind: string; importance: number };
 
 export default async function DiaryPage() {
   const supabase = await createClient();
@@ -24,7 +27,7 @@ export default async function DiaryPage() {
   // permissions.
   const showMilestones = (await getEffectivePermission("categories", profile)).pageAccess;
 
-  const [{ data: events }, { data: entries }] = await Promise.all([
+  const [{ data: events }, { data: entries }, commsResult] = await Promise.all([
     supabase
       .from("events")
       .select("id, name, slug, starts_at, show_on_diary")
@@ -35,11 +38,19 @@ export default async function DiaryPage() {
       .from("diary_entries")
       .select("id, title, entry_date, source, category_pages(title, slug)")
       .order("entry_date"),
+    // Organising comms (0043): RLS returns only what this viewer may see, and
+    // an error (table not there yet) just means no comms on the timeline.
+    supabase
+      .from("org_comms")
+      .select("id, kind, counterparty, subject, occurred_on, importance")
+      .order("occurred_on", { ascending: false })
+      .limit(200),
   ]);
+  const comms = commsResult.error ? [] : (commsResult.data ?? []);
 
   const now = new Date();
 
-  const eventItems: TimelineItem[] = (events ?? [])
+  const eventItems: DiaryItem[] = (events ?? [])
     .filter((e) => e.slug)
     .map((e) => ({
       kind: "event",
@@ -50,7 +61,7 @@ export default async function DiaryPage() {
       isPast: new Date(e.starts_at as string) < now,
     }));
 
-  const milestoneItems: TimelineItem[] = (entries ?? []).map((e) => {
+  const milestoneItems: DiaryItem[] = (entries ?? []).map((e) => {
     const cat = Array.isArray(e.category_pages) ? e.category_pages[0] : e.category_pages;
     return {
       kind: "milestone",
@@ -63,9 +74,59 @@ export default async function DiaryPage() {
     };
   });
 
-  const timeline = [...eventItems, ...(showMilestones ? milestoneItems : [])].sort(
+  const commItems: DiaryItem[] = comms.map((c) => ({
+    kind: "comm",
+    id: c.id as string,
+    date: c.occurred_on as string,
+    title: commShortTitle(c as { kind: string; counterparty: string | null; subject: string }),
+    commKind: c.kind as string,
+    importance: c.importance as number,
+  }));
+
+  const timeline = [...eventItems, ...(showMilestones ? milestoneItems : []), ...commItems].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   );
+
+  const items: TimelineEntry[] = timeline.map((item) => {
+    if (item.kind === "event") {
+      return {
+        id: `event-${item.id}`,
+        date: item.date,
+        title: item.title,
+        href: `/events/${item.slug}`,
+        tier: "milestone",
+        icon: item.isPast ? <Check strokeWidth={3} aria-hidden="true" /> : <Calendar strokeWidth={2.5} aria-hidden="true" />,
+        chips: <span className={`chip ${item.isPast ? "chip-sec" : ""}`}>{item.isPast ? "Completed" : "Upcoming"}</span>,
+        children: isCouple ? (
+          <p className="tl-actions">
+            <Link href={`/diary/events/${item.id}/edit`} className="btn btn-quiet btn-sm">
+              Edit event
+            </Link>
+          </p>
+        ) : undefined,
+      };
+    }
+    if (item.kind === "milestone") {
+      return {
+        id: `entry-${item.id}`,
+        date: item.date,
+        title: item.title,
+        tier: "standard",
+        icon: <Flag strokeWidth={2.5} aria-hidden="true" />,
+        excerpt: item.fromDecision
+          ? `From Categories · ${item.categoryTitle}${item.source === "page_option" ? ", winner selected" : ""}`
+          : null,
+      };
+    }
+    return {
+      id: `comm-${item.id}`,
+      date: item.date,
+      title: item.title,
+      href: `/organising?entry=${item.id}`,
+      tier: importanceToTier(item.importance),
+      icon: <CommKindIcon kind={item.commKind} />,
+    };
+  });
 
   return (
     <div>
@@ -98,95 +159,9 @@ export default async function DiaryPage() {
           hint="Events you add, and dates from category decisions, show up here automatically."
         />
       ) : (
-        <ol className="relative mt-9 flex flex-col gap-6">
-          {/* The connecting line — positioned to run through the centre of
-              the big event markers (20px wide, so 10px from the left edge
-              of this padded list) rather than the smaller milestone dots,
-              since events are the visual backbone of this timeline. */}
-          <div aria-hidden="true" className="absolute top-2 bottom-2 left-[10px] w-px bg-ink/10" />
-
-          {timeline.map((item, i) => (
-            <InView
-              key={`${item.kind}-${item.id}`}
-              as="li"
-              once
-              className="relative flex items-start gap-4 pl-0"
-              variants={{ hidden: { opacity: 0, x: -10 }, visible: { opacity: 1, x: 0 } }}
-              transition={{ duration: 0.4, delay: Math.min(i, 12) * 0.05, ease: [0.22, 1, 0.36, 1] }}
-            >
-              {item.kind === "event" ? (
-                <span
-                  aria-hidden="true"
-                  className={`relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
-                    item.isPast ? "bg-accent text-cream" : "border-2 border-ink/25 bg-cream text-ink-soft"
-                  }`}
-                >
-                  {item.isPast ? (
-                    <Check className="h-3 w-3" strokeWidth={3} />
-                  ) : (
-                    <Calendar className="h-2.5 w-2.5" strokeWidth={2.5} />
-                  )}
-                </span>
-              ) : (
-                <span
-                  aria-hidden="true"
-                  className={`relative z-10 mt-1.5 ml-1.5 h-2 w-2 shrink-0 rounded-full ${
-                    item.fromDecision ? "bg-accent" : "bg-cream-deep ring-1 ring-inset ring-ink/15"
-                  }`}
-                />
-              )}
-
-              <div
-                className={
-                  item.kind === "event"
-                    ? "surface surface-lift flex-1 p-4"
-                    : "flex-1"
-                }
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-serif text-[11px] font-medium tracking-[0.06em] text-ink-soft uppercase">
-                    {new Date(item.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                  </p>
-                  {item.kind === "event" && (
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-medium tracking-[0.04em] uppercase ${
-                        item.isPast ? "bg-accent/12 text-accent" : "bg-cream-deep text-ink-soft"
-                      }`}
-                    >
-                      {item.isPast ? "Completed" : "Upcoming"}
-                    </span>
-                  )}
-                </div>
-
-                {item.kind === "event" ? (
-                  <div className="mt-1 flex items-center justify-between gap-3">
-                    <Link href={`/events/${item.slug}`} className="font-serif text-sm font-semibold hover:text-sec">
-                      {item.title}
-                    </Link>
-                    {isCouple && (
-                      <Link
-                        href={`/diary/events/${item.id}/edit`}
-                        className="shrink-0 font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-sec"
-                      >
-                        Edit
-                      </Link>
-                    )}
-                  </div>
-                ) : (
-                  <>
-                    <p className="mt-0.5 font-serif text-sm font-semibold">{item.title}</p>
-                    {item.fromDecision && (
-                      <p className="mt-1 font-reading text-[13px] text-accent italic">
-                        ← from Categories · {item.categoryTitle}
-                        {item.source === "page_option" ? ", winner selected" : ""}
-                      </p>
-                    )}
-                  </>
-                )}
-              </div>
-            </InView>
-          ))}
-        </ol>
+        <div className="mt-9">
+          <Timeline items={items} />
+        </div>
       )}
     </div>
   );

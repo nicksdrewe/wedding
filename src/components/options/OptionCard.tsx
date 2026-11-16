@@ -1,12 +1,14 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import Link from "next/link";
 import {
   Check,
   ExternalLink,
   ImageOff,
   Loader2,
   Mail,
+  MessagesSquare,
   Phone,
   Plus,
   X,
@@ -76,7 +78,10 @@ export function OptionCard({
   costItems = [],
   linkableCategories = [],
   linksByItem = {},
+  showCommsLink = false,
 }: {
+  // Adds a "Comms" link to this option's organising-comms entries.
+  showCommsLink?: boolean;
   option: OptionDetail;
   // "May add to and edit this option" (photos, details, and — where prices
   // are visible — costs). Deleting the option and choosing the winner are
@@ -158,6 +163,14 @@ export function OptionCard({
           </div>
         </div>
       </DisclosureTrigger>
+      {showCommsLink && (
+        <div className="px-4 pb-2">
+          <Link href={`/organising?option=${option.id}`} className="btn btn-quiet btn-sm min-h-11">
+            <MessagesSquare className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+            Comms
+          </Link>
+        </div>
+      )}
       <DisclosureContent>
         <OptionDetailPanel
           option={option}

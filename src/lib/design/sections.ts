@@ -25,6 +25,7 @@ const RULES: [prefix: string, section: SectionKey][] = [
   ["/access", "people"],
   ["/errors", "people"],
   ["/comms", "comms"],
+  ["/organising", "comms"],
   ["/diary", "diary"],
   ["/big-day", "diary"],
 ];

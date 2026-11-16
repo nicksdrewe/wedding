@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { AnimatedNumber } from "@/components/motion-primitives/animated-number";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
-import { getFxRates } from "@/lib/currency/rates";
-import { convertToGBP, type Currency } from "@/lib/currency/convert";
+import Link from "next/link";
+import { loadCategoryTree } from "@/lib/categories/load";
+import { flattenTree } from "@/lib/categories/tree";
 import { getCurrentProfile } from "@/lib/auth/roles";
 import { getEffectivePermission } from "@/lib/permissions/actions";
 
@@ -17,47 +17,37 @@ export default async function BudgetPage() {
   const permission = await getEffectivePermission("budget", profile);
   if (!permission.pageAccess) redirect("/no-access");
 
-  const supabase = await createClient();
-  const [{ data: rows }, rates] = await Promise.all([
-    supabase
-      .from("category_pages")
-      .select("id, slug, title, category_costs(predicted_cost_min, predicted_cost_max, actual_cost, currency)")
-      .order("title"),
-    getFxRates(),
-  ]);
-
-  // Everything here is a cross-category SUM, so every constituent is
-  // converted to GBP before being added — the budget page stays GBP-only
-  // regardless of what currency any individual category was entered in
-  // (unlike a single category's own card, which shows its native currency
-  // unconverted since there's nothing to sum there).
+  // Every figure here is worked out, not typed: each category's cost comes
+  // from its options and everything nested inside it (lib/categories), already
+  // converted to pounds so it can be added up. The totals count each
+  // top-level category once (it already includes what's inside it).
   // A category whose prices are hidden from this viewer (cost_access,
-  // 0031_cost_access.sql) is left out of the table AND the totals — RLS
-  // returns no cost for it, and showing it as £0 would misstate both.
-  const visibility = await Promise.all(
-    (rows ?? []).map(async (r) => (await getEffectivePermission(`categories:${r.slug}`, profile)).costAccess)
-  );
-  const visibleRows = (rows ?? []).filter((_, i) => visibility[i]);
-  const hiddenCount = (rows ?? []).length - visibleRows.length;
+  // 0031_cost_access.sql) is left out of the table AND the totals.
+  const { roots } = await loadCategoryTree(profile);
+  const all = flattenTree(roots);
+  const hiddenCount = all.filter((n) => !n.costAccess).length;
 
-  const items = visibleRows.map((r) => {
-    const cost = Array.isArray(r.category_costs) ? r.category_costs[0] : r.category_costs;
-    const currency: Currency = cost?.currency ?? "GBP";
-    return {
-      title: r.title,
-      predictedMin: convertToGBP(Number(cost?.predicted_cost_min ?? 0), currency, rates),
-      predictedMax: convertToGBP(Number(cost?.predicted_cost_max ?? 0), currency, rates),
-      actual: convertToGBP(Number(cost?.actual_cost ?? 0), currency, rates),
-    };
-  });
+  const items = all
+    .filter((n) => n.costAccess)
+    .map((n) => ({
+      id: n.id,
+      slug: n.slug,
+      title: n.title,
+      depth: n.depth,
+      isParent: n.children.length > 0,
+      predictedMin: n.total?.min ?? 0,
+      predictedMax: n.total?.max ?? 0,
+      actual: n.total?.actual ?? 0,
+    }));
 
-  const totalPredictedMin = items.reduce((sum, i) => sum + i.predictedMin, 0);
-  const totalPredictedMax = items.reduce((sum, i) => sum + i.predictedMax, 0);
-  const totalActual = items.reduce((sum, i) => sum + i.actual, 0);
-  // "Over" means past the top of the predicted range, "under" means below
-  // the bottom of it — actual landing inside the range is on track, not a
-  // diff worth flagging either way.
-  const totalDiff = totalActual > totalPredictedMax ? totalActual - totalPredictedMax : totalActual < totalPredictedMin ? totalActual - totalPredictedMin : 0;
+  const top = roots.filter((n) => n.costAccess);
+  const totalPredictedMin = top.reduce((sum, n) => sum + (n.total?.min ?? 0), 0);
+  const totalPredictedMax = top.reduce((sum, n) => sum + (n.total?.max ?? 0), 0);
+  const totalActual = top.reduce((sum, n) => sum + (n.total?.actual ?? 0), 0);
+  // "Over" means actual spend has passed the top of the predicted range.
+  // Being under it is normal while things are still being paid for, so only
+  // overspend is flagged.
+  const totalDiff = totalActual > totalPredictedMax ? totalActual - totalPredictedMax : 0;
   const overallOver = totalDiff > 0;
   const onTrack = totalDiff === 0;
   const highestPredicted = items.reduce((max, i) => Math.max(max, i.predictedMax, i.actual), 0);
@@ -67,7 +57,7 @@ export default async function BudgetPage() {
       <PageHeader
         eyebrow="Planning"
         title="Budget Tracker"
-        infoText="Rolls up automatically from the cost fields on every category page — always shown in GBP, converted live from whatever currency each category was entered in."
+        infoText="Worked out from the options in every category: a range until a winner is chosen, then the real figures. A category adds up everything inside it. Always in pounds."
       />
 
       {hiddenCount > 0 && (
@@ -81,7 +71,7 @@ export default async function BudgetPage() {
         <EmptyState
           className="mt-8"
           title="No categories yet"
-          hint="Costs entered on category pages show up here."
+          hint="Costs from options on category pages show up here."
         />
       ) : (
         <>
@@ -151,17 +141,25 @@ export default async function BudgetPage() {
               </thead>
               <tbody>
                 {items.map((i) => {
-                  const diff =
-                    i.actual > i.predictedMax ? i.actual - i.predictedMax : i.actual < i.predictedMin ? i.actual - i.predictedMin : 0;
+                  const diff = i.actual > i.predictedMax ? i.actual - i.predictedMax : 0;
                   const overBudget = diff > 0;
                   const predictedPct = highestPredicted > 0 ? (i.predictedMax / highestPredicted) * 100 : 0;
                   const actualPct = highestPredicted > 0 ? (i.actual / highestPredicted) * 100 : 0;
                   return (
                     <tr
-                      key={i.title}
+                      key={i.id}
                       className="border-t border-ink/8 transition-colors duration-150 hover:bg-cream-deep/40"
                     >
-                      <td className="px-5 py-4 align-top font-semibold">{i.title}</td>
+                      <td className={`px-5 py-4 align-top ${i.depth === 0 ? "font-semibold" : "text-ink-soft"}`}>
+                        <Link
+                          href={`/categories/${i.slug}`}
+                          className="inline-flex min-h-8 items-center hover:text-sec"
+                          style={{ paddingLeft: `${i.depth * 18}px` }}
+                        >
+                          {i.depth > 0 && <span aria-hidden="true" className="mr-1.5 text-ink-soft/50">└</span>}
+                          {i.title}
+                        </Link>
+                      </td>
                       <td className="px-5 py-4 align-top">
                         <div>
                           £<AnimatedNumber value={i.predictedMin} springOptions={{ bounce: 0 }} />

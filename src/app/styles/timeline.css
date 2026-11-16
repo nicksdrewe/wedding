@@ -1,0 +1,191 @@
+/* Timeline styles (organising comms + diary). Loaded into the components layer by globals.css. */
+
+.tl {
+  position: relative;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* The spine: on the left on phones, down the middle from md. */
+.tl::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 14px;
+  width: 2px;
+  border-radius: 2px;
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--sec) 40%, transparent) 40px, color-mix(in srgb, var(--sec) 40%, transparent) calc(100% - 40px), transparent);
+}
+
+.tl-item {
+  position: relative;
+  padding-left: 44px;
+  min-width: 0;
+}
+
+.tl-node {
+  position: absolute;
+  left: 6px;
+  top: 20px;
+  z-index: 1;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--color-paper);
+  border: 2px solid var(--sec);
+  color: var(--sec);
+  box-shadow: 0 0 0 4px var(--sec-tint);
+}
+.tl-node svg { width: 10px; height: 10px; }
+
+.tl-item[data-tier="milestone"] .tl-node {
+  width: 24px;
+  height: 24px;
+  left: 3px;
+  background: var(--sec);
+  color: var(--color-paper);
+  box-shadow: 0 0 0 5px var(--sec-tint), 0 0 18px var(--sec-glow);
+}
+.tl-item[data-tier="milestone"] .tl-node svg { width: 12px; height: 12px; }
+
+.tl-item[data-tier="minor"] .tl-node {
+  width: 10px;
+  height: 10px;
+  left: 10px;
+  top: 14px;
+  border-width: 2px;
+  border-color: color-mix(in srgb, var(--color-ink-soft) 55%, transparent);
+  background: var(--color-paper);
+  box-shadow: none;
+}
+
+/* Cards */
+.tl-card { padding: 16px 18px; }
+.tl-title {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+.tl-title-lg { font-size: 26px; line-height: 1.15; }
+.tl-link { color: inherit; text-decoration: none; }
+@media (hover: hover) {
+  .tl-link:hover { color: var(--sec); text-decoration: underline; text-underline-offset: 3px; }
+}
+.tl-date {
+  margin: 4px 0 0;
+  font-family: var(--font-serif, inherit);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink-soft);
+}
+.tl-excerpt {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-ink-soft);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tl-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+
+/* Minor: compact, grey, one line, no card. */
+.tl-minor {
+  padding: 6px 0;
+  color: var(--color-ink-soft);
+  font-size: 14px;
+  min-width: 0;
+}
+.tl-minor-line {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  white-space: nowrap;
+}
+.tl-minor-icon { display: inline-flex; flex-shrink: 0; align-self: center; }
+.tl-minor-icon svg { width: 14px; height: 14px; }
+.tl-minor-date { flex-shrink: 0; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+.tl-minor-title { color: var(--color-ink); font-weight: 500; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 0 1 auto; }
+.tl-minor-excerpt { overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1 1 0; }
+
+/* Entry from a link: stand out. */
+.tl-hl { outline: 3px solid var(--sec); outline-offset: 3px; border-radius: var(--radius-lg); }
+.tl-minor.tl-hl { border-radius: 10px; background: var(--sec-tint); padding-inline: 10px; }
+
+/* Month dividers */
+.tl-month { padding-left: 44px; position: relative; z-index: 1; }
+.tl-month span {
+  display: inline-block;
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: var(--sec-tint);
+  color: var(--sec);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Desktop: spine in the middle, cards alternate. */
+@media (min-width: 48rem) {
+  .tl { gap: 22px; }
+  .tl::before { left: 50%; transform: translateX(-1px); }
+  .tl-item { width: 50%; padding-left: 0; }
+  .tl-item[data-side="left"] { padding-right: 40px; }
+  .tl-item[data-side="right"] { margin-left: 50%; padding-left: 40px; }
+  .tl-item[data-side="left"] .tl-node { left: auto; right: -9px; }
+  .tl-item[data-side="right"] .tl-node { left: -9px; }
+  .tl-item[data-side="left"][data-tier="minor"] .tl-node { right: -5px; }
+  .tl-item[data-side="right"][data-tier="minor"] .tl-node { left: -5px; }
+  .tl-item[data-side="left"][data-tier="minor"] .tl-minor { text-align: right; }
+  .tl-item[data-side="left"][data-tier="minor"] .tl-minor-line { justify-content: flex-end; }
+
+  /* Milestones span the spine, centred. */
+  .tl-item[data-tier="milestone"] {
+    width: 100%;
+    margin-left: 0;
+    padding: 12px 0 0;
+    text-align: center;
+  }
+  .tl-item[data-tier="milestone"] .tl-node { left: 50%; right: auto; top: 0; transform: translateX(-50%); }
+  .tl-item[data-tier="milestone"] .tl-card { padding: 28px 32px 22px; }
+  .tl-item[data-tier="milestone"] .tl-chips { justify-content: center; }
+  .tl-item[data-tier="milestone"] .tl-excerpt { margin-inline: auto; max-width: 56ch; }
+  .tl-month { padding-left: 0; text-align: center; }
+}
+
+/* Entry body (organising comms) */
+.tl-body {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  text-align: left;
+  color: var(--color-ink);
+}
+.tl-body[data-clamped="true"] {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tl-actions { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 8px; align-items: center; }
+.tl-actions .btn { min-height: 44px; }
+.tl-meta { margin: 8px 0 0; font-size: 12px; color: var(--color-ink-soft); }
+@media (min-width: 48rem) {
+  .tl-item[data-tier="milestone"] .tl-actions { justify-content: center; }
+}

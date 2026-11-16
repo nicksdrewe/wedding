@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Profile, RoleTier } from "@/lib/auth/role-types";
 import { normalizeTag, normalizeTags, ROLE_TAG_VALUES } from "@/lib/tags";
+import { categoryKeyChain, resolvePermission } from "./resolve";
 
 export type PageRegistryRow = {
   page_key: string;
@@ -147,49 +148,31 @@ export async function getEffectivePermission(pageKey: string, profile: Profile |
     tags = normalizeTags(contact?.tags);
   }
 
-  const { data: registryRow } = await supabase
-    .from("page_registry")
-    .select("page_key, parent_page_key")
-    .eq("page_key", pageKey)
-    .maybeSingle();
-
-  // Same parent fallback as fn_resolve_cost_access: a category/project
-  // sub-page with no registry row still inherits its parent's rules.
-  const parentKey =
-    registryRow?.parent_page_key ??
-    (pageKey.startsWith("categories:") ? "categories" : pageKey.startsWith("project:") ? "project" : null);
-  const keysToTry = [pageKey, parentKey].filter((k): k is string => !!k);
-
-  for (const key of keysToTry) {
-    const { data: rows } = await supabase
-      .from("page_permissions")
-      .select("principal_type, principal_value, page_access, data_access, edit_access, cost_access")
-      .eq("page_key", key);
-    if (!rows || rows.length === 0) continue;
-
-    const tagRows = rows.filter((r) => r.principal_type === "tag" && tags.includes(normalizeTag(r.principal_value)));
-    if (tagRows.length > 0) {
-      return {
-        pageAccess: !tagRows.some((r) => !r.page_access),
-        dataAccess: !tagRows.some((r) => !r.data_access),
-        editAccess: !tagRows.some((r) => !r.edit_access),
-        costAccess: !tagRows.some((r) => !r.cost_access),
-      };
-    }
-
-    const roleRow = rows.find((r) => r.principal_type === "role" && r.principal_value === profile.role);
-    if (roleRow) {
-      return {
-        pageAccess: roleRow.page_access,
-        dataAccess: roleRow.data_access,
-        editAccess: roleRow.edit_access,
-        costAccess: roleRow.cost_access,
-      };
-    }
+  // The chain of pages whose rules apply: the page itself, then each parent.
+  // A category inherits from the category it sits inside, all the way up
+  // (0042_nested_categories.sql), then from "categories"; everything else
+  // from its registry parent (project:* falls back to "project").
+  let keyChain: string[];
+  if (pageKey.startsWith("categories:")) {
+    const { data: cats } = await supabase.from("category_pages").select("id, slug, parent_id");
+    keyChain = categoryKeyChain(pageKey.slice("categories:".length), cats ?? []);
+  } else {
+    const { data: registryRow } = await supabase
+      .from("page_registry")
+      .select("parent_page_key")
+      .eq("page_key", pageKey)
+      .maybeSingle();
+    const parentKey = registryRow?.parent_page_key ?? (pageKey.startsWith("project:") ? "project" : null);
+    keyChain = [pageKey, parentKey].filter((k): k is string => !!k);
   }
 
-  // No rule at all: everything else keeps its long-standing "allowed"
-  // default, but prices fall back to the pre-existing baseline only (family),
-  // never to wedding party or guests.
-  return { pageAccess: true, dataAccess: true, editAccess: true, costAccess: profile.role === "family" };
+  const { data: rows } = await supabase
+    .from("page_permissions")
+    .select("page_key, principal_type, principal_value, page_access, data_access, edit_access, cost_access")
+    .in("page_key", keyChain);
+
+  // No rule at all: everything keeps its long-standing "allowed" default,
+  // but prices fall back to the pre-existing baseline only (family), never
+  // to wedding party or guests. (See resolvePermission.)
+  return resolvePermission(keyChain, rows ?? [], profile.role, tags);
 }

@@ -17,6 +17,7 @@ node supabase/tests/rls_admin_accounts.test.mjs
 node supabase/tests/rls_feedback.test.mjs
 node supabase/tests/rls_moodboard.test.mjs
 node supabase/tests/rls_error_log.test.mjs
+node supabase/tests/rls_nested_comms_bigday.test.mjs
 ```
 
 - `rls_cost_access.test.mjs` — prices (0031/0032): who sees and edits costs.
@@ -42,3 +43,4 @@ confirm the checks really fail without the migration under test.
 Each prints `ALL CHECKS PASSED` or the failing checks, and exits non-zero on
 failure. PGlite is deliberately not a project dependency (it is only needed
 here), hence `--no-save`.
+- `rls_nested_comms_bigday.test.mjs` — nested categories (0042: access cascades down the tree, no loops), organising comms (0043) and the Big Day schedule (0044).
