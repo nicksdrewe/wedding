@@ -60,6 +60,9 @@ export default async function ProjectPage() {
       .select(
         `id, title, category_page_id, visible_tag, category_pages(title, slug), page_options(id, name, is_winner, ${OPTION_COVER_EMBED}, ${OPTION_COSTS_EMBED})`
       )
+      // The stag and hen boards are separate projects: their comparisons never
+      // appear here.
+      .is("visible_tag", null)
       .order("created_at", { ascending: false })
       .order("created_at", { ascending: true, referencedTable: "page_options" }),
   ]);
@@ -159,8 +162,8 @@ export default async function ProjectPage() {
       <section className="mt-12">
         <div className="section-head"><h2 className="section-head__title">Compare options</h2><span className="section-head__rule" /></div>
         <p className="mt-2 font-reading text-sm text-ink-soft italic">
-          Every comparison running, across every category plus stag/hen
-          extras — skimmed to title and cost so you can pick fast.
+          Every comparison running across the wedding&rsquo;s categories —
+          skimmed to title and cost so you can pick fast.
         </p>
         {canEdit && <NewOptionGroupForm />}
 

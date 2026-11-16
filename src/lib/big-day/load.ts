@@ -71,11 +71,13 @@ export async function loadBigDaySources(supabase: SupabaseClient): Promise<{ cho
   const [optionsRes, ideasRes] = await Promise.all([
     supabase
       .from("page_options")
-      .select(`id, name, option_groups(title), ${OPTION_COVER_EMBED}, ${OPTION_COSTS_EMBED}`)
-      .eq("is_winner", true),
+      .select(`id, name, option_groups!inner(title, visible_tag), ${OPTION_COVER_EMBED}, ${OPTION_COSTS_EMBED}`)
+      .eq("is_winner", true)
+      .is("option_groups.visible_tag", null),
     supabase
       .from("idea_boards")
       .select("id, title, idea_board_images(image_url, sort_order)")
+      .is("visible_tag", null)
       .order("created_at", { ascending: false })
       .limit(60),
   ]);

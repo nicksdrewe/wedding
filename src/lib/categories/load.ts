@@ -44,7 +44,7 @@ export async function loadCategoryTree(profile: Profile | null, board: BoardKey 
     supabase
       .from("option_groups")
       .select(
-        "id, category_page_id, page_options(id, name, is_winner, page_option_costs(predicted_cost_min, predicted_cost_max, actual_cost, currency), option_cost_items(amount, kind))"
+        "id, category_page_id, page_options(id, name, is_winner, latitude, longitude, page_option_costs(predicted_cost_min, predicted_cost_max, actual_cost, currency), option_cost_items(amount, kind))"
       )
       .not("category_page_id", "is", null),
     getFxRates(),
@@ -56,6 +56,9 @@ export async function loadCategoryTree(profile: Profile | null, board: BoardKey 
   const categories = (cats ?? []).filter((c) => (boardById.get(c.id) ?? null) === board);
   // Kinds come from their own small query so a missing column never breaks the tree.
   const { data: kindRows } = await supabase.from("category_pages").select("id, option_kind");
+  // Category pins (0048) come from their own small query for the same reason.
+  const { data: locRows } = await supabase.from("category_pages").select("id, latitude, longitude");
+  const locById = new Map((locRows ?? []).map((r) => [r.id, r as { latitude?: number | null; longitude?: number | null }]));
   const kindById = new Map((kindRows ?? []).map((r) => [r.id, (r as { option_kind?: string | null }).option_kind ?? null]));
 
   // Access rules for every category at once.
@@ -112,6 +115,8 @@ export async function loadCategoryTree(profile: Profile | null, board: BoardKey 
         max: gbp(totals?.totalMax ?? null),
         actual: gbp(totals?.totalActual ?? null),
         costsHidden: costs.costs_hidden,
+        latitude: o.latitude ?? null,
+        longitude: o.longitude ?? null,
       });
     }
     optionsByCategory.set(g.category_page_id, list);
@@ -133,6 +138,8 @@ export async function loadCategoryTree(profile: Profile | null, board: BoardKey 
       parentId: c.parent_id,
       sortOrder: c.sort_order ?? 0,
       optionKind: kindById.get(c.id) ?? null,
+      latitude: locById.get(c.id)?.latitude ?? null,
+      longitude: locById.get(c.id)?.longitude ?? null,
       costAccess: permissions.get(c.id)?.costAccess ?? false,
       options: optionsByCategory.get(c.id) ?? [],
       legacy: lo != null && hi != null ? { min: lo, max: hi, actual: lActual } : null,

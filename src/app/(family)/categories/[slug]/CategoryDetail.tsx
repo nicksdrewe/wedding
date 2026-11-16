@@ -16,6 +16,7 @@ import { BOARDS, categoryHref, type BoardKey } from "@/lib/categories/boards";
 import { getCurrentContactTags } from "@/lib/auth/roles";
 import { ancestorsOf, categoryPathLabels, findNode, flattenTree } from "@/lib/categories/tree";
 import { moveTargetsFor, toCardData } from "@/lib/categories/card";
+import { placePins } from "@/lib/categories/map";
 import { CategoryCard } from "../CategoryCard";
 import { NewCategoryForm } from "../NewCategoryForm";
 import { getLinkedCostItemsForCategory } from "@/lib/costs/links";
@@ -114,6 +115,9 @@ export async function CategoryDetail({ slug, board = null }: { slug: string; boa
   const node = findNode(roots, page.id);
   const trail = ancestorsOf(roots, page.id);
   const children = node?.children ?? [];
+  // One pin per category inside this one (its own pin, or the middle of the
+  // pins of the options inside it), each with its total.
+  const placePinList = placePins(children, basePath);
   // Options are decided at the lowest level. A category that only groups
   // others doesn't offer its own board unless it already has options.
   const showOptions = children.length === 0 || (node?.options.length ?? 0) > 0;
@@ -209,6 +213,14 @@ export async function CategoryDetail({ slug, board = null }: { slug: string; boa
             <h2 className="section-head__title">Inside {page.title}</h2>
             <span className="section-head__rule" />
           </div>
+          {placePinList.length > 0 && (
+            <div className="mb-4">
+              <p className="mb-2 font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft/70 uppercase">
+                Where things are
+              </p>
+              <OptionsMapLoader options={placePinList} />
+            </div>
+          )}
           {children.length > 0 ? (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {children.map((c) => (

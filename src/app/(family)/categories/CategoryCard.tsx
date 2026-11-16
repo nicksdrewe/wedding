@@ -17,6 +17,10 @@ export type CategoryCardData = {
   parentId: string | null;
   // What kind of options it holds (0046): decides which boxes the option forms show.
   optionKind?: string | null;
+  // Its own map pin (0048), if set; hasPin = it shows on a map at all (own or from its options).
+  latitude?: number | null;
+  longitude?: number | null;
+  hasPin?: boolean;
   // False when this viewer isn't allowed to see this category's prices.
   showCost: boolean;
   total: { min: number; max: number; actual: number | null } | null;
@@ -101,6 +105,16 @@ export function CategoryCard({
             ))}
           </select>
         </label>
+        <div>
+          <span className="field-label">Place on the map (optional)</span>
+          <div className="flex gap-2">
+            <input name="latitude" type="number" step="any" min={-90} max={90} defaultValue={category.latitude ?? ""} placeholder="Latitude" className="field" />
+            <input name="longitude" type="number" step="any" min={-180} max={180} defaultValue={category.longitude ?? ""} placeholder="Longitude" className="field" />
+          </div>
+          <p className="mt-1 font-reading text-[11px] text-ink-soft">
+            For a destination like Porto. Left blank, it is placed from the pins of the options inside it.
+          </p>
+        </div>
         <label>
           <span className="field-label">Kind of options</span>
           <select name="optionKind" defaultValue={category.optionKind ?? "general"} className="field">

@@ -11,14 +11,12 @@ import { GroupChart } from "@/components/ui/GroupChart";
 import { BoardPlans } from "@/components/ui/BoardPlans";
 import { loadCategoryTree } from "@/lib/categories/load";
 import { loadGroupChart } from "@/lib/party/group";
-import { EmptyState } from "@/components/EmptyState";
 import { OPTION_COVER_EMBED, coverImageOf } from "@/lib/options/cover";
 import { IdeaPortal, portalThumbs } from "@/components/ui/IdeaPortal";
 import { TaskBoard } from "../TaskBoard";
 import { TASK_SELECT, toBoardTask } from "@/lib/tasks/priority";
 import { OptionsCompareGroup, type CompareGroup } from "../OptionsCompareGroup";
 import { ProjectBudget, type ChosenOption } from "../ProjectBudget";
-import { GenderedOptionGroupForm } from "./GenderedOptionGroupForm";
 
 // Near-duplicate of ../page.tsx (Project Management), scoped to
 // visible_tag='groomsman' instead of tier='wedding_party' — see
@@ -144,8 +142,6 @@ export default async function GroomsmenProjectPage() {
         <GroupChart kind="groomsman" data={await loadGroupChart("groomsman")} />
       </PageHeader>
 
-      <BoardPlans board="groomsman" roots={(await loadCategoryTree(profile, "groomsman")).roots} isAdmin={isAdmin} />
-
       <div className="flex flex-col gap-8">
         <IdeaPortal
           href="/project/groomsmen/ideas"
@@ -166,27 +162,21 @@ export default async function GroomsmenProjectPage() {
         />
       </div>
 
-      <section className="mt-12">
-        <div className="section-head"><h2 className="section-head__title">Compare options</h2><span className="section-head__rule" /></div>
-        <p className="mt-2 font-reading text-sm text-ink-soft italic">
-          Comparisons started here — stag do venue, outfits, and anything
-          else just for the groomsmen.
-        </p>
-        {permission.editAccess && isAdmin && <GenderedOptionGroupForm visibleTag="groomsman" />}
+      <div className="mt-12">
+        <BoardPlans board="groomsman" roots={(await loadCategoryTree(profile, "groomsman")).roots} isAdmin={isAdmin} />
+      </div>
 
-        <div className="mt-5 flex flex-col gap-5">
-          {compareGroups.map((g) => (
-            <OptionsCompareGroup key={g.id} group={g} showCommsLink={isAdmin} />
-          ))}
-          {compareGroups.length === 0 && (
-            <EmptyState
-              className="mt-2"
-              title="Nothing being compared yet"
-              hint={permission.editAccess && isAdmin ? "Start a comparison above." : undefined}
-            />
-          )}
-        </div>
-      </section>
+      {/* Comparisons started before plans existed stay available, tucked below. */}
+      {compareGroups.length > 0 && (
+        <section className="mb-10">
+          <div className="section-head"><h2 className="section-head__title">Earlier comparisons</h2><span className="section-head__rule" /></div>
+          <div className="mt-5 flex flex-col gap-5">
+            {compareGroups.map((g) => (
+              <OptionsCompareGroup key={g.id} group={g} showCommsLink={isAdmin} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {permission.costAccess && (
         <ProjectBudget visibleTag="groomsman" chosen={chosen} canManage={isAdmin} />

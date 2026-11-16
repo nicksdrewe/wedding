@@ -53,6 +53,10 @@ export type MapOption = {
   latitude: number | null;
   longitude: number | null;
   coverImageUrl: string | null;
+  // When set, the popup's name is a link (a destination pin opens its page).
+  href?: string;
+  // A short second line (e.g. "3 options").
+  note?: string;
 };
 
 export function OptionsMap({ options }: { options: MapOption[] }) {
@@ -100,8 +104,15 @@ export function OptionsMap({ options }: { options: MapOption[] }) {
                 )}
                 <div className="min-w-0">
                   <p className="truncate font-serif text-[13px] font-semibold text-ink">
-                    {option.name}
+                    {option.href ? (
+                      <a href={option.href} className="underline decoration-ink/30 underline-offset-2 hover:text-sec">
+                        {option.name}
+                      </a>
+                    ) : (
+                      option.name
+                    )}
                   </p>
+                  {option.note && <p className="font-reading text-[11px] text-ink-soft/80">{option.note}</p>}
                   {!option.costs_hidden && (
                     <p className="mt-0.5 font-reading text-xs text-ink-soft">
                       {formatCostRange(option.predicted_cost_min, option.predicted_cost_max, option.currency)} predicted

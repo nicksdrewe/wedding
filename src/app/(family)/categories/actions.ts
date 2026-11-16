@@ -135,12 +135,24 @@ export async function updateCategoryPage(formData: FormData) {
   // Slug is left untouched on edit (unlike create's dedupe dance) so the
   // category's URL — and anything already linking to it — keeps working.
   const optionKind = parseOptionKind(formData.get("optionKind"));
+  // Optional map pin (0048). Blank clears it.
+  const num = (v: FormDataEntryValue | null) => {
+    const n = v === null || v === "" ? null : Number(v);
+    return n !== null && Number.isFinite(n) ? n : null;
+  };
+  const latitude = num(formData.get("latitude"));
+  const longitude = num(formData.get("longitude"));
+  const hasLocationFields = formData.has("latitude");
   const { error } = await supabase
     .from("category_pages")
-    .update({ title: parsed.title, ...(optionKind ? { option_kind: optionKind } : {}) })
+    .update({
+      title: parsed.title,
+      ...(optionKind ? { option_kind: optionKind } : {}),
+      ...(hasLocationFields ? { latitude, longitude } : {}),
+    })
     .eq("id", parsed.id);
   // Before migration 0046 the kind column isn't there; still let the rename through.
-  if (error && optionKind && error.message.includes("option_kind")) {
+  if (error && (error.message.includes("option_kind") || error.message.includes("latitude") || error.message.includes("longitude"))) {
     const retry = await supabase.from("category_pages").update({ title: parsed.title }).eq("id", parsed.id);
     revalidatePath("/categories", "layout");
     return { error: retry.error?.message ?? null };

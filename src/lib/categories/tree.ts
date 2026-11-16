@@ -21,6 +21,9 @@ export type OptionFigure = {
   max: number | null;
   actual: number | null;
   costsHidden: boolean;
+  // Map pin, if it has one.
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export type CategoryInput = {
@@ -31,6 +34,9 @@ export type CategoryInput = {
   sortOrder: number;
   // What kind of options it holds (0046), if known.
   optionKind?: string | null;
+  // Its own place on the map (0048), if set.
+  latitude?: number | null;
+  longitude?: number | null;
   // Whether this viewer may see prices here at all.
   costAccess: boolean;
   options: OptionFigure[];
@@ -51,6 +57,11 @@ export type CategoryNode = CategoryInput & {
   // Some prices beneath (or here) are hidden from this viewer, so `total`
   // may understate.
   partial: boolean;
+  // Where it sits on the map: its own pin, else the middle of the pins of
+  // every option beneath it. Null when nothing underneath is pinned.
+  pin: { lat: number; lng: number; own: boolean } | null;
+  // The pins of this category's options and of everything beneath it.
+  points: { lat: number; lng: number }[];
   // Counting this category and everything beneath: how many have options to
   // decide between, and how many of those have a winner.
   decisions: number;
@@ -109,6 +120,8 @@ export function buildCategoryTree(inputs: CategoryInput[]): CategoryNode[] {
       partial: false,
       decisions: 0,
       decided: 0,
+      pin: null,
+      points: [],
     });
   }
   const roots: CategoryNode[] = [];
@@ -131,6 +144,21 @@ export function buildCategoryTree(inputs: CategoryInput[]): CategoryNode[] {
     seen.add(node.id);
     for (const child of node.children) visit(child, depth + 1, seen);
 
+    node.points = [
+      ...node.options
+        .filter((o) => o.latitude != null && o.longitude != null)
+        .map((o) => ({ lat: o.latitude as number, lng: o.longitude as number })),
+      ...node.children.flatMap((c) => c.points),
+    ];
+    if (node.latitude != null && node.longitude != null) {
+      node.pin = { lat: node.latitude, lng: node.longitude, own: true };
+    } else if (node.points.length > 0) {
+      node.pin = {
+        lat: node.points.reduce((sum, p) => sum + p.lat, 0) / node.points.length,
+        lng: node.points.reduce((sum, p) => sum + p.lng, 0) / node.points.length,
+        own: false,
+      };
+    }
     node.winners = node.options.filter((o) => o.isWinner).map((o) => o.name);
     const hiddenHere = !node.costAccess || node.options.some((o) => o.costsHidden);
     // What this category's own options say (no typed figure involved), then
