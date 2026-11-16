@@ -1,14 +1,19 @@
+import Link from "next/link";
+import { ArrowUpRight, Receipt } from "lucide-react";
 import { formatCostRange, formatCurrency } from "@/lib/currency/format";
 import { sumTotals, type CategoryNode } from "@/lib/categories/tree";
 
 // Everything planned so far (a range, then real figures as winners are
-// chosen) with what has been spent so far on the right.
-export function PlanTotals({ roots }: { roots: CategoryNode[] }) {
+// chosen) with what has been spent so far on the right. With expensesHref, a
+// button on the far right (about a fifth of the row) goes through to splitting
+// and settling expenses.
+export function PlanTotals({ roots, expensesHref }: { roots: CategoryNode[]; expensesHref?: string }) {
   const { total, partial } = sumTotals(roots);
+  if (!total && !expensesHref) return null;
   return (
-    <>
+    <div className="mb-2 flex flex-col gap-3 sm:flex-row sm:items-stretch sm:justify-between">
       {total && (
-        <div className="surface surface-tint mb-2 p-5 sm:p-6">
+        <div className="surface surface-tint p-5 sm:w-[75%] sm:p-6">
           <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
             <div>
               <p className="stat__label">Everything planned so far</p>
@@ -27,6 +32,21 @@ export function PlanTotals({ roots }: { roots: CategoryNode[] }) {
           </p>
         </div>
       )}
-    </>
+      {expensesHref && (
+        <Link
+          href={expensesHref}
+          className="surface surface-raised surface-lift group flex flex-row items-center justify-between gap-3 p-5 sm:ml-auto sm:w-[20%] sm:flex-col sm:items-start sm:justify-between"
+        >
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-sec/10 text-sec transition-colors group-hover:bg-sec group-hover:text-white">
+            <Receipt className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
+          </span>
+          <span className="flex-1 sm:flex-none">
+            <span className="block font-title text-[20px] leading-tight text-ink">Expenses</span>
+            <span className="block font-reading text-[12px] text-ink-soft">Split costs and settle up</span>
+          </span>
+          <ArrowUpRight className="h-4 w-4 text-ink-soft transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 sm:self-end" strokeWidth={2} aria-hidden="true" />
+        </Link>
+      )}
+    </div>
   );
 }

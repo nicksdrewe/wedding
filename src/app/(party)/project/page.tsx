@@ -5,13 +5,12 @@ import { getEffectivePermission } from "@/lib/permissions/actions";
 import { OPTION_COSTS_EMBED, readOptionCosts } from "@/lib/options/costs";
 import { loadFeedback } from "@/lib/feedback/load";
 import { PageHeader } from "@/components/PageHeader";
-import { EmptyState } from "@/components/EmptyState";
 import { OPTION_COVER_EMBED, coverImageOf } from "@/lib/options/cover";
 import { IdeaPortal, portalThumbs } from "@/components/ui/IdeaPortal";
 import { TaskBoard } from "./TaskBoard";
 import { TASK_SELECT, toBoardTask } from "@/lib/tasks/priority";
-import { NewOptionGroupForm } from "./NewOptionGroupForm";
-import { ProjectTabs } from "./ProjectTabs";
+import { BoardPlans } from "@/components/ui/BoardPlans";
+import { loadCategoryTree } from "@/lib/categories/load";
 import { OptionsCompareGroup, type CompareGroup } from "./OptionsCompareGroup";
 
 export default async function ProjectPage() {
@@ -130,15 +129,16 @@ export default async function ProjectPage() {
     };
   });
 
+  const standalone = compareGroups.filter((g) => !g.categorySlug);
+  const { roots } = await loadCategoryTree(profile);
+
   return (
     <div>
       <PageHeader
         eyebrow="Planning"
-        title="Project Management"
-        infoText="Ideas, plans, and who's doing what — plus expense splitting."
+        title="Wedding Planning"
+        infoText="Everything in one place: ideas, tasks, and every plan with its options, costs and choices, plus expense splitting."
       />
-
-      <ProjectTabs active="project" />
 
       <div className="flex flex-col gap-8">
         <IdeaPortal
@@ -159,27 +159,27 @@ export default async function ProjectPage() {
         />
       </div>
 
-      <section className="mt-12">
-        <div className="section-head"><h2 className="section-head__title">Compare options</h2><span className="section-head__rule" /></div>
-        <p className="mt-2 font-reading text-sm text-ink-soft italic">
-          Every comparison running across the wedding&rsquo;s categories —
-          skimmed to title and cost so you can pick fast.
-        </p>
-        {canEdit && <NewOptionGroupForm />}
+      <div className="mt-12">
+        <BoardPlans
+          board={null}
+          roots={roots}
+          isAdmin={isCouple}
+          profileId={profile?.id ?? null}
+          canInteract={!!profile && profile.role !== "guest"}
+        />
+      </div>
 
-        <div className="mt-5 flex flex-col gap-5">
-          {compareGroups.map((g) => (
-            <OptionsCompareGroup key={g.id} group={g} showCommsLink={true} />
-          ))}
-          {compareGroups.length === 0 && (
-            <EmptyState
-              className="mt-2"
-              title="Nothing being compared yet"
-              hint="Start a comparison above, or from a category page."
-            />
-          )}
-        </div>
-      </section>
+      {/* Standalone comparisons started before plans existed stay available. */}
+      {standalone.length > 0 && (
+        <section className="mb-10">
+          <div className="section-head"><h2 className="section-head__title">Earlier comparisons</h2><span className="section-head__rule" /></div>
+          <div className="mt-5 flex flex-col gap-5">
+            {standalone.map((g) => (
+              <OptionsCompareGroup key={g.id} group={g} showCommsLink={true} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

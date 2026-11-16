@@ -159,8 +159,8 @@ export async function CategoryDetail({ slug, board = null }: { slug: string; boa
           </>
         )}
         {!board && (
-          <Link href={basePath} className="inline-flex min-h-11 items-center hover:text-sec">
-            Categories
+          <Link href="/project" className="inline-flex min-h-11 items-center hover:text-sec">
+            Wedding planning
           </Link>
         )}
         {trail.map((a) => (

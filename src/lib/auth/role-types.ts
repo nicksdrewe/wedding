@@ -27,7 +27,7 @@ export type Profile = {
  */
 export const HOME_FOR_ROLE: Record<RoleTier, string> = {
   couple: "/guests",
-  family: "/categories",
+  family: "/project",
   wedding_party: "/account",
   guest: "/account",
 };

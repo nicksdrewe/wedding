@@ -14,7 +14,7 @@ export function ProjectTabs({ active }: { active: "project" | "expenses" }) {
 
   return (
     <div className="surface surface-sunken -mt-3 mb-8 inline-flex gap-0.5 !rounded-full p-1">
-      {tab("/project", "project", "Project")}
+      {tab("/project", "project", "Planning")}
       {tab("/project/expenses", "expenses", "Expenses")}
     </div>
   );

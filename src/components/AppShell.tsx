@@ -9,7 +9,7 @@ import {
   ClipboardList,
   ChevronDown,
   FolderKanban,
-  LayoutGrid,
+
   LogOut,
   Menu,
   X,
@@ -66,16 +66,8 @@ type NavLink = {
 
 const NAV_LINKS: NavLink[] = [
   {
-    href: "/categories",
-    label: "Categories",
-    icon: LayoutGrid,
-    roles: ["couple", "family"],
-    tags: ["best_man", "maid_of_honour"],
-    group: "Planning",
-  },
-  {
     href: "/project",
-    label: "Project",
+    label: "Wedding Planning",
     icon: FolderKanban,
     roles: ["couple", "family"],
     tags: ["best_man", "maid_of_honour"],
