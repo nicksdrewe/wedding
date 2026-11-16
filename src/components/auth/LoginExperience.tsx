@@ -24,8 +24,6 @@ type Step = "email" | "code" | "set" | "login";
 
 const INPUT =
   "w-full rounded-2xl border border-ink/15 bg-white px-4 py-3.5 font-reading text-[15px] text-ink shadow-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20";
-const PLAIN_BUTTON =
-  "w-full rounded-full bg-ink px-5 py-3.5 font-serif text-sm text-cream transition hover:bg-ink-soft disabled:opacity-60";
 const LINK = "font-serif text-xs text-ink-soft underline decoration-ink/30 underline-offset-2 hover:text-sec";
 
 function remember(key: string, value: string | null) {
@@ -177,21 +175,24 @@ export function LoginExperience({ next = "/hub", startAt }: { next?: string; sta
     go("quick");
   }
 
-  const word = step === "login" ? "Login" : step === "set" ? "Almost" : "Welcome";
+  const word = step === "login" ? "Login" : step === "set" ? "Almost" : step === "code" ? "Almost there" : "Welcome";
+  const end = step === "set" ? "bang" : step === "code" ? "dots" : "dot";
 
   return (
     <>
-      <AuthScene>
+      <AuthScene late={step !== "email"}>
         <div className="w-full max-w-[380px]">
-          <SplitWord key={`${word}-${step}`} word={word} />
+          <SplitWord key={`${word}-${step}`} word={word} end={end} />
 
           {step === "email" && (
             <form onSubmit={sendCode} className="mt-8 flex flex-col gap-3">
               <p className="font-reading text-[15px] text-ink-soft">Pop in your email and we&rsquo;ll send you a code.</p>
               <input type="email" required autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className={INPUT} />
-              <button type="submit" disabled={busy} className={PLAIN_BUTTON}>
-                {busy ? "Sending…" : "Send my code"}
-              </button>
+              <div className="pt-1">
+                <GalaxyButton disabled={busy} power={0.34}>
+                  {busy ? "Sending…" : "Send my code"}
+                </GalaxyButton>
+              </div>
               <div className="flex justify-between pt-1">
                 <button type="button" onClick={() => to("code")} className={LINK}>
                   I already have a code
@@ -219,9 +220,11 @@ export function LoginExperience({ next = "/hub", startAt }: { next?: string; sta
                 className={`${INPUT} text-center font-serif text-2xl tracking-[0.3em]`}
                 autoFocus
               />
-              <button type="submit" disabled={busy || code.length < CODE_MIN || !email} className={PLAIN_BUTTON}>
-                {busy ? "Checking…" : "Verify"}
-              </button>
+              <div className="pt-1">
+                <GalaxyButton disabled={busy || code.length < CODE_MIN || !email} power={0.6}>
+                  {busy ? "Checking…" : "Enter"}
+                </GalaxyButton>
+              </div>
               <button
                 type="button"
                 onClick={() => {
@@ -244,7 +247,7 @@ export function LoginExperience({ next = "/hub", startAt }: { next?: string; sta
               <input type="password" required minLength={8} autoComplete="new-password" placeholder="Choose a password" value={password} onChange={(e) => setPassword(e.target.value)} className={INPUT} autoFocus />
               <input type="password" required minLength={8} autoComplete="new-password" placeholder="Type it again" value={confirm} onChange={(e) => setConfirm(e.target.value)} className={INPUT} />
               <div className="pt-1">
-                <GalaxyButton disabled={busy}>{busy ? "One moment…" : "Let’s go"}</GalaxyButton>
+                <GalaxyButton disabled={busy}>{busy ? "One moment…" : "Let’s Go!"}</GalaxyButton>
               </div>
               <button type="button" onClick={() => go("quick")} className={`${LINK} self-start pt-1`}>
                 Skip for now

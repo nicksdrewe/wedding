@@ -229,9 +229,9 @@
 
 /* ── the cosmic button, in our greens ── */
 .galaxy-btn {
-  --hue: 150;
   --transition: 0.25s;
   --spark: 1.8s;
+  --power: 1;
   position: relative;
   display: block;
   width: 100%;
@@ -239,10 +239,12 @@
 .galaxy-btn button {
   --cut: 0.1em;
   --active: 0;
+  --sun-hi: color-mix(in srgb, var(--sun-c) 35%, white);
   --bg:
-    radial-gradient(120% 120% at 126% 126%, hsl(var(--hue) calc(var(--active) * 80%) 96% / calc(var(--active) * 0.9)) 40%, transparent 50%) calc(100px - (var(--active) * 100px)) 0 / 100% 100% no-repeat,
-    radial-gradient(120% 120% at 120% 120%, hsl(var(--hue) calc(var(--active) * 55%) 58% / calc(var(--active) * 1)) 30%, transparent 70%) calc(100px - (var(--active) * 100px)) 0 / 100% 100% no-repeat,
-    hsl(var(--hue) calc(var(--active) * 35%) calc(10% - (var(--active) * 4%)));
+    radial-gradient(120% 120% at 126% 126%, color-mix(in srgb, var(--sun-hi) calc(var(--active) * 90%), transparent) 40%, transparent 50%) calc(100px - (var(--active) * 100px)) 0 / 100% 100% no-repeat,
+    radial-gradient(120% 120% at 120% 120%, color-mix(in srgb, var(--sun-c) calc(var(--active) * 100%), transparent) 30%, transparent 70%) calc(100px - (var(--active) * 100px)) 0 / 100% 100% no-repeat,
+    radial-gradient(135% 120% at 50% 140%, var(--btn-sheen) 0%, transparent 62%),
+    var(--btn-base);
   background: var(--bg);
   width: 100%;
   font-family: var(--font-ui), system-ui, sans-serif;
@@ -259,9 +261,9 @@
   border-radius: 2rem;
   position: relative;
   box-shadow:
-    0 0 calc(var(--active) * 3em) calc(var(--active) * 1.2em) hsl(var(--hue) 60% 55% / 0.45),
-    0 0.05em 0 0 hsl(var(--hue) calc(var(--active) * 60%) calc((var(--active) * 40%) + 28%)) inset,
-    0 -0.05em 0 0 hsl(var(--hue) calc(var(--active) * 60%) calc(var(--active) * 10%)) inset;
+    0 0 calc(var(--active) * 3em) calc(var(--active) * 1.2em) color-mix(in srgb, var(--sun-c) 50%, transparent),
+    0 0.05em 0 0 color-mix(in srgb, var(--sun-hi) 60%, transparent) inset,
+    0 -0.05em 0 0 rgba(0, 0, 0, 0.25) inset;
   transition: box-shadow var(--transition), scale var(--transition), background var(--transition);
   scale: calc(1 + (var(--active) * 0.04));
   transform-style: preserve-3d;
@@ -276,7 +278,7 @@
   scale: 1;
 }
 .galaxy-btn button:is(:hover, :focus-visible):not(:disabled) {
-  --active: 1;
+  --active: var(--power, 1);
 }
 .galaxy-btn .gstar {
   height: calc(var(--size) * 1px);
@@ -367,7 +369,7 @@
 .galaxy-btn .gtext {
   position: relative;
   letter-spacing: 0.01ch;
-  color: hsl(0 0% calc(66% + (var(--active) * 26%)));
+  color: color-mix(in srgb, white calc(78% + var(--active) * 22%), transparent);
 }
 
 /* ── the whoosh: bars of our colours sweep across, then the page opens ── */
@@ -565,9 +567,53 @@
   animation: bee-puff 1s ease-out calc(var(--i) * 0.17s) infinite;
 }
 @keyframes bee-puff {
-  0% { opacity: 0.7; transform: translate(0, 0) scale(1); }
+  0% { opacity: 0.45; transform: translate(0, 0) scale(1); }
   100% { opacity: 0; transform: translate(-44px, calc((var(--i) - 2.5) * 2px)) scale(0.3); }
 }
 @media (prefers-reduced-motion: reduce) {
   .auth-bee { display: none; }
+}
+
+/* the colours the cosmic button borrows, in step with the sky (same 30s there and back) */
+.auth-stage {
+  animation: stage-colours 30s ease-in-out infinite alternate;
+}
+@keyframes stage-colours {
+  0%, 8% { --sun-c: #ffe08a; --btn-base: #4a7aa3; --btn-sheen: #eef3f6; }
+  33%, 42% { --sun-c: #ff9f5a; --btn-base: #3d4a82; --btn-sheen: #f0955f; }
+  55% { --sun-c: #ff8f6a; --btn-base: #3a3f78; --btn-sheen: #d9707a; }
+  66% { --sun-c: #ebe3d2; --btn-base: #2e3263; --btn-sheen: #a8607a; }
+  90%, 100% { --sun-c: #eef0e6; --btn-base: #0b120d; --btn-sheen: #2f5a3a; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-stage { animation: none; --sun-c: #eef0e6; --btn-base: #0b120d; --btn-sheen: #2f5a3a; }
+}
+
+/* the bee glides to a lower path once the sign-in moves past the welcome page,
+   so it does not cross the words (timing is unchanged) */
+.auth-bee { transition: --y0 1s ease, --y1 1s ease, --y2 1s ease, --y3 1s ease, --y4 1s ease; }
+@media (min-width: 1024px) {
+  .auth-stage[data-late="true"] .auth-bee {
+    --y0: 52vh;
+    --y1: 62vh;
+    --y2: 72vh;
+    --y3: 83vh;
+    --y4: 92vh;
+  }
+}
+
+/* the title: out-of-time dropped dots, and an exclamation mark */
+.split-word__dot {
+  animation-duration: var(--dt, 2.2s);
+  animation-delay: var(--dd, 0s);
+}
+.split-word__dot + .split-word__dot { margin-left: 0.1em; }
+.split-word__bang {
+  color: var(--color-accent);
+  animation: split-in 0.6s cubic-bezier(0.5, 0, 0.5, 1) var(--delay) backwards, split-bang 2.4s ease-in-out calc(var(--delay) + 0.8s) infinite;
+}
+@keyframes split-bang {
+  0%, 70%, 100% { transform: translateY(0) scale(1); }
+  80% { transform: translateY(-0.12em) scale(1.12); }
+  90% { transform: translateY(0) scale(1); }
 }

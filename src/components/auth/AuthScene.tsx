@@ -65,9 +65,9 @@ function Bee() {
   );
 }
 
-export function AuthScene({ children }: { children: React.ReactNode }) {
+export function AuthScene({ children, late = false }: { children: React.ReactNode; late?: boolean }) {
   return (
-    <div className="auth-stage">
+    <div className="auth-stage" data-late={late ? "true" : "false"}>
       <div className="auth-night" aria-hidden="true">
         <div className="auth-sky auth-sky--day" />
         <div className="auth-sky auth-sky--sunset" />

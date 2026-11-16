@@ -665,3 +665,14 @@ body {
 }
 .portal__empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
 }
+
+/* Colours that follow the sign-in sky, so the cosmic button can match it. */
+@property --sun-c { syntax: "<color>"; inherits: true; initial-value: #ffe08a; }
+@property --btn-base { syntax: "<color>"; inherits: true; initial-value: #4a7aa3; }
+@property --btn-sheen { syntax: "<color>"; inherits: true; initial-value: #eef3f6; }
+/* The bee's path height, registered so it glides when the path changes. */
+@property --y0 { syntax: "<length>"; inherits: true; initial-value: 84vh; }
+@property --y1 { syntax: "<length>"; inherits: true; initial-value: 64vh; }
+@property --y2 { syntax: "<length>"; inherits: true; initial-value: 48vh; }
+@property --y3 { syntax: "<length>"; inherits: true; initial-value: 34vh; }
+@property --y4 { syntax: "<length>"; inherits: true; initial-value: 24vh; }
