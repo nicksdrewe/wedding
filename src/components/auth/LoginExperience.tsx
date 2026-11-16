@@ -183,7 +183,6 @@ export function LoginExperience({ next = "/hub", startAt }: { next?: string; sta
     <>
       <AuthScene>
         <div className="w-full max-w-[380px]">
-          <p className="mb-2 font-serif text-[11px] tracking-[0.25em] text-ink-soft uppercase">Nick &amp; Ellie</p>
           <SplitWord key={`${word}-${step}`} word={word} />
 
           {step === "email" && (

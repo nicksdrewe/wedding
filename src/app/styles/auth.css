@@ -140,7 +140,7 @@
   opacity: 0;
   animation: auth-fade 1s ease-out calc(var(--gd, 0s) + 1.1s + var(--ld, 0s)) forwards;
 }
-.auth-flower__leaf--l { right: 1px; transform: rotate(var(--lr, -20deg)) scaleX(-1); transform-origin: right center; }
+.auth-flower__leaf--l { right: 1px; border-radius: 0 100%; transform: rotate(calc(var(--lr, -20deg) * -1)); transform-origin: right center; }
 .auth-flower__leaf--r { left: 1px; transform: rotate(var(--lr, -20deg)); transform-origin: left center; }
 .auth-flower__bloom {
   position: absolute;
