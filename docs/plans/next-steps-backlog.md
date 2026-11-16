@@ -106,9 +106,19 @@ On Project (and the Groomsmen and Bridesmaids pages) replace the inline idea lis
 6. **THE BIG DAY (#9).** Last, because it draws on categories, options, ideas and the visual system. *(Fable then Sonnet)*
 7. **Visual rollout to the remaining pages (#10, part 2)**, continuing in slices.
 
-## Questions to answer before starting (collected)
+## Decisions (Nick, 15 Nov 2026) — these replace the open questions
 
-1. Nested categories: additive vs choose-one per node? Cascade of permissions to children?
-2. Organising comms: who can see what (plain wedding party, stag/hen board entries)? Attachments or text only?
-3. Big Day: who can edit vs view? Time granularity?
-4. Visual overhaul: how bold relative to the current identity; keep botanicals?
+1. **Nested categories roll up as ranges.** Sibling categories are *additive* (Food = breakfast + lunch + dinner). Each leaf is a *range* from its cheapest option to its dearest. A parent's range = sum of its children's lows → sum of its highs. A flat category (e.g. Venue with options directly under it) is just the range of its options. Once a winner is chosen at a leaf, that leaf uses the winner's real figure. No "choose one" node mode needed for now. (Permission cascade to children: still suggested as inherit + override.)
+2. **Organising comms** is for best man, maid of honour, family and the couple only. Not plain wedding party, not groomsmen/bridesmaids, not guests.
+3. **Big Day schedule:** editable by best man, maid of honour, family and the couple; *visible* to all wedding party. Later it becomes publishable: each item has a "visible to guests" tick, and a signed-out/guest visitor sees only ticked items. Design the item table with a `visible_to_guests` flag from day one.
+4. **Visual overhaul: all the way.** The current site is the foundation, not the destination. Priority one is still speed and ease of use (UX first, very fast, very obvious); the visuals should make people think "wow, I'm excited to be here" — premium-agency depth, animation, layered storytelling linking pages. Do the design foundation first and build every new page in it.
+
+## Timeline design notes (Nick, 16 Nov 2026) — applies to the diary timeline, Organising comms (#5) and the Big Day (#9) feed
+
+Three reference images were shared. Use them for **structure only**, not for colours or theme: the site's new visual identity (design foundation) will decide the look, and the timeline inherits it.
+
+- **Backbone (image 1, the WordPress timeline):** a vertical spine with cards alternating left and right, a small node on the spine per entry, date under each title, a short excerpt with "[…]" truncation. Entries can be flagged **featured**, which makes the card span the full width across the spine, centred, larger title. Build it this way.
+- **Importance drives size and colour:** a real event (engagement party, tasting, venue visit) is a **big, coloured, featured** card; a routine log (email sent to a vendor, "update committed") is **small, grey, short text** on one side. Suggested three tiers: *milestone* (full-width, colour, image), *standard* (half-width, normal), *minor* (compact, grey, one line). Each entry stores an `importance` field; auto entries from comms default to *minor*, couple/family can promote one.
+- **Optional flourishes (images 2 and 3), use sparingly:** a numbered or dated tag on the spine node; a line-icon per entry kind (email, call, venue, payment) beside the card; a ribbon-style date tab on milestones; colour keyed to category. These are ideas to try once the visual foundation exists, not requirements.
+- Phone: collapse to a single column down the left spine; featured cards stay full-width.
+- Keep it fast: render in pages by date (load more), no heavy JS.

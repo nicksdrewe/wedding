@@ -135,12 +135,12 @@ export default async function GuestsPage({
 
   return (
     <div>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <PageHeader
-          eyebrow="Household"
-          title="Guest List"
-          infoText="Your working guest list — doubles as the CRM for RSVP links, tags, and reminders."
-        />
+      <PageHeader
+        eyebrow="Household"
+        title="Guest List"
+        infoText="Your working guest list — doubles as the CRM for RSVP links, tags, and reminders."
+      />
+      <div className="-mt-2 flex justify-end">
         <InviteLinkButton initialToken={activeInviteToken} />
       </div>
 

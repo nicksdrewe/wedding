@@ -90,9 +90,9 @@ export function CategoryCard({
   }
 
   return (
-    <div className="group relative rounded-[10px] border border-ink/10 bg-white transition-colors duration-150 hover:border-accent/40 hover:bg-accent/[0.03]">
-      <Link href={`/categories/${category.slug}`} className="block p-5">
-        <h2 className="font-serif text-[15px] font-semibold text-ink transition-colors duration-150 group-hover:text-accent">
+    <div className="surface surface-lift group h-full">
+      <Link href={`/categories/${category.slug}`} className="block p-5 pb-6">
+        <h2 className="font-title text-[21px] leading-tight tracking-tight text-ink transition-colors duration-150 group-hover:text-sec">
           {category.title}
         </h2>
         {category.showCost && (

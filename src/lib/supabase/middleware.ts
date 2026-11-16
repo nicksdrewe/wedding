@@ -103,6 +103,10 @@ function isInviteLinkPath(pathname: string) {
 
 function isPublic(pathname: string) {
   if (pathname === "/") return true;
+  // The style guide (app/design) opens without signing in on a developer's
+  // own machine only — it holds sample pieces, no data. On the real site it
+  // is behind sign-in like everything else, and couple-only.
+  if (process.env.NODE_ENV !== "production" && pathname === "/design") return true;
   if (isInviteLinkPath(pathname)) return true;
   return PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
 }

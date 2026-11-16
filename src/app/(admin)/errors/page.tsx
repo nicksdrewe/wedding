@@ -44,13 +44,17 @@ export default async function ErrorsPage() {
       >
         ← Roles &amp; Access
       </Link>
-      <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
+      <div className="mt-4">
         <PageHeader
           eyebrow="Household"
           title="Recent errors"
           infoText="Anything that went wrong on the site in the last 30 days — which page, what it said, and a reference code. No names or personal details are recorded."
         />
-        {rows.length > 0 && <ClearErrorsButton />}
+        {rows.length > 0 && (
+          <div className="-mt-2 flex justify-end">
+            <ClearErrorsButton />
+          </div>
+        )}
       </div>
 
       {error ? (

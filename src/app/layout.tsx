@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo, Source_Serif_4, Manrope } from "next/font/google";
+import { Archivo, Fraunces, Source_Serif_4, Manrope } from "next/font/google";
 import "./globals.css";
 import { ViewAsBanner } from "@/components/ViewAsBanner";
 
@@ -29,6 +29,15 @@ const hero = Manrope({
   variable: "--font-hero",
   subsets: ["latin"],
   weight: ["500", "600"],
+});
+
+// Page titles, section headings and big numbers on signed-in pages — the one
+// face with character (see docs/design-system.md). Variable font, so one file.
+const title = Fraunces({
+  variable: "--font-title",
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  axes: ["opsz"],
 });
 
 export const metadata: Metadata = {
@@ -63,7 +72,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${ui.variable} ${display.variable} ${reading.variable} ${hero.variable} antialiased`}
+      className={`${ui.variable} ${display.variable} ${reading.variable} ${hero.variable} ${title.variable} antialiased`}
     >
       {/* No h-full on <html>/<body>: that pins <html> to exactly one
           viewport tall while content (like the scroll-scrubbed landing

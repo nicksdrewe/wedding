@@ -23,6 +23,8 @@ import { Botanical } from "@/components/Botanical";
 import { AnimatedBackground } from "@/components/motion-primitives/animated-background";
 import { canAccess, type Profile, type RoleTier } from "@/lib/auth/role-types";
 import useClickOutside from "@/hooks/useClickOutside";
+import { Backdrop } from "@/components/ui/Backdrop";
+import { sectionFor } from "@/lib/design/sections";
 
 // App Shell Design Spec §1 — the shared top nav (+ mobile bottom tab bar)
 // for every signed-in page. One instance of this, mounted by each route
@@ -196,14 +198,14 @@ function NavGroupDropdown({
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         className={`flex items-center gap-1 rounded-full px-3 py-2 font-serif text-[13px] font-medium tracking-[0.02em] transition-colors duration-150 ${
-          active ? "text-accent" : "text-ink-soft hover:text-ink"
+          active ? "text-sec" : "text-ink-soft hover:text-ink"
         }`}
       >
         {name}
         <ChevronDown className={`h-3 w-3 transition-transform duration-150 ${open ? "rotate-180" : ""}`} strokeWidth={2.5} />
       </button>
       {open && (
-        <div className="absolute top-full left-0 z-50 mt-1.5 min-w-[160px] rounded-[10px] border border-ink/10 bg-cream p-1.5 shadow-lg">
+        <div className="surface surface-raised rise absolute top-full left-0 z-50 mt-2.5 min-w-[180px] !rounded-[16px] p-1.5">
           {links.map((link) => {
             const linkActive = isActiveHref(pathname, link.href);
             return (
@@ -211,8 +213,8 @@ function NavGroupDropdown({
                 key={link.href}
                 href={link.href}
                 onClick={() => setOpen(false)}
-                className={`block rounded-[8px] px-3 py-2 font-serif text-[13px] font-medium tracking-[0.02em] transition-colors duration-150 ${
-                  linkActive ? "bg-accent/10 text-accent" : "text-ink-soft hover:bg-cream-deep hover:text-ink"
+                className={`block rounded-[11px] px-3 py-2.5 font-serif text-[13px] font-medium tracking-[0.02em] transition-colors duration-150 ${
+                  linkActive ? "bg-sec-tint text-sec" : "text-ink-soft hover:bg-ink/5 hover:text-ink"
                 }`}
               >
                 {link.label}
@@ -262,10 +264,26 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
     };
   }, [menuOpen]);
 
+  const section = sectionFor(pathname);
+  const rawSections = [
+    ...groups.map((g) => ({ name: g.name, links: g.links })),
+    ...(ungrouped.length ? [{ name: "", links: ungrouped }] : []),
+  ];
+  // Each section remembers how many links came before it, for the stagger.
+  const sections = rawSections.map((s, idx) => ({
+    ...s,
+    start: rawSections.slice(0, idx).reduce((n, x) => n + x.links.length, 0),
+  }));
+
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-40 h-16 border-b border-ink/10 bg-[#f4f1ec]/95 backdrop-blur-sm">
-        <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-6">
+    <div data-shell data-section={section} className="relative flex min-h-screen flex-col">
+      <Backdrop />
+
+      {/* A floating glass bar rather than a strip glued to the top: the page's
+          light shows through it and it casts its own shadow, which is the
+          first cue that things here sit in layers. */}
+      <header className="sticky top-0 z-40 px-3 pt-3">
+        <div className="surface surface-glass surface-raised mx-auto flex h-14 max-w-6xl items-center justify-between !rounded-full px-4 sm:px-5">
           {/* Left: wordmark — this IS the "back to landing" affordance. */}
           <Link href="/" className="flex shrink-0 items-center gap-2">
             <Botanical
@@ -274,15 +292,16 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
               width={20}
               height={22}
               spread={7}
-              strokeOpacity={0.75}
-              fillOpacity={0.4}
+              color="var(--sec)"
+              strokeOpacity={0.85}
+              fillOpacity={0.45}
               className="shrink-0"
             />
-            <span className="font-display text-[15px] tracking-tight">Nick &amp; Ellie</span>
+            <span className="font-title text-[17px] tracking-tight">Nick &amp; Ellie</span>
           </Link>
 
-          {/* Center-left: role-filtered nav, hidden below md in favour of
-              the bottom tab bar. */}
+          {/* Centre: role-filtered nav, hidden below md in favour of the
+              burger menu. */}
           <nav className="hidden items-center gap-1 md:flex">
             {/* Grouped dropdowns (Planning, People) render outside
                 AnimatedBackground — it clones each direct child and
@@ -293,11 +312,7 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
             {groups.map((group) => (
               <NavGroupDropdown key={group.name} name={group.name} links={group.links} pathname={pathname} />
             ))}
-            <AnimatedBackground
-              className="rounded-full bg-accent/10"
-              transition={{ duration: 0.15 }}
-              enableHover
-            >
+            <AnimatedBackground className="rounded-full bg-sec-tint" transition={{ duration: 0.15 }} enableHover>
               {ungrouped.map((link) => {
                 const active = isActiveHref(pathname, link.href);
                 return (
@@ -306,7 +321,7 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
                     data-id={link.href}
                     href={link.href}
                     className={`rounded-full px-3 py-2 font-serif text-[13px] font-medium tracking-[0.02em] transition-colors duration-150 ${
-                      active ? "text-accent" : "text-ink-soft hover:text-ink"
+                      active ? "text-sec" : "text-ink-soft hover:text-ink"
                     }`}
                   >
                     {link.label}
@@ -322,95 +337,93 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
           </nav>
 
           {/* Right: identity + sign out. */}
-          <div className="flex shrink-0 items-center gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            {name && <span className="hidden text-[13px] text-ink-soft sm:inline">{name}</span>}
+            {profile.role === "couple" ? (
+              <Link
+                href="/access"
+                title="Manage roles & access"
+                className="chip chip-sec !text-[10px] tracking-[0.08em] uppercase transition-opacity hover:opacity-80"
+              >
+                {ROLE_LABEL[profile.role]}
+              </Link>
+            ) : (
+              <span className="chip chip-sec !text-[10px] tracking-[0.08em] uppercase">{ROLE_LABEL[profile.role]}</span>
+            )}
+            <a
+              href="/logout"
+              aria-label="Sign out"
+              title="Sign out"
+              className="hidden h-9 w-9 items-center justify-center rounded-full text-ink-soft transition-colors duration-150 hover:bg-ink/5 hover:text-ink md:flex"
+            >
+              <LogOut className="h-4 w-4" strokeWidth={2} />
+            </a>
             {links.length > 0 && (
               <button
                 type="button"
                 onClick={() => setMenuOpen((o) => !o)}
                 aria-label={menuOpen ? "Close menu" : "Open menu"}
                 aria-expanded={menuOpen}
-                className="flex h-10 w-10 items-center justify-center rounded-full text-ink transition-colors hover:bg-ink/5 md:hidden"
+                className="flex h-11 w-11 items-center justify-center rounded-full text-ink transition-colors hover:bg-ink/5 md:hidden"
               >
                 {menuOpen ? <X className="h-5 w-5" strokeWidth={2} /> : <Menu className="h-5 w-5" strokeWidth={2} />}
               </button>
             )}
-            {name && <span className="hidden text-[13px] text-ink-soft sm:inline">{name}</span>}
-            {profile.role === "couple" ? (
-              <Link
-                href="/access"
-                title="Manage roles & access"
-                className="rounded-full bg-cream-deep px-2 py-0.5 text-[10px] tracking-[0.08em] text-ink-soft uppercase transition-colors hover:text-accent"
-              >
-                {ROLE_LABEL[profile.role]}
-              </Link>
-            ) : (
-              <span className="rounded-full bg-cream-deep px-2 py-0.5 text-[10px] tracking-[0.08em] text-ink-soft uppercase">
-                {ROLE_LABEL[profile.role]}
-              </span>
-            )}
-            <a
-              href="/logout"
-              aria-label="Sign out"
-              title="Sign out"
-              className="flex h-8 w-8 items-center justify-center rounded-full text-ink-soft transition-colors duration-150 hover:bg-ink/5 hover:text-ink"
-            >
-              <LogOut className="h-4 w-4" strokeWidth={2} />
-            </a>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10 md:px-12">
+      <main className="relative z-10 mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-16 sm:px-6 md:px-10">
         {children}
       </main>
 
-      {/* Phone menu panel, opened by the burger in the header. Same grouping
-          as the desktop dropdowns (Planning, People, then the rest). Links
-          are full-width, 48px tall, for thumbs. */}
+      {/* Phone menu, opened by the burger. It's the night garden: the same
+          dark green as the landing page, with the links falling into place.
+          Same grouping as the desktop dropdowns; every link is 52px tall. */}
       {links.length > 0 && menuOpen && (
-        <div className="fixed inset-x-0 top-16 bottom-0 z-30 overflow-y-auto bg-[#f4f1ec] px-6 py-6 md:hidden">
-          <nav aria-label="Main menu" className="mx-auto flex max-w-md flex-col gap-6">
-            {[...groups.map((g) => ({ name: g.name, links: g.links })), ...(ungrouped.length ? [{ name: "", links: ungrouped }] : [])].map(
-              (section) => (
-                <div key={section.name || "other"}>
-                  {section.name && (
-                    <p className="mb-1 px-3 font-serif text-[11px] font-semibold tracking-[0.18em] text-ink-soft/70 uppercase">
-                      {section.name}
-                    </p>
-                  )}
-                  <ul className="flex flex-col">
-                    {section.links.map((link) => {
-                      const active = isActiveHref(pathname, link.href);
-                      const Icon = link.icon;
-                      return (
-                        <li key={link.href}>
-                          <Link
-                            href={link.href}
-                            className={`flex min-h-12 items-center gap-3 rounded-[12px] px-3 font-serif text-[15px] transition-colors ${
-                              active ? "bg-accent/10 text-accent" : "text-ink hover:bg-ink/5"
-                            }`}
-                          >
-                            <Icon className="h-5 w-5 shrink-0" strokeWidth={2} />
-                            {link.label}
-                            {link.viewOnlyRoles?.includes(profile.role) && (
-                              <span className="rounded-full bg-cream-deep px-1.5 py-0.5 text-[8px] font-medium tracking-[0.06em] text-ink-soft/70 uppercase">
-                                View
-                              </span>
-                            )}
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              )
-            )}
-            <div className="flex items-center justify-between border-t border-ink/10 px-3 pt-4 font-serif text-sm text-ink-soft">
+        <div className="fixed inset-0 z-30 overflow-y-auto bg-gradient-to-b from-forest to-night px-5 pt-24 pb-10 text-cream md:hidden">
+          <div aria-hidden="true" className="pointer-events-none absolute right-[-20px] bottom-[-24px] origin-bottom" style={{ animation: "sway 10s ease-in-out infinite" }}>
+            <Botanical seed={17} stems={3} width={200} height={330} spread={34} color="var(--sec-glow)" strokeOpacity={0.28} fillOpacity={0.12} />
+          </div>
+          <nav aria-label="Main menu" className="relative mx-auto flex max-w-md flex-col gap-6">
+            {sections.map((group) => (
+              <div key={group.name || "other"}>
+                {group.name && (
+                  <p className="mb-1 px-3 font-serif text-[11px] font-semibold tracking-[0.2em] text-cream/50 uppercase">{group.name}</p>
+                )}
+                <ul className="flex flex-col">
+                  {group.links.map((link, li) => {
+                    const active = isActiveHref(pathname, link.href);
+                    const Icon = link.icon;
+                    const i = group.start + li;
+                    return (
+                      <li key={link.href} style={{ animation: `menuIn 420ms var(--ease-out) ${i * 35}ms both` }}>
+                        <Link
+                          href={link.href}
+                          className={`flex min-h-[52px] items-center gap-3.5 rounded-[14px] px-3 font-title text-[21px] transition-colors ${
+                            active ? "bg-cream/10 text-white" : "text-cream/85 hover:bg-cream/5"
+                          }`}
+                        >
+                          <Icon className={`h-5 w-5 shrink-0 ${active ? "text-sec-glow" : "text-cream/50"}`} strokeWidth={1.75} />
+                          {link.label}
+                          {link.viewOnlyRoles?.includes(profile.role) && (
+                            <span className="rounded-full bg-cream/10 px-2 py-0.5 font-serif text-[9px] font-medium tracking-[0.08em] text-cream/70 uppercase">
+                              View
+                            </span>
+                          )}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+            <div className="flex items-center justify-between border-t border-cream/15 px-3 pt-4 font-serif text-sm text-cream/60">
               <span>
                 {name ? `${name} · ` : ""}
                 {ROLE_LABEL[profile.role]}
               </span>
-              <a href="/logout" className="inline-flex min-h-10 items-center gap-2 text-ink">
+              <a href="/logout" className="inline-flex min-h-11 items-center gap-2 text-cream">
                 <LogOut className="h-4 w-4" strokeWidth={2} />
                 Sign out
               </a>

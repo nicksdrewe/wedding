@@ -69,25 +69,22 @@ export default async function DiaryPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <PageHeader
-          eyebrow="Us"
-          title="Diary"
-          infoText="Every event and key date, in one shared timeline."
-        />
-        {isCouple && (
-          <Link
-            href="/diary/events/new"
-            className="flex items-center gap-1.5 rounded-full bg-ink px-5 py-2.5 font-serif text-sm text-cream transition-colors duration-150 hover:bg-ink-soft"
-          >
-            <Plus className="h-4 w-4" strokeWidth={2} />
-            Add event
-          </Link>
-        )}
-      </div>
+      <PageHeader
+        eyebrow="Us"
+        title="Diary"
+        infoText="Every event and key date, in one shared timeline."
+        actions={
+          isCouple && (
+            <Link href="/diary/events/new" className="btn btn-on-dark">
+              <Plus className="h-4 w-4" strokeWidth={2} />
+              Add event
+            </Link>
+          )
+        }
+      />
 
       {isCouple && (
-        <p className="mt-3">
+        <p className="-mt-3">
           <Link href="/diary/events" className="font-serif text-xs tracking-[0.06em] text-ink-soft uppercase hover:text-accent">
             Manage all events →
           </Link>
