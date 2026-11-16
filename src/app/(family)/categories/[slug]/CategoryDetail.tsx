@@ -19,6 +19,8 @@ import { moveTargetsFor, toCardData } from "@/lib/categories/card";
 import { CategoryCard } from "../CategoryCard";
 import { Feedback } from "@/components/feedback/Feedback";
 import { loadCategoryFeedback } from "@/lib/categories/feedback";
+import { placePins } from "@/lib/categories/map";
+import { HideToggle } from "@/components/ui/HideToggle";
 import { NewCategoryForm } from "../NewCategoryForm";
 import { getLinkedCostItemsForCategory } from "@/lib/costs/links";
 import { OPTION_COSTS_EMBED, readOptionCosts } from "@/lib/options/costs";
@@ -92,7 +94,7 @@ export async function CategoryDetail({ slug, board = null }: { slug: string; boa
         };
       })
     : [];
-  const hasPinnedOptions = !board && mapOptions.some((o) => o.latitude != null && o.longitude != null);
+  const hasPinnedOptions = mapOptions.some((o) => o.latitude != null && o.longitude != null);
 
   const [{ data: contacts }, { data: dates }, linkedCostItems, { roots }] = await Promise.all([
     supabase
@@ -116,6 +118,8 @@ export async function CategoryDetail({ slug, board = null }: { slug: string; boa
   const node = findNode(roots, page.id);
   const trail = ancestorsOf(roots, page.id);
   const children = node?.children ?? [];
+  // One pin for each child that has a place of its own (Porto, Scunthorpe).
+  const placePinList = placePins(children, basePath);
   const canInteract = !!profile && profile.role !== "guest";
   // Votes and comments on this category and the ones inside it.
   const catFeedback = await loadCategoryFeedback(roots, profile?.id ?? null);
@@ -175,7 +179,16 @@ export async function CategoryDetail({ slug, board = null }: { slug: string; boa
 
       <PageHeader eyebrow={trail.length > 0 ? trail[trail.length - 1].title : board ? BOARDS[board].label : "Planning"} title={page.title} />
 
-      {node && node.feedbackEnabled !== false && (
+      {node?.hiddenFromMe && (
+        <div className="surface p-6">
+          <p className="font-serif text-[15px] font-semibold">A surprise, kept hidden from you</p>
+          <p className="mt-1.5 font-reading text-[13px] text-ink-soft">
+            Everything inside {page.title} has been hidden from you on purpose. It still shows on the plan as a line, and will appear when it is revealed.
+          </p>
+        </div>
+      )}
+
+      {!node?.hiddenFromMe && node && node.feedbackEnabled !== false && (
         <div className="surface mb-6 p-4">
           <p className="mb-2 font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft/70 uppercase">
             What do you think of {page.title}?
@@ -191,6 +204,12 @@ export async function CategoryDetail({ slug, board = null }: { slug: string; boa
         </div>
       )}
 
+      {board && children.length > 0 && profile?.role !== "couple" && isRealCouple && (
+        <div className="mb-4">
+          <HideToggle kind="category" id={page.id} hidden={node?.hidden === true} revalidate={`${basePath}/${page.slug}`} />
+        </div>
+      )}
+
       {node && children.length === 0 && node.winners.length > 0 && permission.dataAccess && (
         <div className="route" data-lit="true" aria-label={`Chosen: ${node.winners.join(", ")}`}>
           <span className="route__node">{page.title}</span>
@@ -202,7 +221,7 @@ export async function CategoryDetail({ slug, board = null }: { slug: string; boa
         </div>
       )}
 
-      {canSeeCosts && node?.total && (
+      {!node?.hiddenFromMe && canSeeCosts && node?.total && (
         <section className="surface surface-tint mb-6 p-6">
           <p className="stat__label">{node.winners.length > 0 && children.length === 0 ? "Cost" : "Predicted cost"}</p>
           <p className="stat__value">{formatCostRange(node.total.min, node.total.max, "GBP")}</p>
@@ -224,18 +243,24 @@ export async function CategoryDetail({ slug, board = null }: { slug: string; boa
         </section>
       )}
 
-      {(children.length > 0 || isRealCouple) && (
+      {!node?.hiddenFromMe && (children.length > 0 || isRealCouple) && (
         <section className="mb-6">
           <div className="section-head">
             <h2 className="section-head__title">Inside {page.title}</h2>
             <span className="section-head__rule" />
           </div>
+          {placePinList.length > 0 && (
+            <div className="mb-4">
+              <p className="mb-2 font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft/70 uppercase">Where things are</p>
+              <OptionsMapLoader options={placePinList} />
+            </div>
+          )}
           {children.length > 0 ? (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {children.map((c) => (
                 <CategoryCard key={c.id} category={toCardData(c)} isCouple={isRealCouple} moveTargets={isRealCouple ? moveTargetsFor(roots, c) : []}
                   basePath={basePath}
-                  board={{ feedback: catFeedback[c.id], canInteract, canModerate: isRealCouple, revalidate: `${basePath}/${page.slug}`, canChoose: isRealCouple }}
+                  board={{ feedback: catFeedback[c.id], canInteract, canModerate: isRealCouple, revalidate: `${basePath}/${page.slug}`, canChoose: isRealCouple, canHide: board !== null && profile?.role !== "couple" && isRealCouple, feedbackMap: catFeedback }}
                 />
               ))}
             </div>
@@ -248,7 +273,7 @@ export async function CategoryDetail({ slug, board = null }: { slug: string; boa
         </section>
       )}
 
-      {showOptions && (
+      {!node?.hiddenFromMe && showOptions && (
       <section className="surface p-6">
         <div className="flex items-center justify-between gap-4">
           <h2 className="font-serif text-[15px] font-semibold">Options</h2>

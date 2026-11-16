@@ -27,7 +27,7 @@ export function CategoriesView({
   emptyHint?: string;
   // Board plans: votes and comments on each category, and who may take part.
   feedback?: Record<string, FeedbackData>;
-  interact?: { canInteract: boolean; canModerate: boolean; revalidate: string };
+  interact?: { canInteract: boolean; canModerate: boolean; revalidate: string; canHide?: boolean };
 }) {
   // Categories with something inside get their own family tree; ones on
   // their own sit together in a grid underneath.
@@ -42,7 +42,7 @@ export function CategoriesView({
       basePath={basePath}
       board={
         interact
-          ? { feedback: feedback?.[node.id], canInteract: interact.canInteract, canModerate: interact.canModerate, revalidate: interact.revalidate, canChoose: canManage }
+          ? { feedback: feedback?.[node.id], canInteract: interact.canInteract, canModerate: interact.canModerate, revalidate: interact.revalidate, canChoose: canManage, canHide: interact.canHide, feedbackMap: feedback }
           : undefined
       }
     />
@@ -55,6 +55,7 @@ export function CategoriesView({
     <li key={node.id} data-lit={lit(node)}>
       <div className={`cat-node ${node.children.length > 0 ? "cat-node--parent" : ""}`}>{card(node)}</div>
       {node.children.length > 0 && <ul>{node.children.map(branch)}</ul>}
+      {node.hiddenFromMe && <div className="cat-hidden-line" aria-hidden="true" />}
     </li>
   );
 

@@ -14,6 +14,8 @@ export function toCardData(node: CategoryNode) {
     longitude: node.longitude ?? null,
     hasPin: node.pin != null,
     feedbackEnabled: node.feedbackEnabled !== false,
+    hidden: node.hidden === true,
+    hiddenFromMe: node.hiddenFromMe === true,
     showCost: node.costAccess,
     total: node.total,
     partial: node.partial,
@@ -23,7 +25,7 @@ export function toCardData(node: CategoryNode) {
     // Shown inside the card (with Choose buttons) on a board, for categories
     // that hold options directly.
     options:
-      node.children.length === 0
+      node.options.length > 0
         ? node.options.map((o) => ({
             id: o.id,
             name: o.name,

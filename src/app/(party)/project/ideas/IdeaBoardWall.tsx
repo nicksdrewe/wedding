@@ -1,5 +1,6 @@
 import { ImageOff } from "lucide-react";
 import { IdeaEditor } from "./IdeaEditor";
+import { HideToggle } from "@/components/ui/HideToggle";
 import { EmptyState } from "@/components/EmptyState";
 import { InView } from "@/components/motion-primitives/in-view";
 import { toDriveImageUrl } from "@/lib/google/image-url";
@@ -28,6 +29,8 @@ type BoardIdea = {
   tags: string[];
   images: IdeaImage[];
   feedback?: FeedbackData;
+  // Hidden from the couple (0052).
+  hidden?: boolean;
 };
 
 // visibleTag null = the shared main board.
@@ -45,6 +48,11 @@ export async function loadBoardIdeas(
     .order("sort_order", { ascending: true, referencedTable: "idea_board_images" });
 
   const feedbackByIdea = await loadFeedback(supabase, "idea", (data ?? []).map((r) => r.id), viewerId);
+  // Its own query so the wall works before migration 0052.
+  const { data: hiddenRows } = visibleTag
+    ? await supabase.from("idea_boards").select("id, hidden_from_couple").eq("visible_tag", visibleTag)
+    : { data: null };
+  const hiddenIdeas = new Set(((hiddenRows ?? []) as { id: string; hidden_from_couple?: boolean }[]).filter((r) => r.hidden_from_couple).map((r) => r.id));
   return (data ?? []).map((row) => ({
     id: row.id,
     createdBy: row.created_by ?? null,
@@ -53,6 +61,7 @@ export async function loadBoardIdeas(
     tags: (row.tags ?? []) as string[],
     images: (row.idea_board_images ?? []) as IdeaImage[],
     feedback: feedbackByIdea[row.id],
+    hidden: hiddenIdeas.has(row.id),
   }));
 }
 
@@ -62,7 +71,9 @@ export function IdeaBoardWall({
   canModerate,
   revalidate,
   canEditIdea,
+  canHide = false,
 }: {
+  canHide?: boolean;
   // Whether this viewer may edit or delete a given idea.
   canEditIdea: (idea: { id: string; createdBy: string | null }) => boolean;
   ideas: BoardIdea[];
@@ -95,7 +106,7 @@ export function IdeaBoardWall({
   return (
     <>
       {orderedTags.map((tag, i) => (
-        <TagSection key={tag} tag={tag} ideas={sections.get(tag)!} sectionIndex={i} canModerate={canModerate} revalidate={revalidate} canEditIdea={canEditIdea} />
+        <TagSection key={tag} tag={tag} ideas={sections.get(tag)!} sectionIndex={i} canModerate={canModerate} revalidate={revalidate} canEditIdea={canEditIdea} canHide={canHide} />
       ))}
     </>
   );
@@ -108,7 +119,9 @@ function TagSection({
   canModerate,
   revalidate,
   canEditIdea,
+  canHide = false,
 }: {
+  canHide?: boolean;
   canEditIdea: (idea: { id: string; createdBy: string | null }) => boolean;
   tag: string;
   ideas: BoardIdea[];
@@ -142,6 +155,7 @@ function TagSection({
             className="mb-4 break-inside-avoid"
           >
             <IdeaTile idea={idea} />
+            {canHide && <HideToggle kind="idea" id={idea.id} hidden={idea.hidden === true} revalidate={revalidate} />}
             {canEditIdea(idea) && (
               <IdeaEditor
                 idea={{ id: idea.id, title: idea.title, body: idea.body, tags: idea.tags, images: idea.images }}

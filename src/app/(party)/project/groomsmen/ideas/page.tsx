@@ -41,7 +41,7 @@ export default async function GroomsmenIdeasPage() {
         </section>
       )}
 
-      <IdeaBoardWall canEditIdea={(i) => permission.editAccess && (isAdmin || i.createdBy === profile?.id)} ideas={ideas} canContribute={permission.editAccess} canModerate={isAdmin} revalidate="/project/groomsmen/ideas" />
+      <IdeaBoardWall canEditIdea={(i) => permission.editAccess && (isAdmin || i.createdBy === profile?.id)} ideas={ideas} canContribute={permission.editAccess} canModerate={isAdmin} canHide={isAdmin && profile?.role !== "couple"} revalidate="/project/groomsmen/ideas" />
     </div>
   );
 }

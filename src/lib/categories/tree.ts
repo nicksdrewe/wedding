@@ -36,6 +36,9 @@ export type CategoryInput = {
   sortOrder: number;
   // What kind of options it holds (0046), if known.
   optionKind?: string | null;
+  // Flagged hidden from the couple (0052); hiddenFromMe = this viewer is the couple.
+  hidden?: boolean;
+  hiddenFromMe?: boolean;
   // Whether votes and comments are invited here (0051); on unless switched off.
   feedbackEnabled?: boolean;
   // Its own place on the map (0048), if set.

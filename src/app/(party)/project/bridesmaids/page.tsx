@@ -80,6 +80,10 @@ export default async function BridesmaidsProjectPage() {
     loadFeedback(supabase, "task", (tasks ?? []).map((t) => t.id), profile?.id ?? null),
     loadFeedback(supabase, "page_option", optionIds, profile?.id ?? null),
   ]);
+  // Which tasks are hidden from the couple (0052). Its own query so the page
+  // still works before that migration is run.
+  const { data: hiddenRows } = await supabase.from("tasks").select("id, hidden_from_couple").eq("visible_tag", "bridesmaid");
+  const hiddenTaskIds = ((hiddenRows ?? []) as { id: string; hidden_from_couple?: boolean }[]).filter((r) => r.hidden_from_couple).map((r) => r.id);
   const feedbackPath = "/project/bridesmaids";
 
   const compareGroups: CompareGroup[] = (optionGroups ?? []).map((g) => {
@@ -140,6 +144,8 @@ export default async function BridesmaidsProjectPage() {
           contacts={contacts ?? []} visibleTag="bridesmaid"
           canAdd={permission.editAccess}
           canDelete={isAdmin}
+          canHide={isAdmin && !isCouple}
+          hiddenIds={hiddenTaskIds}
           feedback={taskFeedback}
           canModerate={isAdmin}
           revalidate={feedbackPath}
@@ -147,7 +153,7 @@ export default async function BridesmaidsProjectPage() {
       </div>
 
       <div className="mt-12">
-        <BoardPlans board="bridesmaid" roots={(await loadCategoryTree(profile, "bridesmaid")).roots} isAdmin={isAdmin} profileId={profile?.id ?? null} canInteract={!!profile && profile.role !== "guest"} />
+        <BoardPlans board="bridesmaid" roots={(await loadCategoryTree(profile, "bridesmaid")).roots} isAdmin={isAdmin} profileId={profile?.id ?? null} canInteract={!!profile && profile.role !== "guest"} canHide={isAdmin && !isCouple} />
       </div>
 
       {/* Comparisons started before plans existed stay available, tucked below. */}

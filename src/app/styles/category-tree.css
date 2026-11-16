@@ -261,3 +261,12 @@
   box-shadow: 0 0 10px var(--route-glow);
   animation: routeFlow 2.6s linear infinite;
 }
+
+/* A plan hidden from the couple: the name shows, and below it one line that
+   fades away, so you can tell there is something there you cannot see. */
+.cat-hidden-line {
+  width: 2px;
+  height: 72px;
+  margin: 0 auto;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--sec) 45%, transparent), transparent);
+}

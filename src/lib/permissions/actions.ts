@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
@@ -137,7 +138,7 @@ export type EffectivePermission = {
 // table full-scope — this function is the one place allowed to peek on
 // everyone's behalf, since it's answering "what CAN this profile see",
 // not showing them the raw permissions table.
-export async function getEffectivePermission(pageKey: string, profile: Profile | null): Promise<EffectivePermission> {
+async function computeEffectivePermission(pageKey: string, profile: Profile | null): Promise<EffectivePermission> {
   if (!profile) return { pageAccess: false, dataAccess: false, editAccess: false, costAccess: false };
   if (profile.role === "couple") return { pageAccess: true, dataAccess: true, editAccess: true, costAccess: true };
 
@@ -176,4 +177,17 @@ export async function getEffectivePermission(pageKey: string, profile: Profile |
   // but prices fall back to the pre-existing baseline only (family), never
   // to wedding party or guests. (See resolvePermission.)
   return resolvePermission(keyChain, rows ?? [], profile.role, tags);
+}
+
+// Memoised per request (keyed by page and person): a page and its layout often
+// ask the same question more than once.
+const permissionFor = cache((pageKey: string, profileId: string) => {
+  const profile = profileRegistry.get(profileId) ?? null;
+  return computeEffectivePermission(pageKey, profile);
+});
+const profileRegistry = new Map<string, Profile>();
+export async function getEffectivePermission(pageKey: string, profile: Profile | null): Promise<EffectivePermission> {
+  if (!profile) return { pageAccess: false, dataAccess: false, editAccess: false, costAccess: false };
+  profileRegistry.set(profile.id, profile);
+  return permissionFor(pageKey, profile.id);
 }

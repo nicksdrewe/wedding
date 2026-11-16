@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, FolderTree } from "lucide-react";
+import { Check, EyeOff, FolderTree } from "lucide-react";
 import { Feedback } from "@/components/feedback/Feedback";
+import { HideToggle } from "@/components/ui/HideToggle";
 import type { FeedbackData } from "@/lib/feedback/types";
 import { clearOptionWinner, markOptionWinner } from "@/lib/options/actions";
 import { formatCostRange, formatCurrency } from "@/lib/currency/format";
@@ -25,6 +26,9 @@ export type CategoryCardData = {
   latitude?: number | null;
   longitude?: number | null;
   hasPin?: boolean;
+  // Hidden from the couple by the best man / maid of honour (0052).
+  hidden?: boolean;
+  hiddenFromMe?: boolean;
   // Whether it invites votes and comments (0051).
   feedbackEnabled?: boolean;
   // False when this viewer isn't allowed to see this category's prices.
@@ -57,6 +61,10 @@ export type CardBoardTools = {
   canModerate: boolean;
   revalidate: string;
   canChoose: boolean;
+  // Best man / maid of honour only: may hide a parent plan from the couple.
+  canHide?: boolean;
+  // Votes and comments on options (keyed by option id).
+  feedbackMap?: Record<string, FeedbackData>;
 };
 
 export type MoveTarget = { id: string; label: string };
@@ -153,6 +161,16 @@ export function CategoryCard({
             Allow votes and comments on this
           </label>
         )}
+        <div>
+          <span className="field-label">Place on the map (optional)</span>
+          <div className="flex gap-2">
+            <input name="latitude" type="number" step="any" min={-90} max={90} defaultValue={category.latitude ?? ""} placeholder="Latitude" className="field" />
+            <input name="longitude" type="number" step="any" min={-180} max={180} defaultValue={category.longitude ?? ""} placeholder="Longitude" className="field" />
+          </div>
+          <p className="mt-1 font-reading text-[11px] text-ink-soft">
+            For a place, like Porto. The page above it then shows it on a map with its cost. Leave blank for anything that is not a place.
+          </p>
+        </div>
         <label>
           <span className="field-label">Kind of options</span>
           <select name="optionKind" defaultValue={category.optionKind ?? "general"} className="field">
@@ -173,6 +191,17 @@ export function CategoryCard({
         </div>
         {error && <p className="font-reading text-xs text-alert">{error}</p>}
       </form>
+    );
+  }
+
+  if (category.hiddenFromMe) {
+    return (
+      <div className="surface h-full p-4 text-left">
+        <span className="font-title text-[20px] leading-tight tracking-tight text-ink">{category.title}</span>
+        <span className="mt-2 flex items-center gap-1.5 font-serif text-[12px] text-ink-soft">
+          <EyeOff className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden="true" />A surprise, kept hidden from you
+        </span>
+      </div>
     );
   }
 
@@ -232,7 +261,8 @@ export function CategoryCard({
               <>
                 <div className="flex flex-col gap-1.5">
                   {list.map((o) => (
-                    <div key={o.id} data-lit={o.isWinner ? "true" : undefined} className={`flex items-center gap-2 rounded-lg p-1.5 ${o.isWinner ? "bg-accent/10 ring-1 ring-accent/40" : ""}`}>
+                    <div key={o.id} data-lit={o.isWinner ? "true" : undefined} className={`rounded-lg p-1.5 ${o.isWinner ? "bg-accent/10 ring-1 ring-accent/40" : ""}`}>
+                    <div className="flex items-center gap-2">
                       {o.coverImageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={o.coverImageUrl} alt="" className={`${o.isWinner ? "h-14 w-14" : "h-8 w-8"} shrink-0 rounded-md object-cover`} />
@@ -259,6 +289,16 @@ export function CategoryCard({
                         </button>
                       )}
                     </div>
+                    <Feedback
+                      targetType="page_option"
+                      targetId={o.id}
+                      data={board.feedbackMap?.[o.id]}
+                      canInteract={board.canInteract}
+                      canModerate={board.canModerate}
+                      revalidate={board.revalidate}
+                      className="mt-1"
+                    />
+                    </div>
                   ))}
                 </div>
                 {winner && opts.length > 1 && (
@@ -269,6 +309,12 @@ export function CategoryCard({
               </>
             );
           })()}
+        </div>
+      )}
+
+      {board?.canHide && category.childCount > 0 && (
+        <div className="border-t border-ink/8 px-3 py-0.5">
+          <HideToggle kind="category" id={category.id} hidden={category.hidden === true} revalidate={board.revalidate} />
         </div>
       )}
 

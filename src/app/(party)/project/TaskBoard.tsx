@@ -19,6 +19,8 @@ export function TaskBoard({
   visibleTag,
   canAdd,
   canDelete = true,
+  canHide = false,
+  hiddenIds = [],
   feedback,
   canModerate = false,
   revalidate,
@@ -28,6 +30,9 @@ export function TaskBoard({
   visibleTag?: VisibleTag;
   canAdd: boolean;
   canDelete?: boolean;
+  // Best man / maid of honour: may hide a task from the couple (0052).
+  canHide?: boolean;
+  hiddenIds?: string[];
   feedback: Record<string, FeedbackData>;
   canModerate?: boolean;
   revalidate: string;
@@ -126,6 +131,8 @@ export function TaskBoard({
             task={t}
             contacts={contacts}
             canDelete={canDelete}
+            canHide={canHide}
+            hidden={hiddenIds.includes(t.id)}
             feedback={feedback[t.id]}
             canModerate={canModerate}
             revalidate={revalidate}

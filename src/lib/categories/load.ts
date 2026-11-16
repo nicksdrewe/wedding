@@ -37,7 +37,9 @@ type CostEmbed = {
 // loads that stag or hen board's own tree (0047_board_categories.sql).
 export async function loadCategoryTree(profile: Profile | null, board: BoardKey | null = null): Promise<CategoryTree> {
   const supabase = await createClient();
-  const [{ data: cats }, { data: groups }, rates] = await Promise.all([
+  const admin = profile && profile.role !== "couple" ? createAdminClient() : null;
+  // Everything independent is fetched at once.
+  const [{ data: cats }, { data: groups }, rates, allRows, adminData] = await Promise.all([
     supabase
       .from("category_pages")
       .select("id, slug, title, parent_id, sort_order, category_costs(predicted_cost_min, predicted_cost_max, actual_cost, currency)")
@@ -49,38 +51,32 @@ export async function loadCategoryTree(profile: Profile | null, board: BoardKey 
       )
       .not("category_page_id", "is", null),
     getFxRates(),
+    // Board, kind, pin, switches: the viewer's own view of every category.
+    fetchCategoryRows(supabase),
+    admin
+      ? Promise.all([
+          // The full chain, including parents this person can't see themselves.
+          fetchCategoryRows(admin),
+          admin
+            .from("page_permissions")
+            .select("page_key, principal_type, principal_value, page_access, data_access, edit_access, cost_access"),
+          profile!.contact_id
+            ? admin.from("contacts").select("tags").eq("id", profile!.contact_id).maybeSingle()
+            : Promise.resolve({ data: null }),
+        ])
+      : Promise.resolve(null),
   ]);
 
-  // Which board each category is on (own query so a missing column never breaks the tree).
-  const allRows = await fetchCategoryRows(supabase);
-  const boardById = new Map(allRows.map((r) => [r.id, r.board_tag]));
-  const categories = (cats ?? []).filter((c) => (boardById.get(c.id) ?? null) === board);
-  // Kinds come from their own small query so a missing column never breaks the tree.
-  const { data: kindRows } = await supabase.from("category_pages").select("id, option_kind");
-  // Category pins (0048) come from their own small query for the same reason.
-  const { data: locRows } = await supabase.from("category_pages").select("id, latitude, longitude");
-  const locById = new Map((locRows ?? []).map((r) => [r.id, r as { latitude?: number | null; longitude?: number | null }]));
-  const { data: fbRows } = await supabase.from("category_pages").select("id, feedback_enabled");
-  const fbById = new Map((fbRows ?? []).map((r) => [r.id, (r as { feedback_enabled?: boolean }).feedback_enabled]));
-  const kindById = new Map((kindRows ?? []).map((r) => [r.id, (r as { option_kind?: string | null }).option_kind ?? null]));
+  const rowById = new Map(allRows.map((r) => [r.id, r]));
+  const categories = (cats ?? []).filter((c) => (rowById.get(c.id)?.board_tag ?? null) === board);
 
   // Access rules for every category at once.
   const permissions = new Map<string, ResolvedPermission>();
-  if (profile && profile.role !== "couple") {
-    const admin = createAdminClient();
-    const [allCats, { data: rules }, contact] = await Promise.all([
-      // The full chain, including parents this person can't see themselves.
-      fetchCategoryRows(admin),
-      admin
-        .from("page_permissions")
-        .select("page_key, principal_type, principal_value, page_access, data_access, edit_access, cost_access"),
-      profile.contact_id
-        ? admin.from("contacts").select("tags").eq("id", profile.contact_id).maybeSingle()
-        : Promise.resolve({ data: null }),
-    ]);
+  if (adminData) {
+    const [allCats, { data: rules }, contact] = adminData;
     const tags = normalizeTags((contact.data as { tags?: string[] | null } | null)?.tags);
     for (const c of categories) {
-      permissions.set(c.id, resolvePermission(categoryKeyChain(c.slug, allCats), rules ?? [], profile.role, tags));
+      permissions.set(c.id, resolvePermission(categoryKeyChain(c.slug, allCats), rules ?? [], profile!.role, tags));
     }
   } else {
     const all = profile?.role === "couple";
@@ -141,10 +137,13 @@ export async function loadCategoryTree(profile: Profile | null, board: BoardKey 
       title: c.title,
       parentId: c.parent_id,
       sortOrder: c.sort_order ?? 0,
-      optionKind: kindById.get(c.id) ?? null,
-      feedbackEnabled: fbById.get(c.id) !== false,
-      latitude: locById.get(c.id)?.latitude ?? null,
-      longitude: locById.get(c.id)?.longitude ?? null,
+      optionKind: rowById.get(c.id)?.option_kind ?? null,
+      feedbackEnabled: rowById.get(c.id)?.feedback_enabled !== false,
+      latitude: rowById.get(c.id)?.latitude ?? null,
+      longitude: rowById.get(c.id)?.longitude ?? null,
+      // Flagged by the best man / maid of honour; the couple see only its name.
+      hidden: rowById.get(c.id)?.hidden_from_couple === true,
+      hiddenFromMe: rowById.get(c.id)?.hidden_from_couple === true && profile?.role === "couple",
       costAccess: permissions.get(c.id)?.costAccess ?? false,
       options: optionsByCategory.get(c.id) ?? [],
       legacy: lo != null && hi != null ? { min: lo, max: hi, actual: lActual } : null,

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/auth/role-types";
 import { normalizeTags } from "@/lib/tags";
@@ -16,7 +17,9 @@ export type AuthState =
   | { status: "no-profile"; email: string | null }
   | { status: "ok"; profile: Profile };
 
-export async function getAuthState(): Promise<AuthState> {
+// Memoised per request: one page asks for the signed-in user many times (layout,
+// page, permission checks), and each used to be a network round trip.
+export const getAuthState = cache(async function getAuthState(): Promise<AuthState> {
   const supabase = await createClient();
 
   const {
@@ -33,7 +36,7 @@ export async function getAuthState(): Promise<AuthState> {
   if (!profile) return { status: "no-profile", email: user.email ?? null };
 
   return { status: "ok", profile: profile as Profile };
-}
+});
 
 /** Convenience for pages that only care about a fully-resolved profile. */
 export async function getCurrentProfile(): Promise<Profile | null> {
@@ -48,9 +51,13 @@ export async function getCurrentProfile(): Promise<Profile | null> {
 // access for anything tag-gated is still enforced by
 // getEffectivePermission (page-level) and RLS (data-level) regardless of
 // what nav links happen to render.
+const tagsForContact = cache(async (contactId: string): Promise<string[]> => {
+  const supabase = await createClient();
+  const { data } = await supabase.from("contacts").select("tags").eq("id", contactId).maybeSingle();
+  return normalizeTags(data?.tags);
+});
+
 export async function getCurrentContactTags(profile: Profile | null): Promise<string[]> {
   if (!profile?.contact_id) return [];
-  const supabase = await createClient();
-  const { data } = await supabase.from("contacts").select("tags").eq("id", profile.contact_id).maybeSingle();
-  return normalizeTags(data?.tags);
+  return tagsForContact(profile.contact_id);
 }

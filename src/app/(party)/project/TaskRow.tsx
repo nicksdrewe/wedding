@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useOptimistic, useRef, useState, useTransition } from "react";
 import { Check } from "lucide-react";
 import { deleteTask, toggleTask, updateTask } from "./actions";
 import { Feedback } from "@/components/feedback/Feedback";
+import { HideToggle } from "@/components/ui/HideToggle";
 import type { FeedbackData } from "@/lib/feedback/types";
 import { PRIORITIES, priorityLabel, priorityTone, type BoardTask } from "@/lib/tasks/priority";
 
@@ -15,6 +16,8 @@ export function TaskRow({
   task,
   contacts,
   canDelete = true,
+  canHide = false,
+  hidden = false,
   feedback,
   canInteract = true,
   canModerate = false,
@@ -26,14 +29,18 @@ export function TaskRow({
   // (0034_project_admins_and_budgets.sql); everyone on the board can still
   // add, edit and tick them off.
   canDelete?: boolean;
+  canHide?: boolean;
+  hidden?: boolean;
   // Comments on the task (0037) — tasks take comments only, no thumbs.
   feedback?: FeedbackData;
   canInteract?: boolean;
   canModerate?: boolean;
   revalidate?: string;
 }) {
-  const { id, title, done, priority, dueDate, createdAt, doneAt, ownerContactId, ownerName } = task;
+  const { id, title, done: serverDone, priority, dueDate, createdAt, doneAt, ownerContactId, ownerName } = task;
   const [pending, startTransition] = useTransition();
+  // Ticking shows at once; the server catches up in the background.
+  const [done, setDone] = useOptimistic(serverDone, (_current: boolean, next: boolean) => next);
   const [editing, setEditing] = useState(false);
   const [saving, startSaveTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -121,7 +128,12 @@ export function TaskRow({
           aria-checked={done}
           aria-label={done ? "Mark as not done" : "Mark as done"}
           disabled={pending}
-          onClick={() => startTransition(() => toggleTask(id, !done))}
+          onClick={() =>
+            startTransition(async () => {
+              setDone(!done);
+              await toggleTask(id, !done);
+            })
+          }
           className="task-tick mt-0.5"
           data-done={done}
         >
@@ -162,7 +174,8 @@ export function TaskRow({
           )}
         </div>
       </div>
-      <Feedback
+      {canHide && <HideToggle kind="task" id={id} hidden={hidden} revalidate={revalidate} />}
+        <Feedback
         targetType="task"
         targetId={id}
         data={feedback}

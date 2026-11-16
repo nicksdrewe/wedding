@@ -1,15 +1,25 @@
 import Link from "next/link";
 import { ArrowUpRight, Receipt } from "lucide-react";
 import { formatCostRange, formatCurrency } from "@/lib/currency/format";
-import { sumTotals, type CategoryNode } from "@/lib/categories/tree";
+import { flattenTree, sumTotals, type CategoryNode } from "@/lib/categories/tree";
 
 // Everything planned so far (a range, then real figures as winners are
 // chosen) with what has been spent so far on the right. With expensesHref, a
 // button on the far right (about a fifth of the row) goes through to splitting
 // and settling expenses.
 export function PlanTotals({ roots, expensesHref }: { roots: CategoryNode[]; expensesHref?: string }) {
-  const { total, partial } = sumTotals(roots);
+  const { total: seen, partial } = sumTotals(roots);
+  // Plans the best man / maid of honour has hidden: we show a blurred figure
+  // that is NOT the real amount, only that something is left out.
+  const hiddenCount = flattenTree(roots).filter((n) => n.hiddenFromMe).length;
+  const total = seen ?? (hiddenCount > 0 ? { min: 0, max: 0, actual: 0 } : null);
   if (!total && !expensesHref) return null;
+  const excluding = hiddenCount > 0 && (
+    <span className="ml-1.5 font-reading text-[12px] font-normal text-ink-soft">
+      (excluding <span className="inline-block select-none blur-[5px]" aria-hidden="true">£8,888</span>
+      <span className="sr-only">hidden amounts</span>)
+    </span>
+  );
   return (
     <div className="mb-2 flex flex-col gap-3 sm:flex-row sm:items-stretch sm:justify-between">
       {total && (
@@ -21,10 +31,12 @@ export function PlanTotals({ roots, expensesHref }: { roots: CategoryNode[]; exp
                 {formatCostRange(total.min, total.max, "GBP")}
                 {partial && <span className="text-[18px] text-ink-soft"> +</span>}
               </p>
+              {excluding && <p>{excluding}</p>}
             </div>
             <div className="text-right">
               <p className="stat__label">Spent so far</p>
               <p className="stat__value text-accent">{formatCurrency(total.actual ?? 0, "GBP")}</p>
+              {excluding && <p>{excluding}</p>}
             </div>
           </div>
           <p className="mt-2 font-reading text-[13px] text-ink-soft">

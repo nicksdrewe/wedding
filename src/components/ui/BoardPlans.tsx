@@ -15,6 +15,7 @@ export async function BoardPlans({
   isAdmin,
   profileId,
   canInteract,
+  canHide = false,
 }: {
   // null = the main wedding's own plans.
   board: BoardKey | null;
@@ -22,6 +23,8 @@ export async function BoardPlans({
   isAdmin: boolean;
   profileId: string | null;
   canInteract: boolean;
+  // Best man / maid of honour: may hide a parent plan from the couple.
+  canHide?: boolean;
 }) {
   const cfg = board ? BOARDS[board] : null;
   const basePath = cfg ? cfg.plansPath : "/categories";
@@ -39,7 +42,7 @@ export async function BoardPlans({
         basePath={basePath}
         board={board}
         feedback={feedback}
-        interact={{ canInteract, canModerate: isAdmin, revalidate: cfg ? cfg.plansPath.replace(/\/plans$/, "") : "/project" }}
+        interact={{ canInteract, canModerate: isAdmin, canHide, revalidate: cfg ? cfg.plansPath.replace(/\/plans$/, "") : "/project" }}
         emptyHint={
           cfg
             ? `Start with a plan, like "${cfg.noun === "stag" ? "Stag weekend" : "Hen weekend"}", then split it into accommodation, flights and activities. Suits and outfits can be plans too.`
