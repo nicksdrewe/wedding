@@ -46,7 +46,7 @@ export function EditOptionForm({
           required
           defaultValue={option.name}
           placeholder="Option name"
-          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+          className="field w-auto"
         />
         {/* Cost inputs only exist for someone allowed to see prices; the
             hasCostFields marker tells updateOption it may write them. Without
@@ -60,7 +60,7 @@ export function EditOptionForm({
           step="0.01"
           defaultValue={option.predicted_cost_min ?? ""}
           placeholder="Predicted min"
-          className="w-28 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+          className="field w-28"
         />
         <input
           name="predictedCostMax"
@@ -68,7 +68,7 @@ export function EditOptionForm({
           step="0.01"
           defaultValue={option.predicted_cost_max ?? ""}
           placeholder="Predicted max"
-          className="w-28 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+          className="field w-28"
         />
         <input
           name="actualCost"
@@ -76,12 +76,12 @@ export function EditOptionForm({
           step="0.01"
           defaultValue={option.actual_cost ?? ""}
           placeholder="Actual"
-          className="w-28 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+          className="field w-28"
         />
         <select
           name="currency"
           defaultValue={option.currency}
-          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+          className="field w-auto"
         >
           <option value="GBP">£ GBP</option>
           <option value="EUR">€ EUR</option>
@@ -92,7 +92,7 @@ export function EditOptionForm({
           name="optionDate"
           type="date"
           defaultValue={option.option_date ?? ""}
-          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+          className="field w-auto"
         />
       </div>
 
@@ -101,20 +101,20 @@ export function EditOptionForm({
           name="contactName"
           defaultValue={option.contact_name ?? ""}
           placeholder="Contact name"
-          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+          className="field w-auto"
         />
         <input
           name="contactPhone"
           defaultValue={option.contact_phone ?? ""}
           placeholder="Contact phone"
-          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+          className="field w-auto"
         />
         <input
           name="contactEmail"
           type="email"
           defaultValue={option.contact_email ?? ""}
           placeholder="Contact email"
-          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+          className="field w-auto"
         />
       </div>
 
@@ -127,7 +127,7 @@ export function EditOptionForm({
           max={90}
           defaultValue={option.latitude ?? ""}
           placeholder="Latitude"
-          className="w-32 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+          className="field w-32"
         />
         <input
           name="longitude"
@@ -137,7 +137,7 @@ export function EditOptionForm({
           max={180}
           defaultValue={option.longitude ?? ""}
           placeholder="Longitude"
-          className="w-32 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+          className="field w-32"
         />
         <input
           name="nights"
@@ -146,7 +146,7 @@ export function EditOptionForm({
           step={1}
           defaultValue={option.nights ?? ""}
           placeholder="Nights"
-          className="w-24 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+          className="field w-24"
         />
         <input
           name="sleeps"
@@ -155,7 +155,7 @@ export function EditOptionForm({
           step={1}
           defaultValue={option.sleeps ?? ""}
           placeholder="Sleeps"
-          className="w-24 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+          className="field w-24"
         />
       </div>
 
@@ -163,7 +163,7 @@ export function EditOptionForm({
         name="webLink"
         defaultValue={option.web_link ?? ""}
         placeholder="Web link"
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+        className="field w-auto"
       />
 
       <textarea
@@ -171,21 +171,21 @@ export function EditOptionForm({
         defaultValue={option.description ?? ""}
         placeholder="Description"
         rows={3}
-        className="rounded-[10px] border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+        className="field w-auto"
       />
 
       <div className="flex items-center gap-2">
         <button
           type="submit"
           disabled={pending}
-          className="rounded-full bg-ink px-5 py-2 font-serif text-xs text-cream transition hover:bg-ink-soft disabled:opacity-60"
+          className="btn btn-primary btn-sm"
         >
           {pending ? "Saving…" : "Save"}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-full border border-ink/20 px-5 py-2 font-serif text-xs text-ink-soft transition hover:border-ink/40"
+          className="btn btn-quiet btn-sm"
         >
           Cancel
         </button>

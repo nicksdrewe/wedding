@@ -150,21 +150,21 @@ export default async function GuestsPage({
           column, plus the wedding's own separate RSVP track. */}
       <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {confirmedByEvent.map((e) => (
-          <div key={e.id} className="rounded-[10px] border border-ink/10 bg-white px-5 py-4">
+          <div key={e.id} className="surface px-5 py-4">
             <p className="font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
               {e.name} — confirmed
             </p>
-            <p className="mt-1.5 font-display text-[26px] tracking-tight tabular-nums">
+            <p className="mt-1.5 font-title text-[30px] tracking-tight tabular-nums">
               <AnimatedNumber value={e.confirmed} springOptions={{ bounce: 0 }} />
             </p>
           </div>
         ))}
         {showWeddingRsvp && (
-          <div className="rounded-[10px] border border-ink/10 bg-white px-5 py-4">
+          <div className="surface px-5 py-4">
             <p className="font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
               Wedding — confirmed (incl. +1s)
             </p>
-            <p className="mt-1.5 font-display text-[26px] tracking-tight tabular-nums">
+            <p className="mt-1.5 font-title text-[30px] tracking-tight tabular-nums">
               <AnimatedNumber
                 value={(contacts ?? []).reduce(
                   (sum, c) => sum + countConfirmed(weddingEvent?.id, c.rsvps, { includePlusOne: true }),

@@ -34,9 +34,9 @@ export type EventFormData = {
 };
 
 const INPUT_CLASS =
-  "w-full rounded-full border border-ink/20 bg-cream px-4 py-2.5 text-sm text-ink outline-none placeholder:text-ink-soft/50 focus:border-accent";
+  "field w-full";
 const TEXTAREA_CLASS =
-  "w-full rounded-[10px] border border-ink/20 bg-cream px-4 py-3 font-reading text-sm text-ink outline-none placeholder:text-ink-soft/50 focus:border-accent";
+  "field w-full font-reading";
 const LABEL_CLASS = "font-serif text-[11px] font-medium tracking-[0.04em] text-ink-soft uppercase";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -68,7 +68,7 @@ function ToggleSection({
 }) {
   const [checked, setChecked] = useState(defaultChecked);
   return (
-    <div className="rounded-[10px] border border-ink/10 bg-white/60 p-5">
+    <div className="surface surface-sunken p-5">
       <label className="flex items-start gap-3">
         <input
           type="checkbox"
@@ -115,7 +115,7 @@ export function EventForm({ event }: { event?: EventFormData }) {
     <form action={handleSubmit} className="flex flex-col gap-5">
       {event && <input type="hidden" name="id" value={event.id} />}
 
-      <div className="rounded-[10px] border border-ink/10 bg-white/60 p-5">
+      <div className="surface surface-sunken p-5">
         <p className="font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
           Event basics
         </p>
@@ -326,7 +326,7 @@ export function EventForm({ event }: { event?: EventFormData }) {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-full bg-ink px-6 py-3 font-serif text-sm text-cream transition-colors duration-150 hover:bg-ink-soft disabled:opacity-60"
+          className="btn btn-primary"
         >
           {pending ? "Saving…" : event ? "Save changes" : "Create event"}
         </button>

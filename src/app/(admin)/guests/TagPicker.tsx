@@ -50,7 +50,7 @@ export function TagPicker({ defaultTags }: { defaultTags: string[] }) {
         value={other}
         onChange={(e) => setOther(e.target.value)}
         placeholder="Other tags, comma separated"
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+        className="field w-auto"
       />
     </div>
   );

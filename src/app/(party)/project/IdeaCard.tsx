@@ -73,7 +73,7 @@ export function IdeaCard({
 
   if (editing) {
     return (
-      <li className="rounded-[10px] border border-ink/10 bg-white p-4">
+      <li className="surface p-4">
         <form
           action={(formData) =>
             startTransition(async () => {
@@ -94,33 +94,33 @@ export function IdeaCard({
             required
             defaultValue={title}
             placeholder="Idea title"
-            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+            className="field w-auto"
           />
           <textarea
             name="body"
             defaultValue={body ?? ""}
             placeholder="Details (optional)"
             rows={2}
-            className="rounded-2xl border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+            className="field w-auto"
           />
           <input
             name="tags"
             defaultValue={tags.join(", ")}
             placeholder="Tags (comma, separated)"
-            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+            className="field w-auto"
           />
           <div className="flex gap-2">
             <button
               type="submit"
               disabled={pending}
-              className="self-start rounded-full bg-ink px-5 py-2 text-sm text-cream transition hover:bg-ink-soft disabled:opacity-60"
+              className="btn btn-primary self-start"
             >
               {pending ? "Saving…" : "Save"}
             </button>
             <button
               type="button"
               onClick={() => setEditing(false)}
-              className="self-start rounded-full border border-ink/20 px-5 py-2 text-sm text-ink-soft transition hover:border-ink/40"
+              className="btn btn-quiet self-start"
             >
               Cancel
             </button>
@@ -132,7 +132,7 @@ export function IdeaCard({
   }
 
   return (
-    <li className="group rounded-[10px] border border-ink/10 bg-white p-4 transition-colors duration-150 hover:border-accent/40">
+    <li className="surface surface-lift group p-4 duration-150">
       <div className="flex items-start justify-between gap-3">
         <p className="font-serif text-sm font-semibold">{title}</p>
         {canEdit && (
@@ -140,7 +140,7 @@ export function IdeaCard({
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-accent"
+              className="font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-sec"
             >
               Edit
             </button>

@@ -22,7 +22,7 @@ export function AddContactForm() {
           formRef.current?.reset();
         })
       }
-      className="mt-8 rounded-[10px] border border-ink/10 bg-white/50 p-5"
+      className="surface surface-sunken mt-8 p-5"
     >
       <p className="mb-4 font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
         Add a guest
@@ -35,7 +35,7 @@ export function AddContactForm() {
           <input
             name="fullName"
             required
-            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+            className="field w-auto"
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -45,7 +45,7 @@ export function AddContactForm() {
           <input
             name="email"
             type="email"
-            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+            className="field w-auto"
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -54,7 +54,7 @@ export function AddContactForm() {
           </label>
           <input
             name="phone"
-            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+            className="field w-auto"
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -64,7 +64,7 @@ export function AddContactForm() {
           <select
             name="role"
             defaultValue="guest"
-            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+            className="field w-auto"
           >
             <option value="guest">Guest</option>
             <option value="family">Family</option>
@@ -81,13 +81,13 @@ export function AddContactForm() {
             name="plusOneLimit"
             min={0}
             defaultValue={0}
-            className="w-20 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+            className="field w-20"
           />
         </div>
         <button
           type="submit"
           disabled={pending}
-          className="rounded-full bg-ink px-5 py-2 text-sm text-cream transition-colors duration-150 hover:bg-ink-soft disabled:opacity-60"
+          className="btn btn-primary"
         >
           {pending ? "Adding…" : "Add guest"}
         </button>

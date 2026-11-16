@@ -58,7 +58,7 @@ export function CategoryCard({
             setEditing(false);
           })
         }
-        className="flex flex-col gap-2 rounded-[10px] border border-ink/10 bg-white p-5"
+        className="surface flex flex-col gap-2 p-5"
       >
         <input type="hidden" name="id" value={category.id} />
         <input
@@ -66,20 +66,20 @@ export function CategoryCard({
           required
           defaultValue={category.title}
           autoFocus
-          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors focus:border-accent"
+          className="field w-auto"
         />
         <div className="mt-1 flex items-center gap-2">
           <button
             type="submit"
             disabled={pending}
-            className="rounded-full bg-ink px-5 py-2 font-serif text-xs text-cream transition-colors hover:bg-ink-soft disabled:opacity-60"
+            className="btn btn-primary btn-sm"
           >
             {pending ? "Saving…" : "Save"}
           </button>
           <button
             type="button"
             onClick={() => setEditing(false)}
-            className="rounded-full border border-ink/20 px-5 py-2 font-serif text-xs text-ink-soft transition-colors hover:border-ink/40"
+            className="btn btn-quiet btn-sm"
           >
             Cancel
           </button>
@@ -110,7 +110,7 @@ export function CategoryCard({
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="rounded-full bg-white/90 px-2 py-1 font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase shadow-sm hover:text-accent"
+            className="rounded-full bg-white/90 px-2 py-1 font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase shadow-sm hover:text-sec"
           >
             Edit
           </button>

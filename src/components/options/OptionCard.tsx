@@ -102,8 +102,8 @@ export function OptionCard({
     <Disclosure
       open={open}
       onOpenChange={setOpen}
-      className={`overflow-hidden rounded-[10px] border bg-white transition-colors duration-200 ${
-        option.is_winner ? "border-2 border-accent" : "border-ink/10"
+      className={`surface overflow-hidden transition-[box-shadow,border-color] duration-200 ${
+        option.is_winner ? "!border-2 !border-accent shadow-[0_16px_40px_rgba(76,107,82,0.25)]" : ""
       }`}
     >
       <DisclosureTrigger>
@@ -330,13 +330,13 @@ function OptionDetailPanel({
               }
             }}
             placeholder="Paste an image URL"
-            className="flex-1 rounded-full border border-ink/20 bg-cream px-4 py-2 font-reading text-[13px] outline-none focus:border-accent"
+            className="field flex-1"
           />
           <button
             type="button"
             onClick={handleAddImage}
             disabled={imagePending || !imageUrl.trim()}
-            className="flex items-center gap-1 rounded-full border border-ink/20 px-3.5 py-2 font-serif text-xs text-ink-soft transition hover:border-ink/40 disabled:opacity-60"
+            className="btn btn-quiet btn-sm"
           >
             {imagePending ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2.5} />
@@ -467,7 +467,7 @@ function OptionDetailPanel({
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-accent"
+            className="font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-sec"
           >
             Edit
           </button>

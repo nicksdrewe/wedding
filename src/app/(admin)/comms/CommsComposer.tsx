@@ -38,7 +38,7 @@ export type MessageHistoryItem = {
 };
 
 const SELECT_CLASS =
-  "rounded-full border border-ink/20 bg-cream px-3.5 py-1.5 text-xs text-ink-soft outline-none transition-colors duration-150 focus:border-accent focus:text-ink";
+  "field text-xs w-auto";
 
 // Between each individual send — Resend's free tier caps at roughly 2
 // requests/second; comfortably under that without needing a real queue,
@@ -181,7 +181,7 @@ export function CommsComposer({
     <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[1.1fr_1fr]">
       <div>
         {/* Audience */}
-        <div className="rounded-[10px] border border-ink/10 bg-white/60 p-5">
+        <div className="surface surface-sunken p-5">
           <p className="flex items-center gap-1.5 font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
             <Users className="h-3.5 w-3.5" strokeWidth={2} />
             Audience — {selected.size} selected
@@ -193,7 +193,7 @@ export function CommsComposer({
               placeholder="Search by name…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="rounded-full border border-ink/20 bg-cream px-3.5 py-1.5 text-xs text-ink outline-none placeholder:text-ink-soft/50 focus:border-accent"
+              className="field w-auto"
             />
             <select value={role} onChange={(e) => setRole(e.target.value)} className={SELECT_CLASS}>
               <option value="">All roles</option>
@@ -264,7 +264,7 @@ export function CommsComposer({
         </div>
 
         {/* Compose */}
-        <div className="mt-6 rounded-[10px] border border-ink/10 bg-white/60 p-5">
+        <div className="surface surface-sunken mt-6 p-5">
           <div className="flex items-center justify-between">
             <p className="flex items-center gap-1.5 font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
               <Mail className="h-3.5 w-3.5" strokeWidth={2} />
@@ -298,7 +298,7 @@ export function CommsComposer({
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             maxLength={200}
-            className="mt-3 w-full rounded-full border border-ink/20 bg-cream px-4 py-2.5 text-sm text-ink outline-none placeholder:text-ink-soft/50 focus:border-accent"
+            className="field mt-3 w-full"
           />
 
           {bodyMode === "text" ? (
@@ -308,7 +308,7 @@ export function CommsComposer({
               onChange={(e) => setBody(e.target.value)}
               maxLength={20000}
               rows={10}
-              className="mt-3 w-full rounded-[10px] border border-ink/20 bg-cream px-4 py-3 font-reading text-sm text-ink outline-none placeholder:text-ink-soft/50 focus:border-accent"
+              className="field mt-3 w-full font-reading"
             />
           ) : (
             <>
@@ -323,7 +323,7 @@ export function CommsComposer({
                 maxLength={20000}
                 rows={8}
                 spellCheck={false}
-                className="mt-2 w-full rounded-[10px] border border-ink/20 bg-cream px-4 py-3 font-mono text-xs text-ink outline-none placeholder:text-ink-soft/50 focus:border-accent"
+                className="field mt-2 w-full font-mono text-xs"
               />
               {body.trim() && (
                 <div className="mt-3">
@@ -355,7 +355,7 @@ export function CommsComposer({
             type="button"
             onClick={handleSend}
             disabled={!canSend}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 font-serif text-sm text-cream transition-colors duration-150 hover:bg-ink-soft disabled:opacity-50"
+            className="btn btn-primary mt-4 w-full"
           >
             {sendState.phase === "sending" ? (
               <>
@@ -388,7 +388,7 @@ export function CommsComposer({
       </div>
 
       {/* History */}
-      <div className="rounded-[10px] border border-ink/10 bg-white/60 p-5">
+      <div className="surface surface-sunken p-5">
         <p className="font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">Sent before</p>
         {history.length === 0 ? (
           <p className="mt-4 font-reading text-sm text-ink-soft italic">Nothing sent yet.</p>

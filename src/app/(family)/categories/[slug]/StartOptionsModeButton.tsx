@@ -23,7 +23,7 @@ export function StartOptionsModeButton({
           await startOptionsMode(categoryPageId, title, revalidate);
         })
       }
-      className="rounded-full border border-ink/20 px-4 py-2 text-xs text-ink-soft transition hover:border-ink hover:text-ink disabled:opacity-60"
+      className="btn btn-quiet btn-sm"
     >
       {pending ? "Switching…" : "Switch to Options mode"}
     </button>

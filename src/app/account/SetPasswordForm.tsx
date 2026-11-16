@@ -17,7 +17,7 @@ export function SetPasswordForm() {
         minLength={8}
         autoComplete="new-password"
         placeholder="New password (min. 8 characters)"
-        className="rounded-full border border-ink/20 bg-cream px-5 py-3 text-center font-serif text-ink outline-none focus:border-accent"
+        className="field text-center w-auto"
       />
       <input
         name="confirm"
@@ -26,12 +26,12 @@ export function SetPasswordForm() {
         minLength={8}
         autoComplete="new-password"
         placeholder="Confirm password"
-        className="rounded-full border border-ink/20 bg-cream px-5 py-3 text-center font-serif text-ink outline-none focus:border-accent"
+        className="field text-center w-auto"
       />
       <button
         type="submit"
         disabled={pending}
-        className="rounded-full bg-ink px-5 py-3 font-serif text-cream transition hover:bg-ink-soft disabled:opacity-60"
+        className="btn btn-primary"
       >
         {pending ? "Saving…" : "Set password"}
       </button>

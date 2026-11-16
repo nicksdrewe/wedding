@@ -22,7 +22,7 @@ export function NewCategoryForm() {
           formRef.current?.reset();
         })
       }
-      className="mt-6 flex flex-wrap items-end gap-3 rounded-[10px] border border-ink/10 bg-white p-4"
+      className="surface mt-6 flex flex-wrap items-end gap-3 p-4"
     >
       <div className="flex flex-col gap-1">
         <label className="font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
@@ -32,13 +32,13 @@ export function NewCategoryForm() {
           name="title"
           required
           placeholder="e.g. Venue"
-          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors focus:border-accent"
+          className="field w-auto"
         />
       </div>
       <button
         type="submit"
         disabled={pending}
-        className="rounded-full bg-ink px-5 py-2 text-sm text-cream transition-colors hover:bg-ink-soft disabled:opacity-60"
+        className="btn btn-primary"
       >
         {pending ? "Adding…" : "Add category"}
       </button>

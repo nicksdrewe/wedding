@@ -105,7 +105,7 @@ export function ExpenseForm({
           name="description"
           required
           placeholder="What was it for?"
-          className="flex-1 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+          className="field flex-1"
         />
         <input
           name="amount"
@@ -116,13 +116,13 @@ export function ExpenseForm({
           placeholder="Amount (£)"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          className="w-40 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+          className="field w-40"
         />
         <select
           name="paidByContactId"
           required
           defaultValue=""
-          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+          className="field w-auto"
         >
           <option value="" disabled>
             Paid by…
@@ -179,7 +179,7 @@ export function ExpenseForm({
                         setCustomValues((prev) => ({ ...prev, [c.id]: e.target.value }))
                       }
                       placeholder="0"
-                      className="w-20 rounded-full border border-ink/20 bg-cream px-3 py-1 text-right text-sm outline-none focus:border-accent"
+                      className="field w-20 text-right"
                     />
                     {mode === "percent" && <span className="text-xs text-ink-soft">%</span>}
                   </div>
@@ -202,7 +202,7 @@ export function ExpenseForm({
       <button
         type="submit"
         disabled={pending || contacts.length === 0 || !canSubmit}
-        className="self-start rounded-full bg-ink px-5 py-2 text-sm text-cream transition hover:bg-ink-soft disabled:opacity-60"
+        className="btn btn-primary self-start"
       >
         {pending ? "Logging…" : "Log expense"}
       </button>

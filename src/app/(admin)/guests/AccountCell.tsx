@@ -136,7 +136,7 @@ export function AccountCell({ contactId, status }: { contactId: string; status: 
         </p>
       )}
       {open && (
-        <div className="absolute top-full left-0 z-20 mt-1 w-60 overflow-hidden rounded-[10px] border border-ink/10 bg-white py-1 shadow-[0_10px_30px_rgba(35,37,32,0.14)]">
+        <div className="surface absolute top-full left-0 z-20 mt-1 w-60 overflow-hidden py-1 shadow-[0_10px_30px_rgba(35,37,32,0.14)]">
           {actions.map((a) => (
             <button
               key={a.label}

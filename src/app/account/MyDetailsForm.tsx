@@ -65,7 +65,7 @@ export function MyDetailsForm({
             maxLength={200}
             defaultValue={contact.full_name}
             placeholder="Your name"
-            className="w-full rounded-full border border-ink/20 bg-white px-4.5 py-3 font-reading text-sm outline-none focus:border-accent"
+            className="field w-full"
           />
           <textarea
             name="guestNote"
@@ -73,13 +73,13 @@ export function MyDetailsForm({
             defaultValue={contact.guest_note ?? ""}
             placeholder="Anything you'd like the couple to know"
             rows={3}
-            className="w-full rounded-2xl border border-ink/20 bg-white px-4.5 py-3 font-reading text-sm outline-none focus:border-accent"
+            className="field w-full"
           />
           <div className="flex items-center justify-between">
             <button
               type="submit"
               disabled={detailsPending}
-              className="rounded-full bg-ink px-7 py-3 font-serif text-[13px] text-cream transition hover:bg-ink-soft disabled:opacity-60"
+              className="btn btn-primary"
             >
               {detailsPending ? "Saving…" : "Save details"}
             </button>
@@ -182,12 +182,12 @@ function PlusOnesSection({ contact, plusOnes }: { contact: Contact; plusOnes: Pl
             value={nameValue}
             onChange={(e) => setNameValue(e.target.value)}
             placeholder="Add a guest's name"
-            className="flex-1 rounded-full border border-ink/20 bg-white px-4.5 py-3 font-reading text-sm outline-none focus:border-accent"
+            className="field flex-1"
           />
           <button
             type="submit"
             disabled={isPending}
-            className="rounded-full border border-ink/20 px-5 py-3 font-serif text-[13px] text-ink-soft transition hover:border-ink/40 disabled:opacity-60"
+            className="btn btn-quiet"
           >
             Add
           </button>
@@ -232,7 +232,7 @@ function EventCard({ event, existing }: { event: EventRow; existing: RsvpRow | u
         if (attending === null) return;
         handleSubmit(e.currentTarget, attending);
       }}
-      className="rounded-2xl border border-ink/10 bg-white p-8"
+      className="surface p-8"
     >
       <h3 className="font-display text-[19px]">{event.name}</h3>
       {event.location && (
@@ -282,7 +282,7 @@ function EventCard({ event, existing }: { event: EventRow; existing: RsvpRow | u
               placeholder="Dietary requirements"
               maxLength={1000}
               defaultValue={existing?.dietary_requirements ?? ""}
-              className="w-full rounded-2xl border border-ink/20 bg-white px-4.5 py-3 font-reading text-sm outline-none focus:border-accent"
+              className="field w-full"
               rows={2}
             />
             <textarea
@@ -290,7 +290,7 @@ function EventCard({ event, existing }: { event: EventRow; existing: RsvpRow | u
               placeholder="Anything else we should know?"
               maxLength={1000}
               defaultValue={existing?.notes ?? ""}
-              className="w-full rounded-2xl border border-ink/20 bg-white px-4.5 py-3 font-reading text-sm outline-none focus:border-accent"
+              className="field w-full"
               rows={2}
             />
           </div>
@@ -301,7 +301,7 @@ function EventCard({ event, existing }: { event: EventRow; existing: RsvpRow | u
         <button
           type="submit"
           disabled={isPending || attending === null}
-          className="rounded-full bg-ink px-7 py-3 font-serif text-[13px] text-cream transition hover:bg-ink-soft disabled:opacity-60"
+          className="btn btn-primary"
         >
           {isPending ? "Saving…" : existing ? "Update RSVP" : "Send RSVP"}
         </button>

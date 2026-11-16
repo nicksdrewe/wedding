@@ -35,7 +35,7 @@ export default async function EventsListPage() {
       />
 
       <p className="-mt-3">
-        <Link href="/diary" className="font-serif text-xs tracking-[0.06em] text-ink-soft uppercase hover:text-accent">
+        <Link href="/diary" className="font-serif text-xs tracking-[0.06em] text-ink-soft uppercase hover:text-sec">
           ← Back to the timeline
         </Link>
       </p>
@@ -43,9 +43,9 @@ export default async function EventsListPage() {
       {!events || events.length === 0 ? (
         <EmptyState className="mt-9" title="No events yet" hint="Add your first one above." />
       ) : (
-        <div className="mt-9 overflow-x-auto rounded-[10px] border border-ink/10">
+        <div className="surface mt-9 overflow-x-auto">
           <table className="w-full min-w-[600px] text-left font-serif text-[13px]">
-            <thead className="bg-cream-deep">
+            <thead className="bg-sec-tint/70">
               <tr>
                 <th className="px-5 py-3 text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">Name</th>
                 <th className="px-5 py-3 text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">Date</th>
@@ -86,7 +86,7 @@ export default async function EventsListPage() {
                   <td className="px-5 py-3.5 text-right">
                     <Link
                       href={`/diary/events/${e.id}/edit`}
-                      className="font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-accent"
+                      className="font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-sec"
                     >
                       Edit
                     </Link>

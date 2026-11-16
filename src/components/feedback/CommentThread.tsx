@@ -7,7 +7,7 @@ import type { FeedbackComment, FeedbackTargetType } from "@/lib/feedback/types";
 import { timeAgo } from "@/lib/accounts/types";
 
 const INPUT =
-  "w-full rounded-[10px] border border-ink/20 bg-cream px-3 py-2 font-reading text-[13px] text-ink outline-none transition-colors focus:border-accent";
+  "field w-full font-reading";
 const LINK = "font-serif text-[11px] tracking-[0.06em] uppercase";
 
 function CommentRow({
@@ -64,7 +64,7 @@ function CommentRow({
               type="button"
               onClick={save}
               disabled={pending || !draft.trim()}
-              className="rounded-full bg-ink px-4 py-1.5 font-serif text-xs text-cream transition hover:bg-ink-soft disabled:opacity-60"
+              className="btn btn-primary btn-sm"
             >
               {pending ? "Saving…" : "Save"}
             </button>
@@ -88,7 +88,7 @@ function CommentRow({
       {!editing && (comment.mine || canModerate) && (
         <div className="mt-1 flex gap-3">
           {comment.mine && (
-            <button type="button" onClick={() => setEditing(true)} className={`${LINK} text-ink-soft hover:text-accent`}>
+            <button type="button" onClick={() => setEditing(true)} className={`${LINK} text-ink-soft hover:text-sec`}>
               Edit
             </button>
           )}
@@ -147,7 +147,7 @@ export function CommentThread({
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="inline-flex h-9 items-center gap-1.5 rounded-full border border-ink/20 px-3 font-serif text-xs text-ink-soft tabular-nums transition-colors hover:border-ink/40 hover:text-ink"
+        className="btn btn-quiet btn-sm inline-flex"
       >
         <MessageCircle className="h-3.5 w-3.5" strokeWidth={2} />
         {comments.length === 0 ? (canInteract ? "Comment" : "0") : comments.length}
@@ -186,7 +186,7 @@ export function CommentThread({
                 <button
                   type="submit"
                   disabled={pending || !draft.trim()}
-                  className="rounded-full bg-ink px-4 py-1.5 font-serif text-xs text-cream transition hover:bg-ink-soft disabled:opacity-60"
+                  className="btn btn-primary btn-sm"
                 >
                   {pending ? "Posting…" : "Post"}
                 </button>

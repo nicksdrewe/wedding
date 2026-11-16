@@ -85,7 +85,7 @@ export default async function DiaryPage() {
 
       {isCouple && (
         <p className="-mt-3">
-          <Link href="/diary/events" className="font-serif text-xs tracking-[0.06em] text-ink-soft uppercase hover:text-accent">
+          <Link href="/diary/events" className="font-serif text-xs tracking-[0.06em] text-ink-soft uppercase hover:text-sec">
             Manage all events →
           </Link>
         </p>
@@ -139,7 +139,7 @@ export default async function DiaryPage() {
               <div
                 className={
                   item.kind === "event"
-                    ? "flex-1 rounded-[10px] border border-ink/10 bg-white p-4 transition-colors duration-150 hover:border-accent/40"
+                    ? "surface surface-lift flex-1 p-4"
                     : "flex-1"
                 }
               >
@@ -160,13 +160,13 @@ export default async function DiaryPage() {
 
                 {item.kind === "event" ? (
                   <div className="mt-1 flex items-center justify-between gap-3">
-                    <Link href={`/events/${item.slug}`} className="font-serif text-sm font-semibold hover:text-accent">
+                    <Link href={`/events/${item.slug}`} className="font-serif text-sm font-semibold hover:text-sec">
                       {item.title}
                     </Link>
                     {isCouple && (
                       <Link
                         href={`/diary/events/${item.id}/edit`}
-                        className="shrink-0 font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-accent"
+                        className="shrink-0 font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-sec"
                       >
                         Edit
                       </Link>

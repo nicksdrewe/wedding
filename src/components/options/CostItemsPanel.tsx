@@ -20,7 +20,7 @@ export type LinkableCategory = { id: string; title: string };
 export type CostItemLinkInfo = { id: string; categoryTitle: string };
 
 const INPUT_CLASS =
-  "rounded-full border border-ink/20 bg-cream px-3 py-1.5 text-xs outline-none focus:border-accent";
+  "field text-xs w-auto";
 
 function CostItemRowView({
   item,
@@ -120,7 +120,7 @@ function CostItemRowView({
         </span>
         {isCouple && (
           <div className="flex items-center gap-3">
-            <button type="button" onClick={() => setEditing(true)} className="font-serif text-[11px] text-ink-soft uppercase hover:text-accent">
+            <button type="button" onClick={() => setEditing(true)} className="font-serif text-[11px] text-ink-soft uppercase hover:text-sec">
               Edit
             </button>
             <button
@@ -157,7 +157,7 @@ function CostItemRowView({
           <select
             value={linkCategoryId}
             onChange={(e) => setLinkCategoryId(e.target.value)}
-            className="rounded-full border border-ink/15 bg-white px-2.5 py-1 font-reading text-[11px] text-ink-soft outline-none focus:border-accent"
+            className="field w-auto"
           >
             <option value="">Also show under…</option>
             {linkableCategories
@@ -173,7 +173,7 @@ function CostItemRowView({
               type="button"
               onClick={handleLink}
               disabled={linkPending}
-              className="rounded-full border border-ink/20 px-2.5 py-1 font-serif text-[11px] text-ink-soft transition hover:border-ink/40 disabled:opacity-60"
+              className="btn btn-quiet btn-sm"
             >
               Link
             </button>
@@ -280,7 +280,7 @@ function CostItemForm({
       <button
         type="button"
         onClick={() => setUseCalculator((v) => !v)}
-        className="font-serif text-[11px] text-ink-soft underline underline-offset-2 hover:text-accent"
+        className="font-serif text-[11px] text-ink-soft underline underline-offset-2 hover:text-sec"
       >
         {useCalculator ? "Use flat amount" : "Use quantity × rate"}
       </button>
@@ -288,14 +288,14 @@ function CostItemForm({
       <button
         type="submit"
         disabled={pending}
-        className="rounded-full bg-ink px-4 py-1.5 font-serif text-xs text-cream transition hover:bg-ink-soft disabled:opacity-60"
+        className="btn btn-primary btn-sm"
       >
         {pending ? "Saving…" : "Save"}
       </button>
       <button
         type="button"
         onClick={onCancel}
-        className="rounded-full border border-ink/20 px-4 py-1.5 font-serif text-xs text-ink-soft transition hover:border-ink/40"
+        className="btn btn-quiet btn-sm"
       >
         Cancel
       </button>
@@ -352,7 +352,7 @@ export function CostItemsPanel({
             <button
               type="button"
               onClick={() => setAdding(true)}
-              className="flex items-center gap-1.5 font-serif text-xs text-ink-soft transition hover:text-accent"
+              className="flex items-center gap-1.5 font-serif text-xs text-ink-soft transition hover:text-sec"
             >
               <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
               Add a cost or income line

@@ -21,7 +21,7 @@ export function InviteLinkButton({ initialToken }: { initialToken: string | null
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        className="flex items-center gap-1.5 rounded-full border border-ink/15 px-4 py-2 font-serif text-xs font-medium text-ink-soft transition hover:border-ink/30 hover:text-ink"
+        className="btn btn-quiet btn-sm"
       >
         <Link2 className="h-3.5 w-3.5" strokeWidth={2} />
         Invite
@@ -89,7 +89,7 @@ function InviteLinkCard({ initialToken }: { initialToken: string | null }) {
               type="button"
               onClick={handleCopy}
               disabled={!url}
-              className="flex shrink-0 items-center gap-1.5 rounded-full bg-ink px-4 py-2 font-serif text-xs font-medium text-cream transition hover:bg-ink/85 disabled:opacity-60"
+              className="btn btn-primary btn-sm shrink-0"
             >
               {copied ? (
                 <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
@@ -106,7 +106,7 @@ function InviteLinkCard({ initialToken }: { initialToken: string | null }) {
           type="button"
           onClick={handleGenerate}
           disabled={pending}
-          className="flex shrink-0 items-center gap-1.5 rounded-full border border-ink/15 px-4 py-2 font-serif text-xs font-medium text-ink-soft transition hover:border-ink/30 hover:text-ink disabled:opacity-60"
+          className="btn btn-quiet btn-sm shrink-0"
         >
           <RefreshCw className={`h-3.5 w-3.5 ${pending ? "animate-spin" : ""}`} strokeWidth={2} />
           {token ? "Regenerate" : "Generate link"}

@@ -49,7 +49,7 @@ export function ExpenseCard({
 
   if (editing) {
     return (
-      <li className="rounded-[10px] border border-ink/10 bg-white p-4">
+      <li className="surface p-4">
         <form
           action={(formData) =>
             startTransition(async () => {
@@ -69,7 +69,7 @@ export function ExpenseCard({
             name="description"
             required
             defaultValue={description}
-            className="flex-1 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+            className="field flex-1"
           />
           <input
             name="amount"
@@ -78,13 +78,13 @@ export function ExpenseCard({
             min="0.01"
             required
             defaultValue={amount}
-            className="w-32 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+            className="field w-32"
           />
           <select
             name="paidByContactId"
             required
             defaultValue={paidByContactId ?? ""}
-            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+            className="field w-auto"
           >
             <option value="" disabled>
               Paid by…
@@ -98,14 +98,14 @@ export function ExpenseCard({
           <button
             type="submit"
             disabled={pending}
-            className="rounded-full bg-ink px-5 py-2 text-sm text-cream transition hover:bg-ink-soft disabled:opacity-60"
+            className="btn btn-primary"
           >
             {pending ? "Saving…" : "Save"}
           </button>
           <button
             type="button"
             onClick={() => setEditing(false)}
-            className="rounded-full border border-ink/20 px-5 py-2 text-sm text-ink-soft transition hover:border-ink/40"
+            className="btn btn-quiet"
           >
             Cancel
           </button>
@@ -120,7 +120,7 @@ export function ExpenseCard({
   }
 
   return (
-    <li className="group rounded-[10px] border border-ink/10 bg-white p-4 transition-colors duration-150 hover:border-accent/40">
+    <li className="surface surface-lift group p-4 duration-150">
       <div className="flex items-center justify-between gap-3">
         <span className="font-serif text-sm font-semibold">{description}</span>
         <div className="flex shrink-0 items-center gap-3">
@@ -132,7 +132,7 @@ export function ExpenseCard({
               <button
                 type="button"
                 onClick={() => setEditing(true)}
-                className="font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-accent"
+                className="font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-sec"
               >
                 Edit
               </button>

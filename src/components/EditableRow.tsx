@@ -49,7 +49,7 @@ export function EditableRow<T extends { id: string }>({
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-accent"
+              className="font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-sec"
             >
               Edit
             </button>

@@ -20,7 +20,7 @@ export type GuestTableContact = Contact & {
 };
 
 const SELECT_CLASS =
-  "rounded-full border border-ink/20 bg-cream px-3.5 py-1.5 text-xs text-ink-soft outline-none transition-colors duration-150 focus:border-accent focus:text-ink";
+  "field text-xs w-auto";
 
 const RSVP_OPTIONS = [
   { value: "attending", label: "Attending" },
@@ -182,7 +182,7 @@ export function GuestTable({
           <button
             type="button"
             onClick={clearFilters}
-            className="font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-accent"
+            className="font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-sec"
           >
             Clear filters
           </button>
@@ -193,13 +193,13 @@ export function GuestTable({
       </div>
 
       {topLevel.length === 0 && orphanChildren.length === 0 ? (
-        <p className="rounded-[10px] border border-ink/10 bg-white/50 px-5 py-8 text-center font-reading text-sm text-ink-soft italic">
+        <p className="surface surface-sunken px-5 py-8 text-center font-reading text-sm text-ink-soft italic">
           No guests match these filters.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-[10px] border border-ink/10">
+        <div className="surface overflow-x-auto">
           <table className="w-full min-w-[900px] text-left font-serif text-[13px]">
-            <thead className="bg-cream-deep">
+            <thead className="bg-sec-tint/70">
               <tr>
                 <th className="px-5 py-3 text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
                   <button

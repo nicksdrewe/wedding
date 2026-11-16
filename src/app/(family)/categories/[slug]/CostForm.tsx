@@ -40,7 +40,7 @@ export function CostForm({
           type="number"
           step="0.01"
           defaultValue={predictedCostMin}
-          className="w-28 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors focus:border-accent"
+          className="field w-28"
         />
       </div>
       <div className="flex flex-col gap-1">
@@ -52,7 +52,7 @@ export function CostForm({
           type="number"
           step="0.01"
           defaultValue={predictedCostMax}
-          className="w-28 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors focus:border-accent"
+          className="field w-28"
         />
       </div>
       <div className="flex flex-col gap-1">
@@ -64,7 +64,7 @@ export function CostForm({
           type="number"
           step="0.01"
           defaultValue={actualCost}
-          className="w-28 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors focus:border-accent"
+          className="field w-28"
         />
       </div>
       <div className="flex flex-col gap-1">
@@ -74,7 +74,7 @@ export function CostForm({
         <select
           name="currency"
           defaultValue={currency}
-          className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors focus:border-accent"
+          className="field w-auto"
         >
           <option value="GBP">£ GBP</option>
           <option value="EUR">€ EUR</option>
@@ -83,7 +83,7 @@ export function CostForm({
       <button
         type="submit"
         disabled={pending}
-        className="rounded-full bg-ink px-5 py-2 text-sm text-cream transition-colors hover:bg-ink-soft disabled:opacity-60"
+        className="btn btn-primary"
       >
         {pending ? "Saving…" : "Save"}
       </button>

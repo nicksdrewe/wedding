@@ -46,7 +46,7 @@ export function BulkAccounts({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded-full border border-accent/40 px-3.5 py-1.5 font-serif text-xs font-medium text-accent transition-colors hover:bg-accent/10"
+        className="btn btn-quiet btn-sm"
       >
         Create accounts ({eligible.length})
       </button>
@@ -54,7 +54,7 @@ export function BulkAccounts({
   }
 
   return (
-    <div className="w-full rounded-[10px] border border-accent/25 bg-accent/[0.04] px-5 py-4">
+    <div className="surface surface-tint w-full px-5 py-4">
       <p className="font-serif text-sm font-semibold text-ink">
         {done
           ? `Done — ${done.created} account${done.created === 1 ? "" : "s"} created`
@@ -98,7 +98,7 @@ export function BulkAccounts({
             type="button"
             onClick={run}
             disabled={running}
-            className="rounded-full bg-ink px-5 py-2 font-serif text-xs text-cream transition hover:bg-ink-soft disabled:opacity-60"
+            className="btn btn-primary btn-sm"
           >
             {running ? "Creating…" : `Create ${eligible.length} account${eligible.length === 1 ? "" : "s"}`}
           </button>
@@ -111,7 +111,7 @@ export function BulkAccounts({
             setFailures([]);
           }}
           disabled={running}
-          className="rounded-full border border-ink/20 px-5 py-2 font-serif text-xs text-ink-soft transition hover:border-ink/40 disabled:opacity-60"
+          className="btn btn-quiet btn-sm"
         >
           {done ? "Close" : "Cancel"}
         </button>

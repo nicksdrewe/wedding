@@ -118,7 +118,7 @@ export default async function CategoryDetailPage({
     <div className="mx-auto max-w-3xl">
       <PageHeader eyebrow="Planning" title={page.title} />
 
-      <section className="rounded-[10px] border border-ink/10 bg-white p-6">
+      <section className="surface p-6">
         <div className="flex items-center justify-between gap-4">
           <h2 className="font-serif text-[15px] font-semibold">Options</h2>
           {isRealCouple && !optionGroup && (
@@ -167,7 +167,7 @@ export default async function CategoryDetailPage({
       </section>
 
       {canSeeCosts && (
-      <section className="mt-6 rounded-[10px] border border-ink/10 bg-white p-6">
+      <section className="surface mt-6 p-6">
         <h2 className="font-serif text-[15px] font-semibold">Costs</h2>
         {canEditCategoryCost ? (
           <div className="mt-2">
@@ -192,7 +192,7 @@ export default async function CategoryDetailPage({
       )}
 
       {canSeeCosts && linkedCostItems.length > 0 && (
-        <section className="mt-6 rounded-[10px] border border-ink/10 bg-white p-6">
+        <section className="surface mt-6 p-6">
           <h2 className="font-serif text-[15px] font-semibold">Linked costs</h2>
           <p className="mt-1.5 font-reading text-[13px] text-ink-soft">
             Cost items logged under another category, also shown here.
@@ -201,7 +201,7 @@ export default async function CategoryDetailPage({
         </section>
       )}
 
-      <section className="mt-6 rounded-[10px] border border-ink/10 bg-white p-6">
+      <section className="surface mt-6 p-6">
         <h2 className="font-serif text-[15px] font-semibold">Key contacts</h2>
         {contacts && contacts.length > 0 ? (
           <ul className="mt-3 flex flex-col gap-2">
@@ -215,7 +215,7 @@ export default async function CategoryDetailPage({
         {isCouple && <ContactForm categoryPageId={page.id} />}
       </section>
 
-      <section className="mt-6 rounded-[10px] border border-ink/10 bg-white p-6">
+      <section className="surface mt-6 p-6">
         <h2 className="font-serif text-[15px] font-semibold">Key dates</h2>
         {dates && dates.length > 0 ? (
           <ul className="mt-3 flex flex-col gap-2">

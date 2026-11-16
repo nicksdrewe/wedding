@@ -78,14 +78,14 @@ export default async function ExpensesPage() {
       )}
 
       <section className="mt-10">
-        <h2 className="font-serif text-[15px] font-semibold tracking-wide">Balances</h2>
+        <div className="section-head"><h2 className="section-head__title">Balances</h2><span className="section-head__rule" /></div>
         <ul className="mt-3 flex max-w-[520px] flex-col gap-2">
           {balances.map((b, i) => (
             <InView
               key={b.name}
               as="li"
               once
-              className="flex items-center justify-between rounded-[10px] border border-ink/10 bg-white px-4.5 py-3.5 font-serif text-[13px] transition-colors duration-150 hover:border-accent/40"
+              className="surface surface-lift flex items-center justify-between px-4.5 py-3.5 font-serif text-[13px] duration-150"
               variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }}
               transition={{ duration: 0.3, delay: i * 0.05 }}
             >
@@ -111,7 +111,7 @@ export default async function ExpensesPage() {
       </section>
 
       <section className="mt-10">
-        <h2 className="font-serif text-[15px] font-semibold tracking-wide">Expenses</h2>
+        <div className="section-head"><h2 className="section-head__title">Expenses</h2><span className="section-head__rule" /></div>
         <ul className="mt-3 flex max-w-[640px] flex-col gap-2.5">
           {(expenses ?? []).map((e) => {
             const payer = Array.isArray(e.contacts) ? e.contacts[0] : e.contacts;

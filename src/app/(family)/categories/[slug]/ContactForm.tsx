@@ -59,31 +59,31 @@ export function ContactForm({
         required
         defaultValue={contact?.name}
         placeholder="Name"
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors focus:border-accent"
+        className="field w-auto"
       />
       <input
         name="role"
         defaultValue={contact?.role ?? ""}
         placeholder="Role"
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors focus:border-accent"
+        className="field w-auto"
       />
       <input
         name="phone"
         defaultValue={contact?.phone ?? ""}
         placeholder="Phone"
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors focus:border-accent"
+        className="field w-auto"
       />
       <input
         name="email"
         type="email"
         defaultValue={contact?.email ?? ""}
         placeholder="Email"
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors focus:border-accent"
+        className="field w-auto"
       />
       <button
         type="submit"
         disabled={pending}
-        className="rounded-full bg-ink px-5 py-2 text-sm text-cream transition-colors hover:bg-ink-soft disabled:opacity-60"
+        className="btn btn-primary"
       >
         {pending ? "Saving…" : isEditing ? "Save" : "Add contact"}
       </button>
@@ -91,7 +91,7 @@ export function ContactForm({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-full border border-ink/20 px-5 py-2 text-sm text-ink-soft transition-colors hover:border-ink/40"
+          className="btn btn-quiet"
         >
           Cancel
         </button>

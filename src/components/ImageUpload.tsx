@@ -81,7 +81,7 @@ export function ImageUpload({
 
   return (
     <div className={`flex flex-col gap-1.5 ${className ?? ""}`}>
-      <label className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-full border border-ink/20 bg-cream px-4 py-2 font-serif text-sm text-ink-soft transition hover:border-accent disabled:opacity-60">
+      <label className="btn btn-quiet w-fit">
         {input}
         {busy ? "Uploading…" : label}
       </label>

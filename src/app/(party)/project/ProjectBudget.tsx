@@ -67,20 +67,20 @@ export async function ProjectBudget({
 
   return (
     <section className="mt-12">
-      <h2 className="font-serif text-[15px] font-semibold tracking-wide">Budget</h2>
+      <div className="section-head"><h2 className="section-head__title">Budget</h2><span className="section-head__rule" /></div>
       <p className="mt-2 font-reading text-sm text-ink-soft italic">
         This project&rsquo;s own money — separate from the wedding budget.
         {canManage ? "" : " Shared with you to view."}
       </p>
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="rounded-[10px] border border-ink/10 bg-white px-5 py-4">
+        <div className="surface px-5 py-4">
           <p className="font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">Predicted total</p>
           <p className="mt-1.5 font-display text-[24px] tracking-tight tabular-nums">
             {empty ? "—" : formatCostRange(predictedMin, predictedMax, "GBP")}
           </p>
         </div>
-        <div className="rounded-[10px] border border-ink/10 bg-white px-5 py-4">
+        <div className="surface px-5 py-4">
           <p className="font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">Spent so far</p>
           <p className="mt-1.5 font-display text-[24px] tracking-tight tabular-nums">
             {empty ? "—" : formatCurrency(actual, "GBP")}

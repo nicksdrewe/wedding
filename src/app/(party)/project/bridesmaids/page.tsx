@@ -126,7 +126,7 @@ export default async function BridesmaidsProjectPage() {
     <div>
       <Link
         href="/project"
-        className="inline-flex items-center gap-1.5 font-serif text-xs tracking-wide text-ink-soft transition hover:text-accent"
+        className="inline-flex items-center gap-1.5 font-serif text-xs tracking-wide text-ink-soft transition hover:text-sec"
       >
         <ArrowLeft className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
         Project
@@ -159,7 +159,7 @@ export default async function BridesmaidsProjectPage() {
       </div>
 
       <section className="mt-12">
-        <h2 className="font-serif text-[15px] font-semibold tracking-wide">Compare options</h2>
+        <div className="section-head"><h2 className="section-head__title">Compare options</h2><span className="section-head__rule" /></div>
         <p className="mt-2 font-reading text-sm text-ink-soft italic">
           Comparisons started here — hen do venue, outfits, and anything
           else just for the bridesmaids.

@@ -157,7 +157,7 @@ export default async function ProjectPage() {
       </div>
 
       <section className="mt-12">
-        <h2 className="font-serif text-[15px] font-semibold tracking-wide">Compare options</h2>
+        <div className="section-head"><h2 className="section-head__title">Compare options</h2><span className="section-head__rule" /></div>
         <p className="mt-2 font-reading text-sm text-ink-soft italic">
           Every comparison running, across every category plus stag/hen
           extras — skimmed to title and cost so you can pick fast.

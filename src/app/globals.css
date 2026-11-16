@@ -137,6 +137,7 @@ body {
   50% { box-shadow: 0 30px 90px rgba(0,0,0,0.45), 0 0 60px 0 rgba(124,148,130,0.16); }
 }
 
+@layer components {
 /* ═══════════════ Design foundation components ═══════════════
    Plain CSS classes so server and client components can both use them and a
    page can be moved over by swapping class names. Rules: docs/design-system.md */
@@ -500,6 +501,8 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -509,6 +512,7 @@ body {
   }
 }
 
+@layer components {
 /* ═══════════════ Task board ═══════════════ */
 .chip-urgent { color: #fff; background: var(--color-alert); font-weight: 600; }
 
@@ -655,3 +659,4 @@ body {
   animation: portalFloat 7s ease-in-out infinite;
 }
 .portal__empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+}

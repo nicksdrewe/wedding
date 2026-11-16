@@ -49,7 +49,7 @@ export function LinkedCostItems({ items, isCouple }: { items: LinkedItem[]; isCo
         const cover = [...images].sort((a, b) => a.sort_order - b.sort_order)[0];
 
         return (
-          <div key={link.id} className="overflow-hidden rounded-[10px] border border-ink/10 bg-white">
+          <div key={link.id} className="surface overflow-hidden">
             <div className="relative aspect-[4/3] w-full bg-cream-deep">
               {cover ? (
                 // eslint-disable-next-line @next/next/no-img-element

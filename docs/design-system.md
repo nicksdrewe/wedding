@@ -59,6 +59,8 @@ The mapping is `src/lib/design/sections.ts`; `AppShell` sets `data-section` from
 
 ## What is done / not done
 
-**Done (foundation):** tokens, all classes above, backdrop, canopy header on every page that uses `PageHeader`, floating glass nav, night-garden phone menu, section colours, new `EmptyState`, style guide. Category cards on `/categories` moved over as the worked example.
+**Done:** foundation (tokens, classes, backdrop, canopy header, glass nav, night-garden phone menu, section colours), plus the rollout across every signed-in page: cards -> `surface`, buttons -> `btn`, inputs -> `field`, section headings -> `section-head`, option cards and comparison groups, tasks board, idea portals, project tabs. All the tokens/classes sit in `@layer components`, so a Tailwind utility on the same element (e.g. `w-28`, `mt-4`) always wins.
 
-**Not done (rollout, in slices):** the insides of Categories detail, Project, Guests, Budget, Diary, Comms, Access, Account, Errors still use the old flat cards, buttons and inputs. The signature "choosing a winner" moment and the timeline (see backlog timeline notes) are designed with their features.
+**Not restyled (by design):** the public landing, gifts, RSVP, event and sign-in pages (their own ceremonial look, left alone), and any element built from a template-string class (a few state-dependent pills and chips).
+
+**Next for design:** the signature "choosing a winner" moment, and the timeline (see the backlog notes), are designed with their features. Anything new should be built from the classes above from the start.

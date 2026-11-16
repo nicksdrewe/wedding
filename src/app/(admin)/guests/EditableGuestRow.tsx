@@ -224,7 +224,7 @@ export function EditableGuestRow({
               <button
                 type="button"
                 onClick={() => setAddingChild(true)}
-                className="font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-accent"
+                className="font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-sec"
               >
                 + Plus one
               </button>
@@ -232,7 +232,7 @@ export function EditableGuestRow({
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-accent"
+              className="font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-sec"
             >
               Edit
             </button>
@@ -281,7 +281,7 @@ function GuestEditForm({
   }
 
   return (
-    <form action={handleSubmit} className="rounded-[10px] border border-ink/10 bg-white/50 p-4">
+    <form action={handleSubmit} className="surface surface-sunken p-4">
       <input type="hidden" name="id" value={contact.id} />
       {/* Every event's RSVP status travels as one JSON blob rather than
           per-event form fields — the set of events is dynamic now (see
@@ -305,7 +305,7 @@ function GuestEditForm({
             name="fullName"
             required
             defaultValue={contact.full_name}
-            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+            className="field w-auto"
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -316,7 +316,7 @@ function GuestEditForm({
             name="email"
             type="email"
             defaultValue={contact.email ?? ""}
-            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+            className="field w-auto"
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -326,7 +326,7 @@ function GuestEditForm({
           <input
             name="phone"
             defaultValue={contact.phone ?? ""}
-            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+            className="field w-auto"
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -336,7 +336,7 @@ function GuestEditForm({
           <select
             name="role"
             defaultValue={contact.role}
-            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+            className="field w-auto"
           >
             <option value="guest">Guest</option>
             <option value="family">Family</option>
@@ -358,7 +358,7 @@ function GuestEditForm({
             <select
               name="rsvpStatus"
               defaultValue={contact.rsvp_status}
-              className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+              className="field w-auto"
             >
               <option value="pending">Pending</option>
               <option value="attending">Attending</option>
@@ -392,7 +392,7 @@ function GuestEditForm({
                 current[e.id] = ev.target.value;
                 hidden.value = JSON.stringify(current);
               }}
-              className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+              className="field w-auto"
             >
               <option value="pending">Pending</option>
               <option value="attending">Attending</option>
@@ -409,21 +409,21 @@ function GuestEditForm({
             name="plusOneLimit"
             min={0}
             defaultValue={contact.plus_one_limit}
-            className="w-20 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+            className="field w-20"
           />
         </div>
         <div className="flex gap-2">
           <button
             type="submit"
             disabled={pending}
-            className="rounded-full bg-ink px-5 py-2 text-sm text-cream transition-colors duration-150 hover:bg-ink-soft disabled:opacity-60"
+            className="btn btn-primary"
           >
             {pending ? "Saving…" : "Save"}
           </button>
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-full border border-ink/20 px-5 py-2 text-sm text-ink-soft transition-colors duration-150 hover:border-ink/40"
+            className="btn btn-quiet"
           >
             Cancel
           </button>
@@ -469,7 +469,7 @@ function AddChildForm({
   }
 
   return (
-    <form action={handleSubmit} className="rounded-[10px] border border-ink/10 bg-white/50 p-4">
+    <form action={handleSubmit} className="surface surface-sunken p-4">
       <input type="hidden" name="parentContactId" value={parentContactId} />
       <p className="mb-3 font-serif text-[11px] font-medium tracking-[0.04em] text-ink-soft uppercase">
         Add a plus one under {parentName}
@@ -483,7 +483,7 @@ function AddChildForm({
             name="fullName"
             required
             autoFocus
-            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+            className="field w-auto"
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -493,7 +493,7 @@ function AddChildForm({
           <input
             name="email"
             type="email"
-            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+            className="field w-auto"
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -502,7 +502,7 @@ function AddChildForm({
           </label>
           <input
             name="phone"
-            className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors duration-150 focus:border-accent"
+            className="field w-auto"
           />
         </div>
         {events.length > 0 && (
@@ -524,14 +524,14 @@ function AddChildForm({
           <button
             type="submit"
             disabled={pending}
-            className="rounded-full bg-ink px-5 py-2 text-sm text-cream transition-colors duration-150 hover:bg-ink-soft disabled:opacity-60"
+            className="btn btn-primary"
           >
             {pending ? "Adding…" : "Add"}
           </button>
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-full border border-ink/20 px-5 py-2 text-sm text-ink-soft transition-colors duration-150 hover:border-ink/40"
+            className="btn btn-quiet"
           >
             Cancel
           </button>

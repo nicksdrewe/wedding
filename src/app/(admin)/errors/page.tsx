@@ -40,7 +40,7 @@ export default async function ErrorsPage() {
     <div>
       <Link
         href="/access"
-        className="font-serif text-xs tracking-wide text-ink-soft transition-colors hover:text-accent"
+        className="font-serif text-xs tracking-wide text-ink-soft transition-colors hover:text-sec"
       >
         ← Roles &amp; Access
       </Link>
@@ -66,9 +66,9 @@ export default async function ErrorsPage() {
       ) : rows.length === 0 ? (
         <EmptyState className="mt-8" title="Nothing has gone wrong" hint="No errors in the last 30 days." />
       ) : (
-        <div className="mt-8 overflow-x-auto rounded-[10px] border border-ink/10">
+        <div className="surface mt-8 overflow-x-auto">
           <table className="w-full min-w-[640px] text-left font-serif text-[13px]">
-            <thead className="bg-cream-deep">
+            <thead className="bg-sec-tint/70">
               <tr>
                 {["When", "Page", "What it said", "Times", "Reference"].map((h) => (
                   <th key={h} className="px-5 py-3 text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">

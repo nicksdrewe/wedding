@@ -38,18 +38,18 @@ export function IdeaForm() {
         name="title"
         required
         placeholder="Idea title"
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+        className="field w-auto"
       />
       <textarea
         name="body"
         placeholder="Details (optional)"
         rows={2}
-        className="rounded-2xl border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+        className="field w-auto"
       />
       <input
         name="tags"
         placeholder="Tags (comma, separated)"
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+        className="field w-auto"
       />
 
       <div className="flex flex-wrap items-center gap-3">
@@ -72,7 +72,7 @@ export function IdeaForm() {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-full bg-ink px-5 py-2 text-sm text-cream transition hover:bg-ink-soft disabled:opacity-60"
+          className="btn btn-primary"
         >
           {pending ? "Adding…" : "Add idea"}
         </button>

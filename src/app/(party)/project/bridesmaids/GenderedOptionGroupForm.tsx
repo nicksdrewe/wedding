@@ -31,12 +31,12 @@ export function GenderedOptionGroupForm({ visibleTag }: { visibleTag: VisibleTag
         name="title"
         required
         placeholder="e.g. Hen do venue"
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+        className="field w-auto"
       />
       <button
         type="submit"
         disabled={pending}
-        className="rounded-full bg-ink px-5 py-2 text-sm text-cream transition hover:bg-ink-soft disabled:opacity-60"
+        className="btn btn-primary"
       >
         {pending ? "Starting…" : "Start comparison"}
       </button>

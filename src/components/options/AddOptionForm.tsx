@@ -41,7 +41,7 @@ export function AddOptionForm({
         name="name"
         required
         placeholder="Option name"
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+        className="field w-auto"
       />
       {showCosts && (
         <>
@@ -51,26 +51,26 @@ export function AddOptionForm({
         type="number"
         step="0.01"
         placeholder="Predicted min"
-        className="w-28 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+        className="field w-28"
       />
       <input
         name="predictedCostMax"
         type="number"
         step="0.01"
         placeholder="Predicted max"
-        className="w-28 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+        className="field w-28"
       />
       <input
         name="actualCost"
         type="number"
         step="0.01"
         placeholder="Actual"
-        className="w-28 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+        className="field w-28"
       />
       <select
         name="currency"
         defaultValue="GBP"
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+        className="field w-auto"
       >
         <option value="GBP">£ GBP</option>
         <option value="EUR">€ EUR</option>
@@ -80,23 +80,23 @@ export function AddOptionForm({
       <input
         name="optionDate"
         type="date"
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+        className="field w-auto"
       />
       <input
         name="contactName"
         placeholder="Contact name"
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+        className="field w-auto"
       />
       <input
         name="contactPhone"
         placeholder="Contact phone"
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+        className="field w-auto"
       />
       <input
         name="contactEmail"
         type="email"
         placeholder="Contact email"
-        className="rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+        className="field w-auto"
       />
       <input
         name="latitude"
@@ -105,7 +105,7 @@ export function AddOptionForm({
         min={-90}
         max={90}
         placeholder="Latitude"
-        className="w-28 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+        className="field w-28"
       />
       <input
         name="longitude"
@@ -114,7 +114,7 @@ export function AddOptionForm({
         min={-180}
         max={180}
         placeholder="Longitude"
-        className="w-28 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+        className="field w-28"
       />
       <input
         name="nights"
@@ -122,7 +122,7 @@ export function AddOptionForm({
         min={0}
         step={1}
         placeholder="Nights"
-        className="w-24 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+        className="field w-24"
       />
       <input
         name="sleeps"
@@ -130,12 +130,12 @@ export function AddOptionForm({
         min={0}
         step={1}
         placeholder="Sleeps"
-        className="w-24 rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none focus:border-accent"
+        className="field w-24"
       />
       <button
         type="submit"
         disabled={pending}
-        className="rounded-full bg-ink px-5 py-2 text-sm text-cream transition hover:bg-ink-soft disabled:opacity-60"
+        className="btn btn-primary"
       >
         {pending ? "Adding…" : "Add option"}
       </button>

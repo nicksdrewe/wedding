@@ -202,7 +202,7 @@ function PageSection({
   }
 
   return (
-    <div className="rounded-[10px] border border-ink/10 bg-white p-5">
+    <div className="surface p-5">
       <p className="font-serif text-sm font-semibold text-ink">{page.label}</p>
       <p className="mt-0.5 font-reading text-xs text-ink-soft/70">{page.page_key}</p>
 
@@ -226,7 +226,7 @@ function PageSection({
           value={newTag}
           onChange={(e) => setNewTag(e.target.value)}
           placeholder="Add a tag override, e.g. best_man"
-          className="rounded-full border border-ink/20 bg-cream px-4 py-1.5 font-reading text-xs outline-none focus:border-accent"
+          className="field w-auto"
         />
         <datalist id={`tags-${page.page_key}`}>
           {knownTags.map((t) => (
@@ -237,7 +237,7 @@ function PageSection({
           type="button"
           onClick={addTag}
           disabled={pending || !newTag.trim()}
-          className="rounded-full border border-ink/20 px-3.5 py-1.5 font-serif text-xs text-ink-soft transition hover:border-ink/40 disabled:opacity-60"
+          className="btn btn-quiet btn-sm"
         >
           Add
         </button>
@@ -260,7 +260,7 @@ export function AccessMatrixForm({
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="rounded-[10px] border border-ink/10 bg-white/60">
+    <div className="surface surface-sunken">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}

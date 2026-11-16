@@ -80,18 +80,18 @@ export function OptionsGrid({
 
   function cardClasses(o: OptionRow) {
     if (o.is_winner) {
-      return "border-2 border-accent bg-cream shadow-[0_8px_24px_rgba(76,107,82,0.18)] scale-100 opacity-100";
+      return "border-2 border-accent bg-paper shadow-[0_18px_44px_rgba(76,107,82,0.28)] scale-100 opacity-100";
     }
     if (hasWinner) {
-      return "border border-ink/10 bg-cream-deep opacity-50 scale-[0.97]";
+      return "border border-ink/10 bg-cream-deep opacity-50 scale-[0.97] shadow-none";
     }
     if (confirmingId === o.id) {
-      return "border border-accent bg-cream shadow-[0_6px_18px_rgba(76,107,82,0.15)] scale-[1.01] opacity-100";
+      return "border border-accent bg-paper shadow-[0_14px_34px_rgba(76,107,82,0.25)] scale-[1.02] opacity-100";
     }
     if (confirmingId) {
-      return "border border-ink/10 bg-cream-deep opacity-40 scale-[0.97]";
+      return "border border-ink/10 bg-cream-deep opacity-40 scale-[0.97] shadow-none";
     }
-    return "border border-ink/10 bg-cream-deep opacity-100 scale-100";
+    return "border border-ink/10 bg-paper opacity-100 scale-100 shadow-[var(--shadow-1)]";
   }
 
   return (
@@ -99,7 +99,7 @@ export function OptionsGrid({
       {options.map((o) => (
         <div
           key={o.id}
-          className={`relative rounded-[10px] p-5 font-serif text-sm transition-[opacity,transform,border-color,box-shadow] duration-[260ms] ease-[cubic-bezier(.22,1,.36,1)] ${cardClasses(o)}`}
+          className={`relative rounded-[var(--radius-lg)] p-5 font-serif text-sm transition-[opacity,transform,border-color,box-shadow] duration-[260ms] ease-[cubic-bezier(.22,1,.36,1)] ${cardClasses(o)}`}
         >
           {o.is_winner && (
             <span className="absolute -top-2.5 right-4 rounded-full bg-accent px-3 py-1 font-serif text-[10px] tracking-wide text-cream uppercase">
@@ -130,7 +130,7 @@ export function OptionsGrid({
               type="button"
               disabled={!!confirmingId}
               onClick={() => requestSelect(o.id)}
-              className="mt-4 rounded-full border border-ink/20 px-4.5 py-2 font-serif text-xs text-ink-soft transition hover:border-ink/40 disabled:opacity-60"
+              className="btn btn-quiet btn-sm mt-4"
             >
               {confirmingId === o.id ? "Confirming…" : "Select this option"}
             </button>
@@ -158,11 +158,11 @@ export function OptionsGrid({
             <button
               type="button"
               onClick={() => pendingId && commit(pendingId)}
-              className="rounded-full bg-ink px-5 py-2 font-serif text-xs text-cream transition hover:bg-ink-soft"
+              className="btn btn-primary btn-sm"
             >
               Confirm
             </button>
-            <DialogClose className="rounded-full border border-ink/20 px-5 py-2 font-serif text-xs text-ink-soft transition hover:border-ink/40">
+            <DialogClose className="btn btn-quiet btn-sm">
               Cancel
             </DialogClose>
           </div>

@@ -19,7 +19,7 @@ export type ProjectBudgetItem = {
 };
 
 const INPUT =
-  "rounded-full border border-ink/20 bg-cream px-4 py-2 text-sm outline-none transition-colors focus:border-accent";
+  "field w-auto";
 
 // One form for both adding a line and editing an existing one — same
 // convention as ContactForm/DateForm on the category pages.
@@ -83,7 +83,7 @@ function BudgetItemForm({
       <button
         type="submit"
         disabled={pending}
-        className="rounded-full bg-ink px-5 py-2 font-serif text-xs text-cream transition hover:bg-ink-soft disabled:opacity-60"
+        className="btn btn-primary btn-sm"
       >
         {pending ? "Saving…" : item ? "Save" : "Add line"}
       </button>
@@ -91,7 +91,7 @@ function BudgetItemForm({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-full border border-ink/20 px-5 py-2 font-serif text-xs text-ink-soft transition hover:border-ink/40"
+          className="btn btn-quiet btn-sm"
         >
           Cancel
         </button>

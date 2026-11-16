@@ -173,7 +173,7 @@ export function OptionsCompareGroup({ group }: { group: CompareGroup }) {
                 <button
                   type="button"
                   onClick={() => setEditingTitle(true)}
-                  className="font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-accent"
+                  className="font-serif text-[11px] tracking-[0.06em] text-ink-soft uppercase hover:text-sec"
                 >
                   Edit
                 </button>

@@ -71,7 +71,7 @@ export default async function BudgetPage() {
       />
 
       {hiddenCount > 0 && (
-        <p className="mt-6 rounded-[10px] border border-ink/10 bg-cream-deep/40 px-5 py-3 font-reading text-[13px] text-ink-soft">
+        <p className="surface mt-6 bg-cream-deep/40 px-5 py-3 font-reading text-[13px] text-ink-soft">
           {hiddenCount === 1 ? "1 category isn't" : `${hiddenCount} categories aren't`} included here — the
           totals below cover only the categories shared with your account.
         </p>
@@ -88,33 +88,33 @@ export default async function BudgetPage() {
           {/* Running total, front and centre — the number people actually
               came here for. */}
           <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="rounded-[10px] border border-ink/10 bg-white px-5 py-4">
+            <div className="surface px-5 py-4">
               <p className="font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
                 Predicted total
               </p>
-              <p className="mt-1.5 font-display text-[26px] tracking-tight tabular-nums">
+              <p className="mt-1.5 font-title text-[30px] tracking-tight tabular-nums">
                 £<AnimatedNumber value={totalPredictedMin} springOptions={{ bounce: 0 }} />
                 {"–"}£<AnimatedNumber value={totalPredictedMax} springOptions={{ bounce: 0 }} />
               </p>
             </div>
-            <div className="rounded-[10px] border border-ink/10 bg-white px-5 py-4">
+            <div className="surface px-5 py-4">
               <p className="font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
                 Actual total
               </p>
-              <p className="mt-1.5 font-display text-[26px] tracking-tight tabular-nums">
+              <p className="mt-1.5 font-title text-[30px] tracking-tight tabular-nums">
                 £<AnimatedNumber value={totalActual} springOptions={{ bounce: 0 }} />
               </p>
             </div>
             <div
-              className={`rounded-[10px] border px-5 py-4 ${
-                onTrack ? "border-accent/25 bg-accent/5" : overallOver ? "border-alert/25 bg-alert/5" : "border-accent/25 bg-accent/5"
+              className={`surface px-5 py-4 ${
+                overallOver && !onTrack ? "!border-alert/30 !bg-alert/5" : "surface-tint"
               }`}
             >
               <p className="font-serif text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
                 {onTrack ? "Within predicted range" : overallOver ? "Over budget by" : "Under budget by"}
               </p>
               <p
-                className={`mt-1.5 font-display text-[26px] tracking-tight tabular-nums ${
+                className={`mt-1.5 font-title text-[30px] tracking-tight tabular-nums ${
                   onTrack ? "text-accent" : overallOver ? "text-alert" : "text-accent"
                 }`}
               >
@@ -131,9 +131,9 @@ export default async function BudgetPage() {
 
           {/* Per-category breakdown — predicted vs actual read side by side,
               with a bar so the comparison doesn't require doing the maths. */}
-          <div className="mt-6 overflow-hidden rounded-[10px] border border-ink/10">
+          <div className="surface mt-6 overflow-hidden">
             <table className="w-full min-w-[640px] text-left font-serif text-[13px] tabular-nums">
-              <thead className="bg-cream-deep">
+              <thead className="bg-sec-tint/70">
                 <tr>
                   <th className="px-5 py-3 text-[11px] font-medium tracking-[0.08em] text-ink-soft uppercase">
                     Category

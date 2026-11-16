@@ -12,7 +12,7 @@ import type { MapOption } from "./OptionsMap";
 const OptionsMap = dynamic(() => import("./OptionsMap").then((m) => m.OptionsMap), {
   ssr: false,
   loading: () => (
-    <div className="flex h-80 w-full items-center justify-center rounded-[10px] border border-ink/10 bg-cream-deep/40 font-reading text-xs text-ink-soft/70">
+    <div className="surface flex h-80 w-full items-center justify-center bg-cream-deep/40 font-reading text-xs text-ink-soft/70">
       Loading map…
     </div>
   ),
