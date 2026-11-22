@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Botanical } from "@/components/Botanical";
+import { GalaxyButton } from "@/components/auth/GalaxyButton";
 
 // A soft deterrent, not real security: purely client-side, checked against
 // a shared code baked into the bundle. It stops a casual link-share or
@@ -9,7 +11,7 @@ import { Botanical } from "@/components/Botanical";
 // scrolled — it will not stop someone who opens devtools. Real access
 // control still lives in Supabase auth/RLS for everything past the landing
 // page.
-const GATE_CODE = "N&E2028";
+const GATE_CODES = ["N&E2028", "9762"];
 // Exported so /i/[token]'s InviteRedirect can unlock the gate the same way
 // entering the code does, without duplicating the key as a second string
 // literal that could silently drift out of sync with this one.
@@ -37,7 +39,7 @@ export function SiteGate({ children }: { children: React.ReactNode }) {
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (value.trim().toUpperCase() === GATE_CODE) {
+    if (GATE_CODES.includes(value.trim().toUpperCase())) {
       try {
         window.localStorage.setItem(GATE_STORAGE_KEY, "true");
       } catch {
@@ -108,12 +110,19 @@ export function SiteGate({ children }: { children: React.ReactNode }) {
             wrong ? "border-alert" : "border-cream/25"
           }`}
         />
-        <button
-          type="submit"
-          className="rounded-full bg-cream px-8 py-3.5 font-serif text-sm text-ink transition hover:bg-white"
+        {/* The same cosmic button as the sign-in page, in its night colours. */}
+        <div
+          className="w-56"
+          style={{ "--sun-c": "#eef0e6", "--btn-base": "#0b120d", "--btn-sheen": "#2f5a3a" } as React.CSSProperties}
         >
-          Enter
-        </button>
+          <GalaxyButton>Enter</GalaxyButton>
+        </div>
+        <Link
+          href="/login"
+          className="mt-1 w-56 rounded-full border border-cream/30 px-6 py-3 font-serif text-sm text-cream/90 transition hover:border-cream/60 hover:bg-white/10"
+        >
+          Log in
+        </Link>
         {wrong && (
           <p className="font-reading text-xs text-alert">That code isn&rsquo;t quite right.</p>
         )}
