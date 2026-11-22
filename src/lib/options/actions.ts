@@ -1,8 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { notifyWinnerChosen } from "@/lib/push/send";
 import { getCurrentProfile } from "@/lib/auth/roles";
 import { computeOptionTotals } from "./totals";
 
@@ -476,6 +478,9 @@ export async function markOptionWinner(optionId: string) {
       if (costError) return { error: costError.message };
     }
   }
+
+  const actorId = (await getCurrentProfile())?.id ?? null;
+  after(() => notifyWinnerChosen(optionId, actorId));
 
   revalidatePath("/categories");
   revalidatePath("/budget");

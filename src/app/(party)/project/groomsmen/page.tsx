@@ -13,6 +13,7 @@ import { loadCategoryTree } from "@/lib/categories/load";
 import { loadGroupChart } from "@/lib/party/group";
 import { OPTION_COVER_EMBED, coverImageOf } from "@/lib/options/cover";
 import { IdeaPortal, portalThumbs } from "@/components/ui/IdeaPortal";
+import { loadAssignees } from "@/lib/tasks/assignees";
 import { TaskBoard } from "../TaskBoard";
 import { TASK_SELECT, toBoardTask } from "@/lib/tasks/priority";
 import { OptionsCompareGroup, type CompareGroup } from "../OptionsCompareGroup";
@@ -54,11 +55,7 @@ export default async function GroomsmenProjectPage() {
       .eq("visible_tag", "groomsman")
       .order("status")
       .order("due_date", { ascending: true, nullsFirst: false }),
-    supabase
-      .from("contacts")
-      .select("id, full_name")
-      .in("role", ["couple", "wedding_party"])
-      .order("full_name"),
+    loadAssignees("groomsman"),
     supabase
       .from("option_groups")
       .select(
@@ -142,7 +139,7 @@ export default async function GroomsmenProjectPage() {
         <TaskBoard
           tasks={(tasks ?? []).map(toBoardTask)}
           contacts={contacts ?? []} visibleTag="groomsman"
-          canAdd={permission.editAccess}
+          canAdd
           canDelete={isAdmin}
           canHide={isAdmin && !isCouple}
           hiddenIds={hiddenTaskIds}

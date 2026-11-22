@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Archivo, Fraunces, Source_Serif_4, Manrope } from "next/font/google";
 import "./globals.css";
 import { ViewAsBanner } from "@/components/ViewAsBanner";
+import { RegisterServiceWorker } from "@/components/RegisterServiceWorker";
 
 // Grotesque carries UI, structure and numbers; serif carries reading copy.
 // Never mixed within one line — see docs/design-brief.md.
@@ -44,6 +45,9 @@ export const metadata: Metadata = {
   title: "Nick & Ellie — Summer 2028",
   description: "Nick & Ellie's wedding hub",
   manifest: "/manifest.json",
+  // Added to a phone's home screen it opens like an app.
+  appleWebApp: { capable: true, title: "N & E", statusBarStyle: "default" },
+  icons: { apple: "/icons/icon-192.png" },
 };
 
 export const viewport: Viewport = {
@@ -84,6 +88,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-screen flex flex-col bg-cream text-ink font-serif">
         {children}
         <ViewAsBanner />
+        <RegisterServiceWorker />
       </body>
     </html>
   );

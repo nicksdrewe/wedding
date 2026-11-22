@@ -11,9 +11,11 @@
 // which page called them, so they don't need a gendered variant.
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
+import { notifyProfiles, profilesForContact } from "@/lib/push/send";
 
 const visibleTagSchema = z.enum(["bridesmaid", "groomsman"]);
 export type VisibleTag = z.infer<typeof visibleTagSchema>;
@@ -89,6 +91,18 @@ export async function createGenderedTask(formData: FormData) {
     due_date: parsed.dueDate || null,
     priority: parsed.priority,
   });
+
+  // Tell the person it was given to (not if they gave it to themselves).
+  if (parsed.ownerContactId) {
+    const actor = await getCurrentProfile();
+    const ownerId = parsed.ownerContactId;
+    after(async () => notifyProfiles(
+      await profilesForContact(ownerId),
+      "task_assigned",
+      { title: "A task for you", body: parsed.title, url: pathForTag(parsed.visibleTag) },
+      actor?.id
+    ));
+  }
 
   revalidatePath(pathForTag(parsed.visibleTag));
 }

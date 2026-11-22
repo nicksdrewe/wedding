@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
+import { notifyProfiles, profilesForContact } from "@/lib/push/send";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 // tags: same comma-separated-input -> trimmed-array approach as
@@ -192,6 +194,18 @@ export async function addTask(formData: FormData) {
     priority: parsed.priority,
   });
 
+  // Tell the person it was given to (not if they gave it to themselves).
+  if (parsed.ownerContactId) {
+    const actor = await getCurrentProfile();
+    const ownerId = parsed.ownerContactId;
+    after(async () => notifyProfiles(
+      await profilesForContact(ownerId),
+      "task_assigned",
+      { title: "A task for you", body: parsed.title, url: "/project" },
+      actor?.id
+    ));
+  }
+
   revalidateTasks();
 }
 
@@ -223,6 +237,7 @@ export async function updateTask(formData: FormData) {
   });
 
   const supabase = await createClient();
+  const { data: before } = await supabase.from("tasks").select("owner_contact_id").eq("id", parsed.id).maybeSingle();
   const { error } = await supabase
     .from("tasks")
     .update({
@@ -232,6 +247,17 @@ export async function updateTask(formData: FormData) {
       priority: parsed.priority,
     })
     .eq("id", parsed.id);
+
+  if (!error && parsed.ownerContactId && parsed.ownerContactId !== before?.owner_contact_id) {
+    const actor = await getCurrentProfile();
+    const ownerId = parsed.ownerContactId;
+    after(async () => notifyProfiles(
+      await profilesForContact(ownerId),
+      "task_assigned",
+      { title: "A task for you", body: parsed.title, url: "/project" },
+      actor?.id
+    ));
+  }
 
   revalidateTasks();
   return { error: error?.message ?? null };

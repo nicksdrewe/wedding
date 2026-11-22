@@ -5,6 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { SetPasswordForm } from "./SetPasswordForm";
 import { MyDetailsForm } from "./MyDetailsForm";
 import { MyPhoto } from "./MyPhoto";
+import { NotificationSettings } from "@/components/NotificationSettings";
 
 export default async function AccountPage() {
   const state = await getAuthState();
@@ -87,6 +88,12 @@ export default async function AccountPage() {
         {contact && (
           <div className="mt-12">
             <MyDetailsForm contact={contact} plusOnes={plusOnes} events={events} rsvps={rsvps} />
+          </div>
+        )}
+
+        {profile && (
+          <div className="mt-10">
+            <NotificationSettings role={profile.role} />
           </div>
         )}
 

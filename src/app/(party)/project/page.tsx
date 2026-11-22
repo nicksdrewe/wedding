@@ -7,6 +7,7 @@ import { loadFeedback } from "@/lib/feedback/load";
 import { PageHeader } from "@/components/PageHeader";
 import { OPTION_COVER_EMBED, coverImageOf } from "@/lib/options/cover";
 import { IdeaPortal, portalThumbs } from "@/components/ui/IdeaPortal";
+import { loadAssignees } from "@/lib/tasks/assignees";
 import { TaskBoard } from "./TaskBoard";
 import { TASK_SELECT, toBoardTask } from "@/lib/tasks/priority";
 import { BoardPlans } from "@/components/ui/BoardPlans";
@@ -45,11 +46,7 @@ export default async function ProjectPage() {
       .is("visible_tag", null)
       .order("status")
       .order("due_date", { ascending: true, nullsFirst: false }),
-    supabase
-      .from("contacts")
-      .select("id, full_name")
-      .in("role", ["couple", "wedding_party"])
-      .order("full_name"),
+    loadAssignees(null),
     // Every comparison running anywhere — category-linked (Venue, Flowers...)
     // and standalone (stag/hen...) alike — skimmed to title + cost here.
     // Full detail (description, images) lives on the category board; this
@@ -152,7 +149,7 @@ export default async function ProjectPage() {
         <TaskBoard
           tasks={(tasks ?? []).map(toBoardTask)}
           contacts={contacts ?? []}
-          canAdd={canEdit}
+          canAdd
           feedback={taskFeedback}
           canModerate={isCouple}
           revalidate={feedbackPath}

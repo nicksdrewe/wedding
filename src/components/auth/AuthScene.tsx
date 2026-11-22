@@ -75,7 +75,7 @@ export function AuthScene({ children, late = false }: { children: React.ReactNod
         <div className="auth-sun" />
         <div className="auth-moon" />
         <div className="auth-stars">
-        {Array.from({ length: 46 }, (_, i) => (
+        {Array.from({ length: 32 }, (_, i) => (
           <span
             key={i}
             className="auth-star"

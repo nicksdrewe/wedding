@@ -1,8 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentProfile } from "@/lib/auth/roles";
+import { notifyBigDayPublished } from "@/lib/push/send";
 import { BIG_DAY_COLOURS } from "./types";
 import { daysBetween, isDay, MAX_SPAN_DAYS } from "./dates";
 
@@ -127,6 +130,10 @@ export async function setBigDayPublished(published: boolean): Promise<Result> {
     return { error: "Couldn't change that. Try again." };
   }
   if (!data || data.length === 0) return { error: "Only the couple can publish the schedule." };
+  if (published) {
+    const actorId = (await getCurrentProfile())?.id ?? null;
+    after(() => notifyBigDayPublished(actorId));
+  }
   revalidatePath("/big-day");
   return { error: null };
 }

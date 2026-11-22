@@ -448,8 +448,8 @@
   animation: moon-rise 30s ease-in-out infinite alternate;
 }
 @keyframes sun-arc {
-  0%, 30% { opacity: 1; transform: translate(0, 0) scale(1); filter: none; }
-  55% { opacity: 0.9; transform: translate(4%, 70%) scale(1.15); filter: hue-rotate(-14deg) saturate(1.4); }
+  0%, 30% { opacity: 1; transform: translate(0, 0) scale(1); }
+  55% { opacity: 0.9; transform: translate(4%, 70%) scale(1.15); }
   72%, 100% { opacity: 0; transform: translate(8%, 130%) scale(1.2); }
 }
 @keyframes moon-rise {
@@ -617,3 +617,8 @@
   80% { transform: translateY(-0.12em) scale(1.12); }
   90% { transform: translateY(0) scale(1); }
 }
+
+/* Keep the decoration off the main thread's critical path: it is painted in its
+   own layer, and only transform and opacity are animated. */
+.auth-night { contain: layout paint style; }
+.auth-sky, .auth-sun, .auth-moon, .auth-stars, .auth-garden, .auth-bee__path { will-change: opacity, transform; }
