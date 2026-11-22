@@ -287,7 +287,7 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
       {/* A floating glass bar rather than a strip glued to the top: the page's
           light shows through it and it casts its own shadow, which is the
           first cue that things here sit in layers. */}
-      <header className="sticky top-0 z-40 px-3 pt-3">
+      <header className="sticky top-0 z-40 touch-pan-y overflow-x-clip px-3 pt-3">
         <div className="surface surface-glass surface-raised mx-auto flex h-14 max-w-[1760px] items-center justify-between !rounded-full px-4 sm:px-5">
           {/* Left: wordmark — this IS the "back to landing" affordance. */}
           <Link href="/" className="flex shrink-0 items-center gap-2">
@@ -386,7 +386,7 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
           dark green as the landing page, with the links falling into place.
           Same grouping as the desktop dropdowns; every link is 52px tall. */}
       {links.length > 0 && menuOpen && (
-        <div className="fixed inset-0 z-30 overflow-y-auto bg-gradient-to-b from-forest to-night px-5 pt-24 pb-10 text-cream md:hidden">
+        <div className="fixed inset-0 z-30 touch-pan-y overflow-x-hidden overflow-y-auto overscroll-contain bg-gradient-to-b from-forest to-night px-5 pt-24 pb-10 text-cream md:hidden">
           <div aria-hidden="true" className="pointer-events-none absolute right-[-20px] bottom-[-24px] origin-bottom" style={{ animation: "sway 10s ease-in-out infinite" }}>
             <Botanical seed={17} stems={3} width={200} height={330} spread={34} color="var(--sec-glow)" strokeOpacity={0.28} fillOpacity={0.12} />
           </div>
