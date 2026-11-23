@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { sectionFor } from "@/lib/design/sections";
 
 // Clicking a link that has to load: the words on the thing you clicked turn
 // into a pulsing galaxy (see loading.css) until the new page arrives, so it's
@@ -10,7 +11,22 @@ import { usePathname, useSearchParams } from "next/navigation";
 const PENDING = "data-galaxy";
 
 function clear() {
-  document.querySelectorAll(`[${PENDING}]`).forEach((el) => el.removeAttribute(PENDING));
+  document.querySelectorAll(`[${PENDING}]`).forEach((el) => {
+    el.removeAttribute(PENDING);
+    (el as HTMLElement).style.removeProperty("--galaxy");
+  });
+}
+
+// The highlight colour of the page being opened (gold for money, plum for the
+// party pages...), read from the same section colours the site already uses.
+function colourFor(pathname: string) {
+  const probe = document.createElement("div");
+  probe.setAttribute("data-section", sectionFor(pathname));
+  probe.style.display = "none";
+  document.body.appendChild(probe);
+  const c = getComputedStyle(probe).getPropertyValue("--sec").trim();
+  probe.remove();
+  return c || "#4c6b52";
 }
 
 // Every element inside the link that holds its own words.
@@ -45,7 +61,11 @@ export function NavProgress() {
       clear();
       const holders = textHolders(a);
       // A link with no words (a picture, an icon) pulses as a whole instead.
-      (holders.length ? holders : [a]).forEach((el) => el.setAttribute(PENDING, holders.length ? "text" : "whole"));
+      const colour = colourFor(url.pathname);
+      (holders.length ? holders : [a]).forEach((el) => {
+        el.setAttribute(PENDING, holders.length ? "text" : "whole");
+        (el as HTMLElement).style.setProperty("--galaxy", colour);
+      });
       if (failsafe.current) clearTimeout(failsafe.current);
       failsafe.current = setTimeout(clear, 15000);
     }
