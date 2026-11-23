@@ -45,7 +45,10 @@ export function NotificationSettings({ role }: { role: string }) {
         setPrefs(await loadPushPrefs(sub.endpoint));
         setState("on");
       } else setState("off");
-    })().catch(() => setState("unsupported"));
+    })().catch((e) => {
+      setMessage(`Something went wrong setting up notifications (${e instanceof Error ? e.message : "unknown"}). Close and reopen the app, then try again.`);
+      setState("off");
+    });
   }, []);
 
   function turnOn() {
