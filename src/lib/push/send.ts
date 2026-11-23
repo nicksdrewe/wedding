@@ -1,4 +1,4 @@
-import webpush from "web-push";
+import * as webpushModule from "web-push";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeTags } from "@/lib/tags";
 import { fetchCategoryRows } from "@/lib/categories/rows";
@@ -6,6 +6,9 @@ import type { PushType } from "./types";
 
 // Sending. Never throws: a failed notification must not break the action that
 // caused it. Does nothing until the three VAPID settings exist.
+
+// The package is CommonJS: depending on the bundler its API is on `default` or on the module itself.
+const webpush = ((webpushModule as unknown as { default?: typeof webpushModule }).default ?? webpushModule) as typeof webpushModule;
 
 type Payload = { title: string; body: string; url: string };
 
