@@ -3,6 +3,8 @@ import { Archivo, Fraunces, Source_Serif_4, Manrope } from "next/font/google";
 import "./globals.css";
 import { ViewAsBanner } from "@/components/ViewAsBanner";
 import { RegisterServiceWorker } from "@/components/RegisterServiceWorker";
+import { NavProgress } from "@/components/NavProgress";
+import { Suspense } from "react";
 
 // Grotesque carries UI, structure and numbers; serif carries reading copy.
 // Never mixed within one line — see docs/design-brief.md.
@@ -29,6 +31,7 @@ const reading = Source_Serif_4({
 const hero = Manrope({
   variable: "--font-hero",
   subsets: ["latin"],
+  preload: false,
   weight: ["500", "600"],
 });
 
@@ -88,6 +91,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-screen flex flex-col bg-cream text-ink font-serif">
         {children}
         <ViewAsBanner />
+        <Suspense fallback={null}>
+          <NavProgress />
+        </Suspense>
         <RegisterServiceWorker />
       </body>
     </html>

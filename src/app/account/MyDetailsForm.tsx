@@ -14,7 +14,7 @@ import {
 } from "@/lib/account/actions";
 
 type PlusOne = { id: string; full_name: string };
-type EventRow = { id: string; name: string; starts_at: string | null; location: string | null };
+type EventRow = { id: string; name: string; starts_at: string | null; location: string | null; past: boolean };
 type RsvpRow = {
   event_id: string;
   attending: boolean | null;
@@ -52,6 +52,9 @@ export function MyDetailsForm({
 
   const responses: Record<string, RsvpRow> = {};
   for (const r of rsvps) responses[r.event_id] = r;
+  const upcoming = events.filter((e) => !e.past);
+  // Most recent first.
+  const past = events.filter((e) => e.past).reverse();
 
   return (
     <div className="flex flex-col gap-10">
@@ -101,16 +104,27 @@ export function MyDetailsForm({
       <section>
         <h2 className="font-display text-2xl">Your RSVP</h2>
         <div className="mt-4 flex flex-col gap-6">
-          {events.length === 0 && (
-            <p className="font-reading text-ink-soft">
-              No events are open for RSVP yet — check back soon.
+          {upcoming.length === 0 && (
+            <p className="rounded-2xl bg-sec-tint px-5 py-4 font-reading text-ink">
+              Nothing to RSVP to right now. You&rsquo;re all caught up, so go and have a lovely day! 🥂
             </p>
           )}
-          {events.map((event) => (
+          {upcoming.map((event) => (
             <EventCard key={event.id} event={event} existing={responses[event.id]} />
           ))}
         </div>
       </section>
+
+      {past.length > 0 && (
+        <section>
+          <h2 className="font-display text-2xl">Already happened</h2>
+          <div className="mt-4 flex flex-col gap-4">
+            {past.map((event) => (
+              <PastEventCard key={event.id} event={event} existing={responses[event.id]} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
@@ -314,5 +328,29 @@ function EventCard({ event, existing }: { event: EventRow; existing: RsvpRow | u
       </div>
       {error && <p className="mt-2 font-reading text-xs text-alert">{error}</p>}
     </form>
+  );
+}
+
+// Once the day has gone there is nothing to change: just say what happened.
+function PastEventCard({ event, existing }: { event: EventRow; existing: RsvpRow | undefined }) {
+  const when = event.starts_at
+    ? new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeZone: "Europe/London" }).format(new Date(event.starts_at))
+    : null;
+  const headline =
+    existing?.attending === true
+      ? "You attended! 🎉"
+      : existing?.attending === false
+        ? "You couldn’t make it. You were missed!"
+        : "We didn’t get an RSVP from you for this one.";
+  return (
+    <div className="rounded-2xl border border-ink/10 bg-white p-5">
+      <h3 className="font-display text-[19px]">{event.name}</h3>
+      <p className="mt-1 font-reading text-sm text-ink-soft">{[when, event.location].filter(Boolean).join(" · ")}</p>
+      <p className="mt-3 font-title text-[18px]">{headline}</p>
+      {existing?.dietary_requirements && (
+        <p className="mt-2 font-reading text-sm text-ink-soft">Dietary: {existing.dietary_requirements}</p>
+      )}
+      {existing?.notes && <p className="mt-1 font-reading text-sm text-ink-soft">Your note: {existing.notes}</p>}
+    </div>
   );
 }

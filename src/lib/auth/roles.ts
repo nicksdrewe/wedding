@@ -22,10 +22,12 @@ export type AuthState =
 export const getAuthState = cache(async function getAuthState(): Promise<AuthState> {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { status: "anonymous" };
+  // Local token check (no network round trip); the middleware already
+  // refreshed the session, and row security re-verifies it on every query.
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const claims = claimsData?.claims;
+  if (!claims?.sub) return { status: "anonymous" };
+  const user = { id: claims.sub, email: typeof claims.email === "string" ? claims.email : null };
 
   const { data: profile } = await supabase
     .from("profiles")

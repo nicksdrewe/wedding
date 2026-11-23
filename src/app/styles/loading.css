@@ -1,0 +1,111 @@
+/* "Loading" as a galaxy: dark nebula colours in the site's palette with small
+   stars drifting through the letters. Text only, no background box. */
+
+.nav-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  /* Quick pages never flash it. */
+  opacity: 0;
+  animation: nav-loading-in 0.25s ease-out 0.12s forwards;
+}
+
+.nav-loading__word {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(44px, 11vw, 96px);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: transparent;
+  background-image:
+    radial-gradient(2.6px 2.6px at 12% 30%, #fff 96%, transparent),
+    radial-gradient(2px 2px at 38% 72%, #f4f1ec 96%, transparent),
+    radial-gradient(3px 3px at 61% 24%, #f6dd9b 96%, transparent),
+    radial-gradient(2.2px 2.2px at 84% 66%, #fff 96%, transparent),
+    radial-gradient(2px 2px at 25% 50%, #b8e0c0 96%, transparent),
+    radial-gradient(2.6px 2.6px at 72% 44%, #f4f1ec 96%, transparent),
+    radial-gradient(1.6px 1.6px at 50% 85%, #fff 96%, transparent),
+    linear-gradient(115deg, #1d2a21 0%, #3d2a4a 18%, #a8475a 40%, #4c6b52 58%, #86641a 76%, #3d2a4a 90%, #1d2a21 100%);
+  background-size: 70px 100%, 55px 100%, 90px 100%, 65px 100%, 45px 100%, 80px 100%, 38px 100%, 300% 100%;
+  background-repeat: repeat-x, repeat-x, repeat-x, repeat-x, repeat-x, repeat-x, repeat-x, no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: nav-loading-drift 2.4s linear infinite, nav-loading-breathe 1.6s ease-in-out infinite;
+  /* Keeps it readable over any page without drawing a box. */
+  filter: drop-shadow(0 1px 0 rgb(244 241 236 / 0.85)) drop-shadow(0 4px 14px rgb(29 42 33 / 0.28));
+}
+
+@keyframes nav-loading-in {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes nav-loading-drift {
+  from {
+    background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0% 0;
+  }
+  to {
+    background-position: 70px 0, -55px 0, 90px 0, -65px 0, 45px 0, -80px 0, 38px 0, 300% 0;
+  }
+}
+@keyframes nav-loading-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-loading__word {
+    animation: none;
+  }
+}
+
+/* Page-area placeholder shown while the next page's data arrives. */
+.page-skel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 56px 24px;
+}
+.page-skel__bar {
+  height: 18px;
+  border-radius: 9px;
+  background: linear-gradient(90deg, rgb(29 42 33 / 0.06), rgb(29 42 33 / 0.12), rgb(29 42 33 / 0.06));
+  background-size: 200% 100%;
+  animation: page-skel 1.4s ease-in-out infinite;
+}
+.page-skel__bar--title {
+  height: 38px;
+  width: 42%;
+}
+.page-skel__block {
+  height: 120px;
+  border-radius: 20px;
+  background: linear-gradient(90deg, rgb(29 42 33 / 0.05), rgb(29 42 33 / 0.1), rgb(29 42 33 / 0.05));
+  background-size: 200% 100%;
+  animation: page-skel 1.4s ease-in-out infinite;
+}
+@keyframes page-skel {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-skel__bar,
+  .page-skel__block {
+    animation: none;
+  }
+}

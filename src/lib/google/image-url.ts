@@ -14,13 +14,16 @@
 const LH3_PATTERN = /^https:\/\/lh3\.googleusercontent\.com\/d\/([^/?]+)/;
 const THUMBNAIL_ID_PATTERN = /[?&]id=([^&]+)/;
 
-export function toDriveImageUrl(url: string): string {
+// Pass a larger width for hero-sized pictures; 800 suits cards and thumbnails.
+export function toDriveImageUrl(url: string, width = 800): string {
+  const sized = (id: string) => `/api/drive-image/${id}?w=${width}`;
+  if (url.startsWith("/api/drive-image/") && !url.includes("?")) return `${url}?w=${width}`;
   const lh3Match = url.match(LH3_PATTERN);
-  if (lh3Match) return `/api/drive-image/${lh3Match[1]}`;
+  if (lh3Match) return sized(lh3Match[1]);
 
   if (url.startsWith("https://drive.google.com/thumbnail")) {
     const idMatch = url.match(THUMBNAIL_ID_PATTERN);
-    if (idMatch) return `/api/drive-image/${idMatch[1]}`;
+    if (idMatch) return sized(idMatch[1]);
   }
 
   return url;

@@ -1,4 +1,4 @@
-import * as webpushModule from "web-push";
+import type * as WebPush from "web-push";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeTags } from "@/lib/tags";
 import { fetchCategoryRows } from "@/lib/categories/rows";
@@ -7,14 +7,21 @@ import type { PushType } from "./types";
 // Sending. Never throws: a failed notification must not break the action that
 // caused it. Does nothing until the three VAPID settings exist.
 
-// The package is CommonJS: depending on the bundler its API is on `default` or on the module itself.
-const webpush = ((webpushModule as unknown as { default?: typeof webpushModule }).default ?? webpushModule) as typeof webpushModule;
+// The package is CommonJS: depending on the bundler its API is on `default` or
+// on the module itself, so take whichever one actually has the functions.
+let wp: typeof WebPush | null = null;
+async function loadWp() {
+  if (wp) return wp;
+  const m = (await import("web-push")) as unknown as typeof WebPush & { default?: typeof WebPush };
+  wp = (m.default && typeof m.default.sendNotification === "function" ? m.default : m) as typeof WebPush;
+  return wp;
+}
 
 type Payload = { title: string; body: string; url: string };
 
 let configured: boolean | null = null;
 export let pushConfigError: string | null = null;
-function configure() {
+async function configure() {
   if (configured !== null) return configured;
   const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim();
   const priv = process.env.VAPID_PRIVATE_KEY?.trim();
@@ -22,7 +29,7 @@ function configure() {
   if (!pub || !priv) return (configured = false);
   if (!/^(mailto:|https:\/\/)/.test(subject)) subject = `mailto:${subject}`;
   try {
-    webpush.setVapidDetails(subject, pub, priv);
+    (await loadWp()).setVapidDetails(subject, pub, priv);
     return (configured = true);
   } catch (e) {
     pushConfigError = e instanceof Error ? e.message : "invalid VAPID settings";
@@ -32,7 +39,7 @@ function configure() {
 
 // For the "Send a test" button: send to one profile and say what happened.
 export async function sendTestTo(profileId: string): Promise<string | null> {
-  if (!configure()) return pushConfigError ? `The notification keys on the site are not valid (${pushConfigError}).` : "Notifications are not switched on for the site yet.";
+  if (!(await configure())) return pushConfigError ? `The notification keys on the site are not valid (${pushConfigError}).` : "Notifications are not switched on for the site yet.";
   try {
     const admin = createAdminClient();
     const { data, error } = await admin.from("push_subscriptions").select("id, endpoint, p256dh, auth").eq("profile_id", profileId);
@@ -41,7 +48,7 @@ export async function sendTestTo(profileId: string): Promise<string | null> {
     const problems: string[] = [];
     for (const s of data) {
       try {
-        await webpush.sendNotification(
+        await (await loadWp()).sendNotification(
           { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
           JSON.stringify({ title: "Nick & Ellie", body: "Notifications are working.", url: "/hub", type: "task_assigned" }),
           { TTL: 600 }
@@ -58,14 +65,14 @@ export async function sendTestTo(profileId: string): Promise<string | null> {
   }
 }
 
-export function pushConfigured() {
+export async function pushConfigured() {
   return configure();
 }
 
 // Send to these people (by profile), respecting each device's preferences.
 export async function notifyProfiles(profileIds: string[], type: PushType, payload: Payload, exceptProfileId?: string | null) {
   try {
-    if (!configure()) return;
+    if (!(await configure())) return;
     const ids = [...new Set(profileIds)].filter((id) => id && id !== exceptProfileId);
     if (ids.length === 0) return;
     const admin = createAdminClient();
@@ -75,7 +82,7 @@ export async function notifyProfiles(profileIds: string[], type: PushType, paylo
         .filter((s) => (s.prefs as Record<string, boolean> | null)?.[type] !== false)
         .map(async (s) => {
           try {
-            await webpush.sendNotification(
+            await (await loadWp()).sendNotification(
               { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
               JSON.stringify({ ...payload, type }),
               { TTL: 60 * 60 * 24 }
@@ -103,7 +110,7 @@ export async function profilesForContact(contactId: string): Promise<string[]> {
 // hidden from them. For the main wedding: the couple and family.
 export async function notifyWinnerChosen(optionId: string, actorProfileId: string | null) {
   try {
-    if (!configure()) return;
+    if (!(await configure())) return;
     const admin = createAdminClient();
     const { data: opt } = await admin
       .from("page_options")
@@ -148,7 +155,7 @@ export async function notifyWinnerChosen(optionId: string, actorProfileId: strin
 // The schedule was published: everyone with an account.
 export async function notifyBigDayPublished(actorProfileId: string | null) {
   try {
-    if (!configure()) return;
+    if (!(await configure())) return;
     const { data } = await createAdminClient().from("profiles").select("id");
     await notifyProfiles(
       (data ?? []).map((p) => p.id),

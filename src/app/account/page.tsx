@@ -5,6 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { SetPasswordForm } from "./SetPasswordForm";
 import { MyDetailsForm } from "./MyDetailsForm";
 import { MyPhoto } from "./MyPhoto";
+import { isEventPast } from "@/lib/events/past";
 import { NotificationSettings } from "@/components/NotificationSettings";
 
 export default async function AccountPage() {
@@ -21,7 +22,7 @@ export default async function AccountPage() {
   } | null = null;
   let photoUrl: string | null = null;
   let plusOnes: { id: string; full_name: string }[] = [];
-  let events: { id: string; name: string; starts_at: string | null; location: string | null }[] = [];
+  let events: { id: string; name: string; starts_at: string | null; location: string | null; past: boolean }[] = [];
   let rsvps: {
     event_id: string;
     attending: boolean | null;
@@ -62,7 +63,7 @@ export default async function AccountPage() {
     // Its own small query so the page works before migration 0045.
     photoUrl = ((await supabase.from("contacts").select("photo_url").eq("id", profile.contact_id).maybeSingle()).data as { photo_url?: string | null } | null)?.photo_url ?? null;
     plusOnes = plusOneRows ?? [];
-    events = eventRows ?? [];
+    events = (eventRows ?? []).map((e) => ({ ...e, past: isEventPast(e.starts_at) }));
     rsvps = rsvpRows ?? [];
   }
 

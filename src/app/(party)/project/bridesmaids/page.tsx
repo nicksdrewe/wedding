@@ -32,17 +32,14 @@ export default async function BridesmaidsProjectPage() {
   const profile = await getCurrentProfile();
   const isCouple = profile?.role === "couple";
 
-  const permission = await getEffectivePermission("project:bridesmaids", profile);
-  if (!permission.pageAccess) redirect("/no-access");
-
-  // This board is a managed project (0034_project_admins_and_budgets.sql):
-  // the maid of honour — and the couple — administer it; everyone else on it
-  // contributes. RLS enforces the same split; isAdmin only decides which
-  // controls are worth showing.
-  const myTags = await getCurrentContactTags(profile);
-  const isAdmin = isCouple || myTags.includes("maid_of_honour");
-
-  const [{ data: ideas }, { data: tasks }, { data: contacts }, { data: optionGroups }] = await Promise.all([
+  // Start everything that doesn't depend on the permission answer now, all at
+  // once, rather than one query after another.
+  const permissionP = getEffectivePermission("project:bridesmaids", profile);
+  const tagsP = getCurrentContactTags(profile);
+  const chartP = loadGroupChart("bridesmaid");
+  const treeP = loadCategoryTree(profile, "bridesmaid");
+  const hiddenP = supabase.from("tasks").select("id, hidden_from_couple").eq("visible_tag", "bridesmaid");
+  const dataP = Promise.all([
     supabase
       .from("idea_boards")
       .select("id, title, body, tags, created_at, created_by, idea_board_images(id, image_url, sort_order)")
@@ -66,6 +63,17 @@ export default async function BridesmaidsProjectPage() {
       .order("created_at", { ascending: false })
       .order("created_at", { ascending: true, referencedTable: "page_options" }),
   ]);
+  const permission = await permissionP;
+  if (!permission.pageAccess) redirect("/no-access");
+
+  // This board is a managed project (0034_project_admins_and_budgets.sql):
+  // the maid of honour — and the couple — administer it; everyone else on it
+  // contributes. RLS enforces the same split; isAdmin only decides which
+  // controls are worth showing.
+  const myTags = await tagsP;
+  const isAdmin = isCouple || myTags.includes("maid_of_honour");
+
+  const [{ data: ideas }, { data: tasks }, { data: contacts }, { data: optionGroups }] = await dataP;
 
   // Votes and comments for every idea, task and comparison option on this
   // board, in a handful of queries (not one per card). The database only
@@ -79,7 +87,7 @@ export default async function BridesmaidsProjectPage() {
   ]);
   // Which tasks are hidden from the couple (0052). Its own query so the page
   // still works before that migration is run.
-  const { data: hiddenRows } = await supabase.from("tasks").select("id, hidden_from_couple").eq("visible_tag", "bridesmaid");
+  const { data: hiddenRows } = await hiddenP;
   const hiddenTaskIds = ((hiddenRows ?? []) as { id: string; hidden_from_couple?: boolean }[]).filter((r) => r.hidden_from_couple).map((r) => r.id);
   const feedbackPath = "/project/bridesmaids";
 
@@ -124,7 +132,7 @@ export default async function BridesmaidsProjectPage() {
         title="Bridesmaids"
         infoText="Ideas, plans, and comparisons just for the bridesmaids."
       >
-        <GroupChart kind="bridesmaid" data={await loadGroupChart("bridesmaid")} />
+        <GroupChart kind="bridesmaid" data={await chartP} />
       </PageHeader>
 
       <div className="flex flex-col gap-8">
@@ -150,7 +158,7 @@ export default async function BridesmaidsProjectPage() {
       </div>
 
       <div className="mt-12">
-        <BoardPlans board="bridesmaid" roots={(await loadCategoryTree(profile, "bridesmaid")).roots} isAdmin={isAdmin} profileId={profile?.id ?? null} canInteract={!!profile && profile.role !== "guest"} canHide={isAdmin && !isCouple} />
+        <BoardPlans board="bridesmaid" roots={(await treeP).roots} isAdmin={isAdmin} profileId={profile?.id ?? null} canInteract={!!profile && profile.role !== "guest"} canHide={isAdmin && !isCouple} />
       </div>
 
       {/* Comparisons started before plans existed stay available, tucked below. */}

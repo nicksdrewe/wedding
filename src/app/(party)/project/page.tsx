@@ -21,16 +21,16 @@ export default async function ProjectPage() {
   // page_access check is what actually blocks a PLAIN wedding_party member
   // (page_access=false on "project" per 0028's seeded permissions) while
   // still letting best_man/maid_of_honour and family through.
-  const permission = await getEffectivePermission("project", profile);
-  if (!permission.pageAccess) redirect("/no-access");
-  const isCouple = profile?.role === "couple";
-  // IdeaForm/TaskForm/NewOptionGroupForm are creation forms — family gets
-  // read-only boards here (edit_access=false on "project" for family, per
-  // 0028), so their visibility follows edit_access rather than "anyone who
-  // reached this page can post".
-  const canEdit = permission.editAccess;
-
-  const [{ data: ideas }, { data: tasks }, { data: contacts }, { data: optionGroups }] = await Promise.all([
+  // Everything below that doesn't depend on the permission answer starts now,
+  // all at once, instead of one query after another.
+  const permissionP = getEffectivePermission("project", profile);
+  const treeP = loadCategoryTree(profile);
+  const tagsP = getCurrentContactTags(profile);
+  const otherPermsP = Promise.all([
+    getEffectivePermission("project:groomsmen", profile),
+    getEffectivePermission("project:bridesmaids", profile),
+  ]);
+  const dataP = Promise.all([
     supabase
       .from("idea_boards")
       .select("id, title, body, tags, created_at, created_by, idea_board_images(id, image_url, sort_order)")
@@ -62,18 +62,25 @@ export default async function ProjectPage() {
       .order("created_at", { ascending: false })
       .order("created_at", { ascending: true, referencedTable: "page_options" }),
   ]);
+  const permission = await permissionP;
+  if (!permission.pageAccess) redirect("/no-access");
+  const isCouple = profile?.role === "couple";
+  // IdeaForm/TaskForm/NewOptionGroupForm are creation forms — family gets
+  // read-only boards here (edit_access=false on "project" for family, per
+  // 0028), so their visibility follows edit_access rather than "anyone who
+  // reached this page can post".
+  const canEdit = permission.editAccess;
+
+  const [{ data: ideas }, { data: tasks }, { data: contacts }, { data: optionGroups }] = await dataP;
 
   // A standalone comparison's prices follow the board it belongs to: the
   // groomsmen/bridesmaids board for a tagged group, otherwise this page.
   // (Category-linked groups add options on their own category page.)
-  const [groomsmenPermission, bridesmaidsPermission] = await Promise.all([
-    getEffectivePermission("project:groomsmen", profile),
-    getEffectivePermission("project:bridesmaids", profile),
-  ]);
+  const [groomsmenPermission, bridesmaidsPermission] = await otherPermsP;
   // Who runs a comparison shown here: a stag/hen one belongs to that
   // project's admin (0034); an untagged standalone one to whoever can edit
   // this page; a category one's winner is the couple's alone.
-  const myTags = await getCurrentContactTags(profile);
+  const myTags = await tagsP;
   const isAdminForTag = (visibleTag: string | null) =>
     isCouple ||
     (visibleTag === "groomsman" && myTags.includes("best_man")) ||
@@ -127,7 +134,7 @@ export default async function ProjectPage() {
   });
 
   const standalone = compareGroups.filter((g) => !g.categorySlug);
-  const { roots } = await loadCategoryTree(profile);
+  const { roots } = await treeP;
 
   return (
     <div>

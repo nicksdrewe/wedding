@@ -139,9 +139,12 @@ export async function updateSession(request: NextRequest) {
   );
 
   // Also refreshes an expiring session so server components see a valid one.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims checks the signed token on this server (the project uses
+  // asymmetric signing keys, which are cached), instead of asking Supabase over
+  // the network on every single request the way getUser does. A rotated or
+  // expired token is still refreshed here.
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null;
 
   const { pathname } = request.nextUrl;
 

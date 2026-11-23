@@ -9,6 +9,7 @@
 // surface whatever error RLS (or a check constraint) hands back.
 
 import { revalidatePath } from "next/cache";
+import { isEventPast } from "@/lib/events/past";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
@@ -133,6 +134,8 @@ export async function updateOwnRsvp(
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   const supabase = await createClient();
+  const { data: ev } = await supabase.from("events").select("starts_at").eq("id", parsed.data.eventId).maybeSingle();
+  if (isEventPast(ev?.starts_at ?? null)) return { error: "That event has already happened." };
   const { error } = await supabase.from("rsvps").upsert(
     {
       contact_id: contactId,
