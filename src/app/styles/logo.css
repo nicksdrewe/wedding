@@ -1,0 +1,28 @@
+/* The WW mark in the header. The flower and leaves keep their colours; the
+   ribbons take the colour of the section you're in (--sec), with the ribbon's
+   own light and shade laid over the top so it still looks like satin. */
+
+.logo-mark {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  isolation: isolate;
+  filter: drop-shadow(0 1px 1.5px rgb(19 24 19 / 0.22));
+}
+.logo-mark > * {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.logo-mark__ribbon {
+  background: var(--sec);
+  -webkit-mask: url("/icons/logo-ribbon.png") center / contain no-repeat;
+  mask: url("/icons/logo-ribbon.png") center / contain no-repeat;
+  transition: background-color 0.4s ease;
+}
+.logo-mark__shade {
+  mix-blend-mode: overlay;
+}

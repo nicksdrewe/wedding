@@ -309,8 +309,13 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
         <div className="surface surface-glass surface-raised mx-auto flex h-14 max-w-[1760px] items-center justify-between !rounded-full px-4 sm:px-5">
           {/* Left: wordmark — this IS the "back to landing" affordance. */}
           <Link href="/" className="flex shrink-0 items-center gap-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icons/logo.png" alt="" width={32} height={32} className="h-8 w-8 shrink-0 rounded-[8px] shadow-[0_2px_6px_rgb(19_24_19/0.35)]" />
+            <span className="logo-mark" aria-hidden="true">
+              <span className="logo-mark__ribbon" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className="logo-mark__shade" src="/icons/logo-ribbon.png" alt="" width={42} height={42} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/icons/logo-art.png" alt="" width={42} height={42} />
+            </span>
             <span className="font-title text-[17px] tracking-tight">Nick &amp; Ellie</span>
           </Link>
 
