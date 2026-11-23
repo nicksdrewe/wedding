@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
-import { notifyProfiles, pushConfigured } from "./send";
+import { pushConfigured, sendTestTo } from "./send";
 
 // Your own devices only: row security (0055) enforces it; these just validate.
 
@@ -14,7 +14,11 @@ const subSchema = z.object({
 });
 
 export async function pushIsConfigured() {
-  return pushConfigured();
+  try {
+    return pushConfigured();
+  } catch {
+    return false;
+  }
 }
 
 export async function savePushSubscription(sub: { endpoint: string; p256dh: string; auth: string }, userAgent: string) {
@@ -51,9 +55,11 @@ export async function loadPushPrefs(endpoint: string): Promise<Record<string, bo
 }
 
 export async function sendTestPush() {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "Sign in first." };
-  if (!pushConfigured()) return { error: "Notifications are not switched on for the site yet." };
-  await notifyProfiles([profile.id], "task_assigned", { title: "Nick & Ellie", body: "Notifications are working.", url: "/hub" });
-  return { error: null };
+  try {
+    const profile = await getCurrentProfile();
+    if (!profile) return { error: "Sign in first." };
+    return { error: await sendTestTo(profile.id) };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Couldn't send the test." };
+  }
 }

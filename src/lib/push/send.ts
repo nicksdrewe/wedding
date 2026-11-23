@@ -10,14 +10,49 @@ import type { PushType } from "./types";
 type Payload = { title: string; body: string; url: string };
 
 let configured: boolean | null = null;
+export let pushConfigError: string | null = null;
 function configure() {
   if (configured !== null) return configured;
-  const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-  const priv = process.env.VAPID_PRIVATE_KEY;
-  const subject = process.env.VAPID_SUBJECT || "mailto:hello@weddingsweddings.co.uk";
+  const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim();
+  const priv = process.env.VAPID_PRIVATE_KEY?.trim();
+  let subject = process.env.VAPID_SUBJECT?.trim() || "mailto:hello@weddingsweddings.co.uk";
   if (!pub || !priv) return (configured = false);
-  webpush.setVapidDetails(subject, pub, priv);
-  return (configured = true);
+  if (!/^(mailto:|https:\/\/)/.test(subject)) subject = `mailto:${subject}`;
+  try {
+    webpush.setVapidDetails(subject, pub, priv);
+    return (configured = true);
+  } catch (e) {
+    pushConfigError = e instanceof Error ? e.message : "invalid VAPID settings";
+    return (configured = false);
+  }
+}
+
+// For the "Send a test" button: send to one profile and say what happened.
+export async function sendTestTo(profileId: string): Promise<string | null> {
+  if (!configure()) return pushConfigError ? `The notification keys on the site are not valid (${pushConfigError}).` : "Notifications are not switched on for the site yet.";
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin.from("push_subscriptions").select("id, endpoint, p256dh, auth").eq("profile_id", profileId);
+    if (error) return "Notifications need one more database step (migration 0055).";
+    if (!data || data.length === 0) return "No device is registered for you yet. Turn notifications off and on again.";
+    const problems: string[] = [];
+    for (const s of data) {
+      try {
+        await webpush.sendNotification(
+          { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
+          JSON.stringify({ title: "Nick & Ellie", body: "Notifications are working.", url: "/hub", type: "task_assigned" }),
+          { TTL: 600 }
+        );
+      } catch (e) {
+        const status = (e as { statusCode?: number }).statusCode;
+        if (status === 404 || status === 410) await admin.from("push_subscriptions").delete().eq("id", s.id);
+        problems.push(status ? `status ${status}` : e instanceof Error ? e.message : "failed");
+      }
+    }
+    return problems.length === data.length ? `The phone's notification service refused it (${problems[0]}). Turn notifications off and on again.` : null;
+  } catch (e) {
+    return e instanceof Error ? e.message : "Couldn't send the test.";
+  }
 }
 
 export function pushConfigured() {
