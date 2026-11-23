@@ -269,6 +269,21 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
     };
   }, [menuOpen]);
 
+  // A few seconds after arriving, quietly load the pages you're most likely to
+  // open next (one every second or so), so the first click on them is instant.
+  const [warmCount, setWarmCount] = useState(0);
+  useEffect(() => {
+    setWarmCount(0);
+    let n = 0;
+    const start = setTimeout(function tick() {
+      n += 1;
+      setWarmCount(n);
+      if (n < 6) setTimeout(tick, 900);
+    }, 2500);
+    return () => clearTimeout(start);
+  }, [pathname]);
+  const warmLinks = links.filter((l) => !isActiveHref(pathname, l.href) && l.href !== "/logout").slice(0, warmCount);
+
   const section = sectionFor(pathname);
   const rawSections = [
     ...groups.map((g) => ({ name: g.name, links: g.links })),
@@ -283,6 +298,9 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
   return (
     <div data-shell data-section={section} className="relative flex min-h-screen flex-col">
       <Backdrop />
+      {warmLinks.map((l) => (
+        <Link key={l.href} href={l.href} prefetch tabIndex={-1} aria-hidden="true" className="pointer-events-none absolute top-0 left-0 h-px w-px overflow-hidden opacity-0" />
+      ))}
 
       {/* A floating glass bar rather than a strip glued to the top: the page's
           light shows through it and it casts its own shadow, which is the
@@ -291,17 +309,8 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
         <div className="surface surface-glass surface-raised mx-auto flex h-14 max-w-[1760px] items-center justify-between !rounded-full px-4 sm:px-5">
           {/* Left: wordmark — this IS the "back to landing" affordance. */}
           <Link href="/" className="flex shrink-0 items-center gap-2">
-            <Botanical
-              seed={7}
-              stems={1}
-              width={20}
-              height={22}
-              spread={7}
-              color="var(--sec)"
-              strokeOpacity={0.85}
-              fillOpacity={0.45}
-              className="shrink-0"
-            />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/icons/logo.png" alt="" width={32} height={32} className="h-8 w-8 shrink-0 rounded-[8px] shadow-[0_2px_6px_rgb(19_24_19/0.35)]" />
             <span className="font-title text-[17px] tracking-tight">Nick &amp; Ellie</span>
           </Link>
 

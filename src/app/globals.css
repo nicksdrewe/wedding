@@ -4,7 +4,7 @@
 @import "./styles/category-tree.css" layer(components);
 @import "./styles/group-chart.css" layer(components);
 @import "./styles/auth.css" layer(components);
-@import "./styles/loading.css" layer(components);
+@import "./styles/loading.css";
 
 :root {
   /* Belt-and-suspenders alongside the colorScheme viewport export in

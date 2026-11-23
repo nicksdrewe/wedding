@@ -106,7 +106,7 @@ export function MyDetailsForm({
         <div className="mt-4 flex flex-col gap-6">
           {upcoming.length === 0 && (
             <p className="rounded-2xl bg-sec-tint px-5 py-4 font-reading text-ink">
-              Nothing to RSVP to right now. You&rsquo;re all caught up, so go and have a lovely day! 🥂
+              Nothing to RSVP to right now. You&rsquo;re all caught up! 🥂
             </p>
           )}
           {upcoming.map((event) => (
