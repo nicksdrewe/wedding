@@ -624,7 +624,7 @@ export function ScrollFlowerHero({
           className="pointer-events-none absolute inset-0 z-20 opacity-0 transition-opacity duration-700 ease-out"
           style={{
             background:
-              "radial-gradient(circle 34vw at var(--spot-x, 50%) var(--spot-y, 50%), rgba(255,244,224,0.16) 0%, rgba(255,244,224,0.06) 45%, transparent 72%)",
+              "radial-gradient(circle 34vw at var(--spot-x, 50%) var(--spot-y, 50%), rgba(255,222,140,0.30) 0%, rgba(255,214,120,0.12) 42%, transparent 72%)",
             mixBlendMode: "soft-light",
           }}
         />
@@ -652,9 +652,9 @@ function ButtonShineLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-// The same cosmic button as the sign-in page and the access gate, in the
-// site's forest green, so the front door matches the rest of the site.
-const NIGHT_GALAXY = { "--sun-c": "#f4f1ec", "--btn-base": "#1d2a21", "--btn-sheen": "#4c6b52" } as React.CSSProperties;
+// The same cosmic button as the sign-in page, in its daytime colours (sky
+// blue with a warm sun glow), matching the light front page.
+const NIGHT_GALAXY = { "--sun-c": "#ffe08a", "--btn-base": "#4a7aa3", "--btn-sheen": "#eef3f6" } as React.CSSProperties;
 function PrimaryButton({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <span className="inline-block w-64" style={NIGHT_GALAXY}>
