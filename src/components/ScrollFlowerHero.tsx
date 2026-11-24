@@ -399,7 +399,7 @@ export function ScrollFlowerHero({
 
   return (
     <div ref={wrapRef} className="relative">
-      <section className="relative flex h-screen items-center justify-center overflow-hidden bg-night">
+      <section className="relative flex h-screen items-center justify-center overflow-hidden bg-cream">
         <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
 
         {/* One flat, page-wide wash — not a box behind any one piece of
@@ -408,25 +408,26 @@ export function ScrollFlowerHero({
             the lightest plausible frame background, paired with every text
             size below qualifying for the "large text" 3:1 AA threshold
             rather than the stricter 4.5:1 normal-text one. */}
-        {/* The photo is shot on a light grey studio backdrop; a sage multiply
-            pulls it into the site's forest night without dulling the flower. */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 mix-blend-multiply" style={{ background: "#9fb8a4" }} />
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ background: "rgba(19,24,19,0.42)" }} />
+        {/* The photo is shot on a grey studio backdrop; a warm screen lifts
+            that grey to the site's cream, so the page feels like the rest of
+            the site (light paper), with the flower still in colour. */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 mix-blend-screen" style={{ background: "#544e40" }} />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ background: "rgba(244,241,236,0.16)" }} />
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse at 50% 46%, rgba(19,24,19,0) 22%, rgba(19,24,19,0.82) 95%)",
+              "radial-gradient(ellipse at 50% 46%, rgba(244,241,236,0) 30%, rgba(244,241,236,0.9) 100%)",
           }}
         />
 
         {!ready && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-night">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-cream">
             <span style={{ animation: "glowPulse 2.6s ease-in-out infinite" }}>
-              <LogoMark size={64} tone="light" />
+              <LogoMark size={64} />
             </span>
-            <p className="font-ui text-[11px] font-semibold tracking-[0.3em] text-cream/60 uppercase tabular-nums">
+            <p className="font-ui text-[11px] font-semibold tracking-[0.3em] text-ink-soft uppercase tabular-nums">
               {Math.round((loadedCount / FRAME_COUNT) * 100)}%
             </p>
           </div>
@@ -467,17 +468,17 @@ export function ScrollFlowerHero({
                 }}
               />
               <p
-                className={`font-ui font-semibold tracking-[0.3em] text-cream uppercase ${
+                className={`font-ui font-semibold tracking-[0.3em] text-forest uppercase ${
                   hintUrgent ? "text-base" : "text-sm"
                 }`}
-                style={{ textShadow: "0 2px 16px rgba(0,0,0,0.7), 0 1px 3px rgba(0,0,0,0.9)" }}
+                style={{ textShadow: "0 0 12px rgba(244,241,236,1), 0 0 22px rgba(244,241,236,0.9), 0 0 3px rgba(244,241,236,1)" }}
               >
                 Scroll to explore
               </p>
               <ChevronDown
                 aria-hidden="true"
-                className={`text-cream ${hintUrgent ? "h-8 w-8" : "h-6 w-6"}`}
-                style={{ filter: "drop-shadow(0 2px 10px rgba(0,0,0,0.7))" }}
+                className={`text-forest ${hintUrgent ? "h-8 w-8" : "h-6 w-6"}`}
+                style={{ filter: "drop-shadow(0 1px 8px rgba(244,241,236,0.9))" }}
                 strokeWidth={2}
               />
             </div>
@@ -500,31 +501,31 @@ export function ScrollFlowerHero({
               // unhidden prompt below, since both containers are dead
               // centred. That's the "everything stacks in the centre
               // before settling" flash.
-              className="font-ui text-sm font-semibold tracking-[0.32em] text-cream uppercase opacity-0 sm:text-base"
-              style={{ textShadow: "0 2px 14px rgba(0,0,0,0.65), 0 1px 3px rgba(0,0,0,0.85)" }}
+              className="font-ui text-sm font-semibold tracking-[0.32em] text-forest uppercase opacity-0 sm:text-base"
+              style={{ textShadow: "0 0 12px rgba(244,241,236,1), 0 0 22px rgba(244,241,236,0.9), 0 0 3px rgba(244,241,236,1)" }}
             >
               We&rsquo;re getting married
             </p>
-            <h1 className="mt-5 font-title text-[15vw] leading-[0.94] font-medium tracking-[-0.02em] text-cream sm:text-[110px] lg:text-[148px]">
+            <h1 className="mt-5 font-title text-[15vw] leading-[0.94] font-medium tracking-[-0.02em] text-forest sm:text-[110px] lg:text-[148px]">
               <span
                 ref={nickRef}
                 className="inline-block opacity-0"
-                style={{ textShadow: "0 2px 24px rgba(0,0,0,0.7), 0 1px 3px rgba(0,0,0,0.9)" }}
+                style={{ textShadow: "0 0 12px rgba(244,241,236,1), 0 0 22px rgba(244,241,236,0.9), 0 0 3px rgba(244,241,236,1)" }}
               >
                 Nick
               </span>{" "}
               <span
                 ref={ellieRef}
                 className="inline-block opacity-0"
-                style={{ textShadow: "0 2px 24px rgba(0,0,0,0.7), 0 1px 3px rgba(0,0,0,0.9)" }}
+                style={{ textShadow: "0 0 12px rgba(244,241,236,1), 0 0 22px rgba(244,241,236,0.9), 0 0 3px rgba(244,241,236,1)" }}
               >
                 &amp; Ellie
               </span>
             </h1>
             <p
               ref={dateRef}
-              className="mt-5 font-reading text-2xl text-cream italic opacity-0 md:text-[28px]"
-              style={{ textShadow: "0 1px 14px rgba(0,0,0,0.6)" }}
+              className="mt-5 font-reading text-2xl text-forest italic opacity-0 md:text-[28px]"
+              style={{ textShadow: "0 0 12px rgba(244,241,236,1), 0 0 22px rgba(244,241,236,0.9), 0 0 3px rgba(244,241,236,1)" }}
             >
               Summer 2028
             </p>
@@ -536,20 +537,20 @@ export function ScrollFlowerHero({
             style={{ transformOrigin: "50% 0%" }}
           >
             <p
-              className="font-ui text-sm font-semibold tracking-[0.32em] text-cream uppercase sm:text-base"
-              style={{ textShadow: "0 2px 14px rgba(0,0,0,0.65), 0 1px 3px rgba(0,0,0,0.85)" }}
+              className="font-ui text-sm font-semibold tracking-[0.32em] text-forest uppercase sm:text-base"
+              style={{ textShadow: "0 0 12px rgba(244,241,236,1), 0 0 22px rgba(244,241,236,0.9), 0 0 3px rgba(244,241,236,1)" }}
             >
               {copy.eyebrow}
             </p>
             <h2
-              className="mt-4 font-title text-[38px] leading-[1.05] font-medium tracking-[-0.015em] text-cream sm:text-[50px]"
-              style={{ textShadow: "0 2px 20px rgba(0,0,0,0.65), 0 1px 3px rgba(0,0,0,0.85)" }}
+              className="mt-4 font-title text-[38px] leading-[1.05] font-medium tracking-[-0.015em] text-forest sm:text-[50px]"
+              style={{ textShadow: "0 0 12px rgba(244,241,236,1), 0 0 22px rgba(244,241,236,0.9), 0 0 3px rgba(244,241,236,1)" }}
             >
               {copy.heading}
             </h2>
             <p
-              className="mt-4 max-w-md font-reading text-2xl text-cream italic"
-              style={{ textShadow: "0 1px 14px rgba(0,0,0,0.6)" }}
+              className="mt-4 max-w-md font-reading text-2xl text-forest italic"
+              style={{ textShadow: "0 0 12px rgba(244,241,236,1), 0 0 22px rgba(244,241,236,0.9), 0 0 3px rgba(244,241,236,1)" }}
             >
               {copy.body}
             </p>
@@ -602,11 +603,11 @@ export function ScrollFlowerHero({
             settles at rest, where it reads as a quiet signature. */}
         <p
           ref={footerRef}
-          className="absolute bottom-5 left-1/2 z-10 -translate-x-1/2 text-center font-ui text-[11px] tracking-[0.3em] text-cream/50 uppercase opacity-0"
-          style={{ textShadow: "0 1px 8px rgba(0,0,0,0.5)" }}
+          className="absolute bottom-5 left-1/2 z-10 -translate-x-1/2 text-center font-ui text-[11px] tracking-[0.3em] text-ink-soft uppercase opacity-0"
+          style={{ textShadow: "0 0 12px rgba(244,241,236,1), 0 0 22px rgba(244,241,236,0.9), 0 0 3px rgba(244,241,236,1)" }}
         >
           <span className="mb-2 flex justify-center opacity-80">
-            <LogoMark size={28} tone="light" />
+            <LogoMark size={28} />
           </span>
           weddingsweddings.co.uk
         </p>
@@ -651,9 +652,9 @@ function ButtonShineLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-// The same cosmic button as the sign-in page and the access gate, in its
-// night colours, so the front door matches the rest of the site.
-const NIGHT_GALAXY = { "--sun-c": "#eef0e6", "--btn-base": "#0b120d", "--btn-sheen": "#2f5a3a" } as React.CSSProperties;
+// The same cosmic button as the sign-in page and the access gate, in the
+// site's forest green, so the front door matches the rest of the site.
+const NIGHT_GALAXY = { "--sun-c": "#f4f1ec", "--btn-base": "#1d2a21", "--btn-sheen": "#4c6b52" } as React.CSSProperties;
 function PrimaryButton({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <span className="inline-block w-64" style={NIGHT_GALAXY}>
@@ -801,7 +802,7 @@ function HubLoginTrigger() {
   return (
     <Link
       href="/login"
-      className="rounded-full border border-cream/30 px-6 py-2.5 font-ui text-[13px] font-medium tracking-[0.04em] text-cream/85 transition hover:border-cream/60 hover:bg-white/10"
+      className="rounded-full border border-ink/25 bg-cream/70 px-6 py-2.5 font-ui text-[13px] font-medium tracking-[0.04em] text-ink transition hover:border-ink/45"
     >
       Sign in
     </Link>
@@ -823,7 +824,7 @@ function GlassButton({ href, children }: { href: string; children: React.ReactNo
   return (
     <Link
       href={href}
-      className="btn btn-on-dark px-10"
+      className="btn btn-quiet px-10"
     >
       {children}
     </Link>

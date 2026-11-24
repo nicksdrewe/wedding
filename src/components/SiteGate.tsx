@@ -54,7 +54,7 @@ export function SiteGate({ children }: { children: React.ReactNode }) {
   }
 
   if (status === "checking") {
-    return <div className="h-screen w-full bg-night" aria-hidden="true" />;
+    return <div className="h-screen w-full bg-cream" aria-hidden="true" />;
   }
 
   if (status === "unlocked") {
@@ -62,16 +62,16 @@ export function SiteGate({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <main className="relative flex h-screen flex-col items-center justify-center overflow-hidden bg-night px-6 text-center">
+    <main className="relative flex h-screen flex-col items-center justify-center overflow-hidden bg-cream px-6 text-center">
       <Botanical
         seed={3}
         stems={2}
         width={150}
         height={220}
         spread={24}
-        color="var(--color-cream)"
-        strokeOpacity={0.22}
-        fillOpacity={0.1}
+        color="var(--sec)"
+        strokeOpacity={0.3}
+        fillOpacity={0.14}
         className="pointer-events-none absolute -bottom-10 -left-10"
       />
       <Botanical
@@ -80,20 +80,20 @@ export function SiteGate({ children }: { children: React.ReactNode }) {
         width={110}
         height={170}
         spread={10}
-        color="var(--color-cream)"
-        strokeOpacity={0.18}
-        fillOpacity={0.08}
+        color="var(--sec)"
+        strokeOpacity={0.24}
+        fillOpacity={0.1}
         className="pointer-events-none absolute -top-6 -right-6"
       />
 
       <span className="relative z-10 mb-4 opacity-90">
-        <LogoMark size={56} tone="light" />
+        <LogoMark size={56} />
       </span>
-      <p className="relative z-10 font-ui text-[11px] font-semibold tracking-[0.3em] text-cream/60 uppercase">
+      <p className="relative z-10 font-ui text-[11px] font-semibold tracking-[0.3em] text-ink-soft uppercase">
         Nick &amp; Ellie
       </p>
-      <h1 className="relative z-10 mt-3 font-title text-4xl font-medium text-cream">This one&rsquo;s private</h1>
-      <p className="relative z-10 mt-3 max-w-xs font-reading text-sm text-cream/70 italic">
+      <h1 className="relative z-10 mt-3 font-title text-4xl font-medium text-forest">This one&rsquo;s private</h1>
+      <p className="relative z-10 mt-3 max-w-xs font-reading text-sm text-ink-soft italic">
         Enter the code from your invitation to come in.
       </p>
 
@@ -110,20 +110,20 @@ export function SiteGate({ children }: { children: React.ReactNode }) {
             setWrong(false);
           }}
           placeholder="Access code"
-          className={`w-56 rounded-full border bg-white/10 px-5 py-3.5 text-center font-serif text-lg tracking-[0.2em] text-cream uppercase outline-none backdrop-blur-sm transition placeholder:text-cream/40 focus:border-cream/50 ${
-            wrong ? "border-alert" : "border-cream/25"
+          className={`w-56 rounded-full border bg-paper px-5 py-3.5 text-center font-serif text-lg tracking-[0.2em] text-ink uppercase outline-none transition placeholder:text-ink-soft/50 focus:border-[var(--sec)] ${
+            wrong ? "border-alert" : "border-ink/15"
           }`}
         />
-        {/* The same cosmic button as the sign-in page, in its night colours. */}
+        {/* The same cosmic button as the sign-in page, in the site's forest green. */}
         <div
           className="w-56"
-          style={{ "--sun-c": "#eef0e6", "--btn-base": "#0b120d", "--btn-sheen": "#2f5a3a" } as React.CSSProperties}
+          style={{ "--sun-c": "#f4f1ec", "--btn-base": "#1d2a21", "--btn-sheen": "#4c6b52" } as React.CSSProperties}
         >
           <GalaxyButton>Enter</GalaxyButton>
         </div>
         <Link
           href="/login"
-          className="mt-1 w-56 rounded-full border border-cream/30 px-6 py-3 font-ui text-sm text-cream/90 transition hover:border-cream/60 hover:bg-white/10"
+          className="mt-1 w-56 rounded-full border border-ink/15 px-6 py-3 font-ui text-sm text-ink-soft transition hover:border-ink/35 hover:text-ink"
         >
           Log in
         </Link>
