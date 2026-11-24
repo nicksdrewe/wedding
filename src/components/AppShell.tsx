@@ -310,7 +310,7 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
         <div className="surface surface-glass surface-raised mx-auto flex h-14 max-w-[1760px] items-center justify-between !rounded-full px-4 sm:px-5">
           {/* Left: wordmark — this IS the "back to landing" affordance. */}
           <Link href="/" className="flex shrink-0 items-center gap-2">
-            <LogoMark size={42} className="shrink-0" />
+            <LogoMark size={34} className="shrink-0" />
             <span className="font-title text-[17px] tracking-tight">Nick &amp; Ellie</span>
           </Link>
 

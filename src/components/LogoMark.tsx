@@ -6,13 +6,13 @@ export function LogoMark({ size = 42, className = "" }: { size?: number; classNa
       <span
         className="pointer-events-none absolute"
         style={{
-          left: "18%",
-          top: "-6%",
-          width: "64%",
-          height: "50%",
+          left: "8%",
+          top: "-14%",
+          width: "84%",
+          height: "66%",
           borderRadius: "50%",
-          background: "radial-gradient(closest-side, color-mix(in srgb, var(--sec-glow) 90%, transparent), transparent)",
-          filter: "blur(2px)",
+          background: "radial-gradient(closest-side, color-mix(in srgb, var(--sec-glow) 60%, transparent), transparent)",
+          filter: "blur(4px)",
           transition: "background 0.4s ease",
         }}
       />
