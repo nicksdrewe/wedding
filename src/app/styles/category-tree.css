@@ -12,6 +12,9 @@
 }
 .cat-node {
   position: relative;
+  /* cards always sit in front of the connecting lines, so a card that lifts
+     on hover covers the line above it instead of the line crossing its edge */
+  z-index: 1;
 }
 
 /* ── phone / tablet: indented ── */
@@ -124,11 +127,13 @@
   .cat-tree ul ul::before {
     content: "";
     position: absolute;
-    top: 0;
+    /* starts 12px up, hidden under the parent's card, so the line stays joined
+       when the card lifts on hover */
+    top: -12px;
     left: 50%;
     margin-left: -1px;
     width: 2px;
-    height: 24px;
+    height: 36px;
     background: color-mix(in srgb, var(--sec) 35%, transparent);
   }
 }
