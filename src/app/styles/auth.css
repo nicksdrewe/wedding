@@ -236,7 +236,7 @@
   display: block;
   width: 100%;
 }
-.galaxy-btn button {
+.galaxy-btn :is(button, a) {
   --cut: 0.1em;
   --active: 0;
   --sun-hi: color-mix(in srgb, var(--sun-c) 35%, white);
@@ -270,14 +270,14 @@
   perspective: 100vmin;
   overflow: hidden;
 }
-.galaxy-btn button:disabled {
+.galaxy-btn :is(button, a):disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
-.galaxy-btn button:active {
+.galaxy-btn :is(button, a):active {
   scale: 1;
 }
-.galaxy-btn button:is(:hover, :focus-visible):not(:disabled) {
+.galaxy-btn :is(button, a):is(:hover, :focus-visible):not(:disabled) {
   --active: var(--power, 1);
 }
 .galaxy-btn .gstar {

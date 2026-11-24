@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { LogoMark } from "@/components/LogoMark";
 import { Botanical } from "@/components/Botanical";
 import { GalaxyButton } from "@/components/auth/GalaxyButton";
 
@@ -53,7 +54,7 @@ export function SiteGate({ children }: { children: React.ReactNode }) {
   }
 
   if (status === "checking") {
-    return <div className="h-screen w-full bg-ink" aria-hidden="true" />;
+    return <div className="h-screen w-full bg-night" aria-hidden="true" />;
   }
 
   if (status === "unlocked") {
@@ -61,7 +62,7 @@ export function SiteGate({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <main className="relative flex h-screen flex-col items-center justify-center overflow-hidden bg-ink px-6 text-center">
+    <main className="relative flex h-screen flex-col items-center justify-center overflow-hidden bg-night px-6 text-center">
       <Botanical
         seed={3}
         stems={2}
@@ -85,10 +86,13 @@ export function SiteGate({ children }: { children: React.ReactNode }) {
         className="pointer-events-none absolute -top-6 -right-6"
       />
 
-      <p className="relative z-10 font-serif text-xs tracking-[0.3em] text-cream/60 uppercase">
+      <span className="relative z-10 mb-4 opacity-90">
+        <LogoMark size={56} tone="light" />
+      </span>
+      <p className="relative z-10 font-ui text-[11px] font-semibold tracking-[0.3em] text-cream/60 uppercase">
         Nick &amp; Ellie
       </p>
-      <h1 className="relative z-10 mt-3 font-display text-3xl text-cream">This one&rsquo;s private</h1>
+      <h1 className="relative z-10 mt-3 font-title text-4xl font-medium text-cream">This one&rsquo;s private</h1>
       <p className="relative z-10 mt-3 max-w-xs font-reading text-sm text-cream/70 italic">
         Enter the code from your invitation to come in.
       </p>
@@ -119,7 +123,7 @@ export function SiteGate({ children }: { children: React.ReactNode }) {
         </div>
         <Link
           href="/login"
-          className="mt-1 w-56 rounded-full border border-cream/30 px-6 py-3 font-serif text-sm text-cream/90 transition hover:border-cream/60 hover:bg-white/10"
+          className="mt-1 w-56 rounded-full border border-cream/30 px-6 py-3 font-ui text-sm text-cream/90 transition hover:border-cream/60 hover:bg-white/10"
         >
           Log in
         </Link>

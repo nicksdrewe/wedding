@@ -1,6 +1,6 @@
 // The WW monogram (source files: public/brand). One colour throughout; a soft
 // glow behind the bouquet takes the light of the section you're in (--sec-glow).
-export function LogoMark({ size = 42, className = "" }: { size?: number; className?: string }) {
+export function LogoMark({ size = 42, className = "", tone = "dark" }: { size?: number; className?: string; tone?: "dark" | "light" }) {
   return (
     <span className={`relative inline-block ${className}`} style={{ width: size, height: size }} aria-hidden="true">
       <span
@@ -16,7 +16,7 @@ export function LogoMark({ size = 42, className = "" }: { size?: number; classNa
           transition: "background 0.4s ease",
         }}
       />
-      <svg viewBox="40 50 920 900" width={size} height={size} className="relative" focusable="false" style={{ color: "var(--color-forest)" }}>
+      <svg viewBox="40 50 920 900" width={size} height={size} className="relative" focusable="false" style={{ color: tone === "light" ? "var(--color-cream)" : "var(--color-forest)" }}>
         <g fill="none" stroke="currentColor" strokeWidth="34" strokeLinecap="round" strokeLinejoin="round">
           <path d="M 908 330 L 775 900 L 698.658595 593.152022 A 26 26 0 0 0 648.046873 593.789073 L 580 900 L 519 758 M 481 669 L 460 620 C 430 545 438 494 500 430" /><path d="M 92 330 L 225 900 L 301.341405 593.152022 A 26 26 0 0 1 351.953127 593.789073 L 420 900 L 540 620 C 570 545 562 494 500 430" />
         </g>

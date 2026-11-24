@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Link from "next/link";
 
 const RANDOM = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1) + min);
 
@@ -12,6 +13,7 @@ export function GalaxyButton({
   type = "submit",
   onClick,
   power = 1,
+  href,
 }: {
   children: React.ReactNode;
   disabled?: boolean;
@@ -19,6 +21,8 @@ export function GalaxyButton({
   onClick?: () => void;
   // 0 to 1: how much of the full effect (stars, swirl, glow) this button has.
   power?: number;
+  /** render as a link to this page instead of a button */
+  href?: string;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => {
@@ -33,7 +37,26 @@ export function GalaxyButton({
   const loose = Math.max(1, Math.round(4 * power));
   return (
     <span className="galaxy-btn" ref={ref} style={{ "--power": power } as React.CSSProperties}>
-      <button type={type} disabled={disabled} onClick={onClick}>
+      {href ? (
+        <Link href={href} style={{ textDecoration: "none" }}>
+        <span className="gspark" />
+        <span className="gbackdrop" />
+        <span className="galaxy__container">
+          {Array.from({ length: loose }, (_, i) => (
+            <span key={i} className="gstar gstar--static" />
+          ))}
+        </span>
+        <span className="galaxy">
+          <span className="galaxy__ring">
+            {Array.from({ length: ring }, (_, i) => (
+              <span key={i} className="gstar" />
+            ))}
+          </span>
+        </span>
+        <span className="gtext">{children}</span>
+      </Link>
+      ) : (
+        <button type={type} disabled={disabled} onClick={onClick}>
         <span className="gspark" />
         <span className="gbackdrop" />
         <span className="galaxy__container">
@@ -50,6 +73,7 @@ export function GalaxyButton({
         </span>
         <span className="gtext">{children}</span>
       </button>
+      )}
     </span>
   );
 }

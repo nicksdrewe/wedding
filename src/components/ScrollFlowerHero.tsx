@@ -12,7 +12,8 @@ import {
   MorphingPopoverTrigger,
 } from "@/components/motion-primitives/morphing-popover";
 import { Spotlight } from "@/components/motion-primitives/spotlight";
-import { SignInFields } from "@/components/SignInFields";
+import { GalaxyButton } from "@/components/auth/GalaxyButton";
+import { LogoMark } from "@/components/LogoMark";
 
 // Off for the engagement-only launch — the wedding date isn't set yet (see
 // the "Summer 2028" placeholder below), so wedding RSVP has nothing real
@@ -398,7 +399,7 @@ export function ScrollFlowerHero({
 
   return (
     <div ref={wrapRef} className="relative">
-      <section className="relative flex h-screen items-center justify-center overflow-hidden bg-ink">
+      <section className="relative flex h-screen items-center justify-center overflow-hidden bg-night">
         <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
 
         {/* One flat, page-wide wash — not a box behind any one piece of
@@ -407,20 +408,25 @@ export function ScrollFlowerHero({
             the lightest plausible frame background, paired with every text
             size below qualifying for the "large text" 3:1 AA threshold
             rather than the stricter 4.5:1 normal-text one. */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-ink/48" />
+        {/* The photo is shot on a light grey studio backdrop; a sage multiply
+            pulls it into the site's forest night without dulling the flower. */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 mix-blend-multiply" style={{ background: "#9fb8a4" }} />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ background: "rgba(19,24,19,0.42)" }} />
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse at 50% 42%, rgba(23,20,15,0) 30%, rgba(23,20,15,0.4) 100%)",
+              "radial-gradient(ellipse at 50% 46%, rgba(19,24,19,0) 22%, rgba(19,24,19,0.82) 95%)",
           }}
         />
 
         {!ready && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-ink">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-cream/25 border-t-cream" />
-            <p className="font-serif text-xs tracking-[0.2em] text-cream/70 uppercase">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-night">
+            <span style={{ animation: "glowPulse 2.6s ease-in-out infinite" }}>
+              <LogoMark size={64} tone="light" />
+            </span>
+            <p className="font-ui text-[11px] font-semibold tracking-[0.3em] text-cream/60 uppercase tabular-nums">
               {Math.round((loadedCount / FRAME_COUNT) * 100)}%
             </p>
           </div>
@@ -461,8 +467,8 @@ export function ScrollFlowerHero({
                 }}
               />
               <p
-                className={`font-serif font-bold tracking-[0.24em] text-white uppercase ${
-                  hintUrgent ? "text-2xl" : "text-xl"
+                className={`font-ui font-semibold tracking-[0.3em] text-cream uppercase ${
+                  hintUrgent ? "text-base" : "text-sm"
                 }`}
                 style={{ textShadow: "0 2px 16px rgba(0,0,0,0.7), 0 1px 3px rgba(0,0,0,0.9)" }}
               >
@@ -470,9 +476,9 @@ export function ScrollFlowerHero({
               </p>
               <ChevronDown
                 aria-hidden="true"
-                className={`text-white ${hintUrgent ? "h-9 w-9" : "h-7 w-7"}`}
+                className={`text-cream ${hintUrgent ? "h-8 w-8" : "h-6 w-6"}`}
                 style={{ filter: "drop-shadow(0 2px 10px rgba(0,0,0,0.7))" }}
-                strokeWidth={2.5}
+                strokeWidth={2}
               />
             </div>
           </div>
@@ -494,12 +500,12 @@ export function ScrollFlowerHero({
               // unhidden prompt below, since both containers are dead
               // centred. That's the "everything stacks in the centre
               // before settling" flash.
-              className="font-serif text-xl font-bold tracking-[0.28em] text-white uppercase opacity-0"
+              className="font-ui text-sm font-semibold tracking-[0.32em] text-cream uppercase opacity-0 sm:text-base"
               style={{ textShadow: "0 2px 14px rgba(0,0,0,0.65), 0 1px 3px rgba(0,0,0,0.85)" }}
             >
               We&rsquo;re getting married
             </p>
-            <h1 className="mt-5 font-hero text-[15vw] leading-[0.94] font-semibold tracking-[-0.01em] text-white sm:text-[110px] lg:text-[148px]">
+            <h1 className="mt-5 font-title text-[15vw] leading-[0.94] font-medium tracking-[-0.02em] text-cream sm:text-[110px] lg:text-[148px]">
               <span
                 ref={nickRef}
                 className="inline-block opacity-0"
@@ -530,13 +536,13 @@ export function ScrollFlowerHero({
             style={{ transformOrigin: "50% 0%" }}
           >
             <p
-              className="font-serif text-xl font-bold tracking-[0.28em] text-white uppercase"
+              className="font-ui text-sm font-semibold tracking-[0.32em] text-cream uppercase sm:text-base"
               style={{ textShadow: "0 2px 14px rgba(0,0,0,0.65), 0 1px 3px rgba(0,0,0,0.85)" }}
             >
               {copy.eyebrow}
             </p>
             <h2
-              className="mt-4 font-hero text-[38px] leading-[1.05] font-semibold tracking-[-0.01em] text-white sm:text-[50px]"
+              className="mt-4 font-title text-[38px] leading-[1.05] font-medium tracking-[-0.015em] text-cream sm:text-[50px]"
               style={{ textShadow: "0 2px 20px rgba(0,0,0,0.65), 0 1px 3px rgba(0,0,0,0.85)" }}
             >
               {copy.heading}
@@ -596,9 +602,12 @@ export function ScrollFlowerHero({
             settles at rest, where it reads as a quiet signature. */}
         <p
           ref={footerRef}
-          className="absolute bottom-5 left-1/2 z-10 -translate-x-1/2 text-center font-serif text-xs tracking-[0.2em] text-cream/50 uppercase opacity-0"
+          className="absolute bottom-5 left-1/2 z-10 -translate-x-1/2 text-center font-ui text-[11px] tracking-[0.3em] text-cream/50 uppercase opacity-0"
           style={{ textShadow: "0 1px 8px rgba(0,0,0,0.5)" }}
         >
+          <span className="mb-2 flex justify-center opacity-80">
+            <LogoMark size={28} tone="light" />
+          </span>
           weddingsweddings.co.uk
         </p>
 
@@ -642,11 +651,14 @@ function ButtonShineLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+// The same cosmic button as the sign-in page and the access gate, in its
+// night colours, so the front door matches the rest of the site.
+const NIGHT_GALAXY = { "--sun-c": "#eef0e6", "--btn-base": "#0b120d", "--btn-sheen": "#2f5a3a" } as React.CSSProperties;
 function PrimaryButton({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <Link href={href} className={PRIMARY_BUTTON_CLASS}>
-      <ButtonShineLabel>{children}</ButtonShineLabel>
-    </Link>
+    <span className="inline-block w-64" style={NIGHT_GALAXY}>
+      <GalaxyButton href={href}>{children}</GalaxyButton>
+    </span>
   );
 }
 
@@ -699,7 +711,7 @@ function RsvpMorphingButton() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
             onClick={() => setOpen(false)}
-            className="fixed inset-0 z-30 bg-ink/70 backdrop-blur-sm"
+            className="fixed inset-0 z-30 bg-night/70 backdrop-blur-sm"
           />
         )}
       </AnimatePresence>
@@ -752,10 +764,10 @@ function RsvpMorphingButton() {
                 component's own background image value, since both are
                 recognised as the same conflict group. */}
             <Spotlight
-              className="bg-[radial-gradient(circle,#7c9482,#f4f1ec_45%,transparent_78%)] blur-3xl"
+              className="bg-[radial-gradient(circle,#9cc4a4,#f4f1ec_45%,transparent_78%)] blur-3xl"
               size={260}
             />
-            <div className="relative h-full w-full rounded-[26px] bg-gradient-to-b from-[#232520]/55 via-[#232520]/72 to-[#232520]/85 p-8 text-center text-cream shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-2xl">
+            <div className="relative h-full w-full rounded-[26px] bg-gradient-to-b from-[#1d2a21]/60 via-[#1d2a21]/75 to-[#131813]/88 p-8 text-center text-cream shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-2xl">
               <button
                 type="button"
                 onClick={() => setOpen(false)}
@@ -764,10 +776,10 @@ function RsvpMorphingButton() {
               >
                 <X className="h-5 w-5" strokeWidth={2} />
               </button>
-              <p className="font-serif text-xs font-bold tracking-[0.28em] text-cream/70 uppercase">
+              <p className="font-ui text-[11px] font-semibold tracking-[0.3em] text-cream/70 uppercase">
                 You&rsquo;re invited
               </p>
-              <h3 className="mt-3 font-hero text-2xl font-semibold text-white">
+              <h3 className="mt-3 font-title text-2xl font-medium text-cream">
                 Check your invitation
               </h3>
               <p className="mt-4 font-reading text-base text-cream/85 italic">
@@ -783,97 +795,16 @@ function RsvpMorphingButton() {
   );
 }
 
-// Mirrors RsvpMorphingButton's structure (same morph, same spotlight-border
-// panel) but the trigger itself is a small muted text link rather than a
-// full button — this is the quiet, secondary path for the couple/family who
-// already know the hub exists, not something an anonymous engagement-party
-// respondent should read as an equally-weighted choice. Nests the same
-// sign-in form used on the standalone /login page (kept as a no-JS/bookmark
-// fallback) rather than re-implementing it.
+// The quiet way in for people with an account: the real sign-in page (the
+// night garden), same as the access gate's "Log in".
 function HubLoginTrigger() {
-  const [open, setOpen] = useState(false);
-  const spotlightWrapRef = useRef<HTMLDivElement>(null);
-  useSpotlightReveal(open, spotlightWrapRef);
-
   return (
-    <>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            key="signin-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            onClick={() => setOpen(false)}
-            className="fixed inset-0 z-30 bg-ink/70 backdrop-blur-sm"
-          />
-        )}
-      </AnimatePresence>
-      <MorphingPopover
-        open={open}
-        onOpenChange={setOpen}
-        variants={{
-          initial: { opacity: 0, filter: "blur(10px)" },
-          animate: { opacity: 1, filter: "blur(0px)" },
-          exit: { opacity: 0, filter: "blur(10px)" },
-        }}
-        transition={{ type: "spring", bounce: 0.12, duration: 0.45 }}
-      >
-        <MorphingPopoverTrigger asChild>
-          <button
-            type="button"
-            className="font-serif text-xs font-medium tracking-[0.08em] text-cream/55 underline decoration-cream/30 decoration-dotted underline-offset-4 transition-colors duration-200 hover:text-cream/85 hover:decoration-cream/60"
-            style={{ textShadow: "0 1px 6px rgba(0,0,0,0.5)" }}
-          >
-            Hub login
-          </button>
-        </MorphingPopoverTrigger>
-        <MorphingPopoverContent
-          // Sized/positioned only, no height cap here — see the comment
-          // below on why max-height + scrolling lives one level deeper
-          // instead of on this element. See RsvpMorphingButton for why the
-          // dark: variant needs neutralising explicitly too.
-          className="fixed top-1/2 left-1/2 z-40 w-[min(90vw,26rem)] -translate-x-1/2 -translate-y-1/2 rounded-[28px] border-none bg-transparent p-0 text-ink shadow-[0_30px_90px_rgba(0,0,0,0.35)] dark:border-none dark:bg-transparent dark:text-ink"
-        >
-          <div ref={spotlightWrapRef} className="relative overflow-hidden rounded-[28px] bg-ink/10 p-[2px]">
-            {/* Self-contained gradient — see RsvpMorphingButton's Spotlight
-                for why the colour-stop utilities don't work here. */}
-            <Spotlight
-              className="bg-[radial-gradient(circle,#4c6b52,#7c9482_45%,transparent_78%)] blur-3xl"
-              size={260}
-            />
-            {/* max-h/overflow-y-auto live here, not on MorphingPopoverContent
-                itself: that element carries the shared layoutId Framer
-                Motion animates between the trigger and this panel, and
-                constraining ITS height mid-animation was the likely cause
-                of the panel visually vanishing after opening — Framer's
-                layout projection re-measuring against a height-clamped,
-                scrolling box mid-transition. Clamping one level deeper
-                keeps the FLIP-tracked box's own geometry simple and
-                stable, while the sign-in form (taller than RSVP's message)
-                still gets to scroll internally on short viewports. */}
-            <div className="relative max-h-[85vh] w-full overflow-y-auto overflow-x-hidden rounded-[26px] bg-gradient-to-b from-white/45 via-[#f4f1ec]/55 to-[#ece7dc]/60 p-8 text-center text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] backdrop-blur-2xl">
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                aria-label="Close"
-                className="absolute top-4 right-4 text-ink/40 transition-colors hover:text-ink"
-              >
-                <X className="h-5 w-5" strokeWidth={2} />
-              </button>
-              <p className="font-serif text-xs font-bold tracking-[0.28em] text-ink-soft uppercase">
-                Nick &amp; Ellie
-              </p>
-              <h3 className="mt-3 font-hero text-2xl font-semibold text-ink">Sign in</h3>
-              <div className="mt-6">
-                <SignInFields next="/hub" />
-              </div>
-            </div>
-          </div>
-        </MorphingPopoverContent>
-      </MorphingPopover>
-    </>
+    <Link
+      href="/login"
+      className="rounded-full border border-cream/30 px-6 py-2.5 font-ui text-[13px] font-medium tracking-[0.04em] text-cream/85 transition hover:border-cream/60 hover:bg-white/10"
+    >
+      Sign in
+    </Link>
   );
 }
 
@@ -892,7 +823,7 @@ function GlassButton({ href, children }: { href: string; children: React.ReactNo
   return (
     <Link
       href={href}
-      className="inline-block rounded-full border border-ink/10 bg-cream/95 px-10 py-4 font-serif text-sm font-medium text-ink shadow-[0_8px_24px_rgba(0,0,0,0.22)] backdrop-blur-md transition-[transform,box-shadow,background] duration-300 ease-[cubic-bezier(.22,1,.36,1)] hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-cream"
+      className="btn btn-on-dark px-10"
     >
       {children}
     </Link>
