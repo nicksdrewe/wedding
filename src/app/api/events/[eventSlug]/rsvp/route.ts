@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getWeddingId } from "@/lib/wedding/current";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 // Public, unauthenticated self-service RSVP for any event created through
@@ -54,11 +55,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ eve
   const normalizedEmail = email.toLowerCase();
   const escapedEmail = escapeIlike(normalizedEmail);
 
-  const supabase = createAdminClient();
+  const supabase = createAdminClient(await getWeddingId());
 
   const { data: event } = await supabase
     .from("events")
     .select("id, rsvp_enabled, rsvp_open, plus_ones_open")
+    .eq("wedding_id", (await getWeddingId())!)
     .eq("slug", eventSlug)
     .maybeSingle();
 
@@ -80,6 +82,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ eve
   const { data: existingContact } = await supabase
     .from("contacts")
     .select("id, plus_one_limit")
+    .eq("wedding_id", (await getWeddingId())!)
     .ilike("email", escapedEmail)
     .maybeSingle();
 

@@ -1,6 +1,17 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { STASH_PREFIX, VIEW_AS_COOKIE, verifyViewAs } from "@/lib/view-as/cookie";
+import {
+  DEFAULT_WEDDING_SLUG,
+  ROOT_DOMAIN,
+  WEDDING_COOKIE,
+  WEDDING_HEADER,
+  WEDDING_PICK_COOKIE,
+  WEDDING_SLUG_HEADER,
+  isValidSlug,
+  slugFromHost,
+} from "@/lib/wedding/host";
+import { weddingIdForSlug } from "@/lib/wedding/resolve";
 
 const VIEW_AS_STOP_PATH = "/api/view-as/stop";
 
@@ -111,11 +122,49 @@ function isPublic(pathname: string) {
   return PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
 }
 
+// Which wedding this address is for (see lib/wedding/host.ts). On preview and
+// local addresses ?wedding=<slug> picks one, remembered in a cookie.
+async function resolveWedding(request: NextRequest) {
+  const host = request.headers.get("host");
+  const fromHost = slugFromHost(host);
+  const isMainDomain = (host ?? "").split(":")[0].replace(/^www\./, "") === ROOT_DOMAIN;
+  let pick: string | null = null;
+  let slug = fromHost;
+  if (!slug && !isMainDomain) {
+    const q = request.nextUrl.searchParams.get("wedding");
+    const c = request.cookies.get(WEDDING_PICK_COOKIE)?.value;
+    pick = isValidSlug(q) ? q : null;
+    slug = pick ?? (isValidSlug(c) ? c : null);
+  }
+  slug = slug ?? DEFAULT_WEDDING_SLUG;
+  let id = await weddingIdForSlug(slug);
+  if (!id && !fromHost) {
+    slug = DEFAULT_WEDDING_SLUG;
+    id = await weddingIdForSlug(slug);
+  }
+  return { slug, id, unknownSubdomain: !!fromHost && !id, pick };
+}
+
 export async function updateSession(request: NextRequest) {
   const guarded = await viewAsGuard(request);
   if (guarded) return guarded;
 
-  let supabaseResponse = NextResponse.next({ request });
+  const wedding = await resolveWedding(request);
+  if (wedding.unknownSubdomain) {
+    // no such wedding: send them to the main site
+    return NextResponse.redirect(new URL(`https://${ROOT_DOMAIN}/`));
+  }
+
+  // Pass the wedding on to the app. Overwrites anything the browser sent, so
+  // the wedding can only ever come from the address.
+  const forwarded = new Headers(request.headers);
+  forwarded.delete(WEDDING_HEADER);
+  forwarded.delete(WEDDING_SLUG_HEADER);
+  if (wedding.id) forwarded.set(WEDDING_HEADER, wedding.id);
+  forwarded.set(WEDDING_SLUG_HEADER, wedding.slug);
+  const next = () => NextResponse.next({ request: { headers: forwarded } });
+
+  let supabaseResponse = next();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -129,7 +178,7 @@ export async function updateSession(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
-          supabaseResponse = NextResponse.next({ request });
+          supabaseResponse = next();
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );
@@ -174,5 +223,12 @@ export async function updateSession(request: NextRequest) {
     return withCookies(NextResponse.redirect(url));
   }
 
+  // The browser's own database client reads the wedding from this cookie.
+  if (wedding.id) {
+    supabaseResponse.cookies.set(WEDDING_COOKIE, wedding.id, { path: "/", sameSite: "lax", secure: true });
+  }
+  if (wedding.pick) {
+    supabaseResponse.cookies.set(WEDDING_PICK_COOKIE, wedding.pick, { path: "/", sameSite: "lax", secure: true, httpOnly: true });
+  }
   return supabaseResponse;
 }

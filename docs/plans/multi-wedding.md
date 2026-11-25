@@ -21,6 +21,16 @@ moved over and checked.
   a signup code instead of payment.
 - **Existing data becomes wedding #1** (`slug = 'nickellie'`).
 
+## Progress
+
+- Phase 1 database: `0056_multi_wedding.sql`. Membership is your contact on a
+  wedding's guest list (`contacts.user_id`); `profiles` is now a per-wedding
+  view over `accounts` + `contacts`, so existing rules work unchanged. Tests:
+  all 13 existing suites pass, plus `rls_multi_wedding` (24 checks).
+- Phase 1 app: middleware resolves the wedding from the address and sends
+  `x-wedding-id` on every database call (server, browser, admin). Admin-client
+  reads of wedding data filter by `wedding_id` explicitly.
+
 ## Phases
 
 1. **Foundations** (no visible change)

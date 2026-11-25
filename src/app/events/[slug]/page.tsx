@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getWeddingId } from "@/lib/wedding/current";
 import { getCurrentProfile } from "@/lib/auth/roles";
 import { EventPageClient, type EventConfig } from "./EventPageClient";
 
@@ -19,13 +20,14 @@ import { EventPageClient, type EventConfig } from "./EventPageClient";
 // is selected below, so bypassing RLS is safe.
 export default async function EventPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const supabase = createAdminClient();
+  const supabase = createAdminClient(await getWeddingId());
 
   const { data: event } = await supabase
     .from("events")
     .select(
       "id, slug, name, starts_at, location, show_header, header_eyebrow, header_title, header_body, show_photo_board, show_details, details_eyebrow, details_title, venue_name, venue_body, show_map, show_rsvp_form, rsvp_enabled"
     )
+    .eq("wedding_id", (await getWeddingId())!)
     .eq("slug", slug)
     .maybeSingle();
 

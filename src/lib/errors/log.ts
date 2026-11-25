@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getWeddingId } from "@/lib/wedding/current";
 
 // Server-error recorder behind instrumentation.ts's onRequestError. Must never
 // throw or slow a request: every failure here is swallowed. Keeps no personal
@@ -40,7 +41,7 @@ export async function logServerError(err: unknown, request: RequestInfo, context
     // Next's control-flow signals aren't errors.
     if (/NEXT_REDIRECT|NEXT_NOT_FOUND|DYNAMIC_SERVER_USAGE/.test(message) || /NEXT_REDIRECT|NEXT_NOT_FOUND/.test(error?.digest ?? "")) return;
 
-    await createAdminClient().from("error_log").insert({
+    await createAdminClient(await getWeddingId()).from("error_log").insert({
       // The template when Next knows it; otherwise just the first path
       // segment — never a full URL.
       route: context.routePath ?? `/${(request.path ?? "").split("?")[0].split("/")[1] ?? ""}`,

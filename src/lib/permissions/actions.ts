@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getWeddingId } from "@/lib/wedding/current";
 import type { Profile, RoleTier } from "@/lib/auth/role-types";
 import { normalizeTag, normalizeTags, ROLE_TAG_VALUES } from "@/lib/tags";
 import { categoryKeyChain, resolvePermission } from "./resolve";
@@ -142,7 +143,7 @@ async function computeEffectivePermission(pageKey: string, profile: Profile | nu
   if (!profile) return { pageAccess: false, dataAccess: false, editAccess: false, costAccess: false };
   if (profile.role === "couple") return { pageAccess: true, dataAccess: true, editAccess: true, costAccess: true };
 
-  const supabase = createAdminClient();
+  const supabase = createAdminClient(await getWeddingId());
 
   let tags: string[] = [];
   if (profile.contact_id) {
@@ -156,12 +157,13 @@ async function computeEffectivePermission(pageKey: string, profile: Profile | nu
   // from its registry parent (project:* falls back to "project").
   let keyChain: string[];
   if (pageKey.startsWith("categories:")) {
-    const cats = await fetchCategoryRows(supabase);
+    const cats = await fetchCategoryRows(supabase, await getWeddingId());
     keyChain = categoryKeyChain(pageKey.slice("categories:".length), cats);
   } else {
     const { data: registryRow } = await supabase
       .from("page_registry")
       .select("parent_page_key")
+      .eq("wedding_id", (await getWeddingId())!)
       .eq("page_key", pageKey)
       .maybeSingle();
     const parentKey = registryRow?.parent_page_key ?? (pageKey.startsWith("project:") ? "project" : null);
@@ -171,6 +173,7 @@ async function computeEffectivePermission(pageKey: string, profile: Profile | nu
   const { data: rows } = await supabase
     .from("page_permissions")
     .select("page_key, principal_type, principal_value, page_access, data_access, edit_access, cost_access")
+    .eq("wedding_id", (await getWeddingId())!)
     .in("page_key", keyChain);
 
   // No rule at all: everything keeps its long-standing "allowed" default,

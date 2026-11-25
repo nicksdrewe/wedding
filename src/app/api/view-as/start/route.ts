@@ -4,6 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getWeddingId } from "@/lib/wedding/current";
 import { getCurrentProfile } from "@/lib/auth/roles";
 import { findAuthUserByEmail, isBanned } from "@/lib/accounts/status";
 import {
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
   const contactId = z.string().uuid().safeParse(form.get("contactId"));
   if (!contactId.success) return fail("That guest couldn't be found.");
 
-  const admin = createAdminClient();
+  const admin = createAdminClient(await getWeddingId());
   const { data: contact } = await admin
     .from("contacts")
     .select("id, full_name, email, role, parent_contact_id")

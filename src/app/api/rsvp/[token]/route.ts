@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getWeddingId } from "@/lib/wedding/current";
 
 // Public, unauthenticated RSVP endpoint — access is gated by the unguessable
 // per-guest rsvp_token in the URL, not by login. Uses the service-role client
@@ -11,11 +12,12 @@ export async function GET(
   { params }: { params: Promise<{ token: string }> }
 ) {
   const { token } = await params;
-  const supabase = createAdminClient();
+  const supabase = createAdminClient(await getWeddingId());
 
   const { data: contact, error } = await supabase
     .from("contacts")
     .select("id, full_name, plus_one_limit, rsvp_status")
+    .eq("wedding_id", (await getWeddingId())!)
     .eq("rsvp_token", token)
     .maybeSingle();
 
@@ -32,6 +34,7 @@ export async function GET(
   const { data: events } = await supabase
     .from("events")
     .select("id, name, starts_at, location")
+    .eq("wedding_id", (await getWeddingId())!)
     .eq("rsvp_enabled", true)
     .order("starts_at", { ascending: true });
 
@@ -57,11 +60,12 @@ export async function POST(
   { params }: { params: Promise<{ token: string }> }
 ) {
   const { token } = await params;
-  const supabase = createAdminClient();
+  const supabase = createAdminClient(await getWeddingId());
 
   const { data: contact, error: contactError } = await supabase
     .from("contacts")
     .select("id, plus_one_limit")
+    .eq("wedding_id", (await getWeddingId())!)
     .eq("rsvp_token", token)
     .maybeSingle();
 

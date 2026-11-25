@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getWeddingId } from "@/lib/wedding/current";
 import type { Profile } from "@/lib/auth/role-types";
 import { normalizeTags } from "@/lib/tags";
 import { getFxRates } from "@/lib/currency/rates";
@@ -37,7 +38,7 @@ type CostEmbed = {
 // loads that stag or hen board's own tree (0047_board_categories.sql).
 export async function loadCategoryTree(profile: Profile | null, board: BoardKey | null = null): Promise<CategoryTree> {
   const supabase = await createClient();
-  const admin = profile && profile.role !== "couple" ? createAdminClient() : null;
+  const admin = profile && profile.role !== "couple" ? createAdminClient(await getWeddingId()) : null;
   // Everything independent is fetched at once.
   const [{ data: cats }, { data: groups }, rates, allRows, adminData] = await Promise.all([
     supabase
@@ -56,10 +57,11 @@ export async function loadCategoryTree(profile: Profile | null, board: BoardKey 
     admin
       ? Promise.all([
           // The full chain, including parents this person can't see themselves.
-          fetchCategoryRows(admin),
+          fetchCategoryRows(admin, await getWeddingId()),
           admin
             .from("page_permissions")
-            .select("page_key, principal_type, principal_value, page_access, data_access, edit_access, cost_access"),
+            .select("page_key, principal_type, principal_value, page_access, data_access, edit_access, cost_access")
+            .eq("wedding_id", (await getWeddingId())!),
           profile!.contact_id
             ? admin.from("contacts").select("tags").eq("id", profile!.contact_id).maybeSingle()
             : Promise.resolve({ data: null }),

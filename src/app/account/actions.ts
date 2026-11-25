@@ -4,6 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getWeddingId } from "@/lib/wedding/current";
 import { getCurrentContactTags, getCurrentProfile } from "@/lib/auth/roles";
 
 const passwordSchema = z
@@ -50,7 +51,7 @@ export async function setMyPhoto(photoUrl: string | null) {
   const parsed = z.string().min(1).max(2000).nullable().safeParse(photoUrl);
   if (!parsed.success) return { error: "That photo couldn't be saved." };
 
-  const { error } = await createAdminClient().from("contacts").update({ photo_url: parsed.data }).eq("id", profile.contact_id);
+  const { error } = await createAdminClient(await getWeddingId()).from("contacts").update({ photo_url: parsed.data }).eq("id", profile.contact_id);
   if (error) {
     return { error: error.message.includes("photo_url") ? "Photos need one more database step (migration 0045) first." : error.message };
   }

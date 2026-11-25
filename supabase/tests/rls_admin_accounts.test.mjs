@@ -35,7 +35,7 @@ const files = fs.readdirSync(MIG).filter((f) => f.endsWith(".sql")).sort();
 for (const f of files) {
   if (f.slice(0, 4) > LAST) break;
   try {
-    await db.exec(fs.readFileSync(path.join(MIG, f), "utf8"));
+    await db.exec(fs.readFileSync(path.join(MIG, f), "utf8")); if (f.startsWith("0056")) await db.exec(`select set_config('app.wedding_id', (select id::text from weddings where slug = 'nickellie'), false)`);
   } catch (e) {
     console.log("MIGRATION FAILED:", f, "\n ", e.message);
     process.exit(1);

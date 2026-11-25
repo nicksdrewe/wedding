@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getWeddingId } from "@/lib/wedding/current";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { findAuthUserByEmail, isBanned } from "@/lib/accounts/status";
 
@@ -44,10 +45,11 @@ export async function POST(request: Request) {
   // live exploit (* isn't valid in a real email address) but defensive.
   const escaped = body.data.email.replace(/[%_\\*]/g, "\\$&");
 
-  const supabase = createAdminClient();
+  const supabase = createAdminClient(await getWeddingId());
   const { data: contact } = await supabase
     .from("contacts")
     .select("id")
+    .eq("wedding_id", (await getWeddingId())!)
     .ilike("email", escaped)
     .maybeSingle();
 
