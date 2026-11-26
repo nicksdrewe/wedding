@@ -14,6 +14,8 @@ import {
 import { Spotlight } from "@/components/motion-primitives/spotlight";
 import { GalaxyButton } from "@/components/auth/GalaxyButton";
 import { LogoMark } from "@/components/LogoMark";
+import { useWedding } from "@/components/WeddingProvider";
+import { eitherOf } from "@/lib/wedding/names";
 
 // Off for the engagement-only launch — the wedding date isn't set yet (see
 // the "Summer 2028" placeholder below), so wedding RSVP has nothing real
@@ -75,7 +77,7 @@ export type HeroCta =
   | { kind: "signed-in"; label: string; href: string }
   | { kind: "no-profile" };
 
-function ctaCopy(cta: HeroCta, landingCta: LandingCta | null) {
+function ctaCopy(cta: HeroCta, landingCta: LandingCta | null, either: string) {
   switch (cta.kind) {
     case "guest":
       return {
@@ -113,7 +115,7 @@ function ctaCopy(cta: HeroCta, landingCta: LandingCta | null) {
       return {
         eyebrow: "You're signed in",
         heading: "Almost there",
-        body: "We haven't added you to the guest list yet — give Nick or Ellie a nudge.",
+        body: `We haven't added you to the guest list yet — give ${either} a nudge.`,
         primary: { href: "/no-access", label: "Continue" },
         secondary: { href: "/logout", label: "Sign out" },
       };
@@ -138,7 +140,8 @@ export function ScrollFlowerHero({
   // in which case the primary CTA button simply doesn't render.
   landingCta: LandingCta | null;
 }) {
-  const copy = ctaCopy(cta, landingCta);
+  const wedding = useWedding();
+  const copy = ctaCopy(cta, landingCta, eitherOf(wedding));
 
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -512,14 +515,14 @@ export function ScrollFlowerHero({
                 className="inline-block opacity-0"
                 style={{ textShadow: "0 0 12px rgba(244,241,236,1), 0 0 22px rgba(244,241,236,0.9), 0 0 3px rgba(244,241,236,1)" }}
               >
-                Nick
+                {wedding.partnerOne}
               </span>{" "}
               <span
                 ref={ellieRef}
                 className="inline-block opacity-0"
                 style={{ textShadow: "0 0 12px rgba(244,241,236,1), 0 0 22px rgba(244,241,236,0.9), 0 0 3px rgba(244,241,236,1)" }}
               >
-                &amp; Ellie
+                &amp; {wedding.partnerTwo}
               </span>
             </h1>
             <p
@@ -527,7 +530,7 @@ export function ScrollFlowerHero({
               className="mt-5 font-reading text-2xl text-forest italic opacity-0 md:text-[28px]"
               style={{ textShadow: "0 0 12px rgba(244,241,236,1), 0 0 22px rgba(244,241,236,0.9), 0 0 3px rgba(244,241,236,1)" }}
             >
-              Summer 2028
+              {wedding.dateLabel}
             </p>
           </div>
 
@@ -697,6 +700,7 @@ function useSpotlightReveal(open: boolean, ref: React.RefObject<HTMLDivElement |
 // message, expanding from the button itself via the shared layoutId
 // between trigger and content (see morphing-popover.tsx).
 function RsvpMorphingButton() {
+  const wedding = useWedding();
   const [open, setOpen] = useState(false);
   const spotlightWrapRef = useRef<HTMLDivElement>(null);
   useSpotlightReveal(open, spotlightWrapRef);
@@ -785,7 +789,7 @@ function RsvpMorphingButton() {
               </h3>
               <p className="mt-4 font-reading text-base text-cream/85 italic">
                 Your invitation email contains a personal RSVP link — follow
-                that to respond. Can&rsquo;t find it? Let Nick or Ellie know
+                that to respond. Can&rsquo;t find it? Let {eitherOf(wedding)} know
                 and they&rsquo;ll resend it.
               </p>
             </div>

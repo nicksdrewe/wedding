@@ -1,5 +1,6 @@
 import { ScrollFlowerHero, type HeroCta } from "@/components/ScrollFlowerHero";
 import { SiteGate } from "@/components/SiteGate";
+import { weddingHasGate } from "@/lib/gate/actions";
 import { getAuthState, getCurrentContactTags, homeFor } from "@/lib/auth/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getWeddingId } from "@/lib/wedding/current";
@@ -47,7 +48,7 @@ export default async function LandingPage() {
 
   return (
     <main className="relative">
-      <SiteGate>
+      <SiteGate enabled={await weddingHasGate()}>
         <ScrollFlowerHero
           cta={cta}
           landingCta={

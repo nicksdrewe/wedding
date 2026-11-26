@@ -4,6 +4,7 @@ import { getWeddingId } from "@/lib/wedding/current";
 import { normalizeTags } from "@/lib/tags";
 import { fetchCategoryRows } from "@/lib/categories/rows";
 import type { PushType } from "./types";
+import { getCurrentWedding } from "@/lib/wedding/current";
 
 // Sending. Never throws: a failed notification must not break the action that
 // caused it. Does nothing until the three VAPID settings exist.
@@ -51,7 +52,7 @@ export async function sendTestTo(profileId: string): Promise<string | null> {
       try {
         await (await loadWp()).sendNotification(
           { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-          JSON.stringify({ title: "Nick & Ellie", body: "Notifications are working.", url: "/hub", type: "task_assigned" }),
+          JSON.stringify({ title: (await getCurrentWedding())?.display_name ?? "Weddings Weddings", body: "Notifications are working.", url: "/hub", type: "task_assigned" }),
           { TTL: 600 }
         );
       } catch (e) {

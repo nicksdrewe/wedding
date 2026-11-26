@@ -235,7 +235,7 @@ export function EventForm({ event }: { event?: EventFormData }) {
           <input
             name="headerEyebrow"
             defaultValue={event?.header_eyebrow ?? ""}
-            placeholder="Nick & Ellie"
+            placeholder="The two of you"
             className={INPUT_CLASS}
           />
         </Field>

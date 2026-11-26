@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useWedding } from "@/components/WeddingProvider";
+import { eitherOf } from "@/lib/wedding/names";
 
 // Typed code rather than a clickable magic link: email security scanners
 // (Gmail's especially) fetch links in a message before the recipient clicks,
@@ -22,6 +24,7 @@ type CodeStep = "email" | "verify";
 // sign-in popover, so the two never drift out of sync. Each caller supplies
 // its own heading/chrome around this.
 export function SignInFields({ next = "/hub" }: { next?: string }) {
+  const wedding = useWedding();
   const [track, setTrack] = useState<Track>("code");
   const [codeStep, setCodeStep] = useState<CodeStep>("email");
   const [email, setEmail] = useState("");
@@ -87,7 +90,7 @@ export function SignInFields({ next = "/hub" }: { next?: string }) {
       const body = await eligibility.json().catch(() => null);
       setError(
         body?.error ??
-          "We don't have that email on our guest list — check with Nick or Ellie."
+          `We don't have that email on our guest list. Check with ${eitherOf(wedding)}.`
       );
       return;
     }

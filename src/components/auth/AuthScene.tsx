@@ -1,4 +1,5 @@
 "use client";
+import { useWedding } from "@/components/WeddingProvider";
 
 // The night garden (left) and the paper page (right) with a flower standing
 // across the split. Purely decorative; the form is passed in as children.
@@ -66,6 +67,7 @@ function Bee() {
 }
 
 export function AuthScene({ children, late = false }: { children: React.ReactNode; late?: boolean }) {
+  const wedding = useWedding();
   return (
     <div className="auth-stage" data-late={late ? "true" : "false"}>
       <div className="auth-night" aria-hidden="true">
@@ -90,7 +92,7 @@ export function AuthScene({ children, late = false }: { children: React.ReactNod
           />
         ))}
         </div>
-        <p className="auth-name">Nick &amp; Ellie</p>
+        <p className="auth-name">{wedding.displayName}</p>
         {HEARTS.map((h, i) => (
           <svg
             key={i}

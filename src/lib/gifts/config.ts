@@ -18,7 +18,7 @@ export type WeddingFundConfig = {
   payLink: { label: string; href: string } | null;
 };
 
-export const WEDDING_FUND: WeddingFundConfig = {
+const NICK_ELLIE_FUND: WeddingFundConfig = {
   accountName: "Nicholas Drewe",
   sortCode: "04-00-04",
   accountNumber: "17400256",
@@ -28,4 +28,11 @@ export const WEDDING_FUND: WeddingFundConfig = {
 
 export function hasBankDetails(fund: WeddingFundConfig): boolean {
   return Boolean(fund.accountName && fund.sortCode && fund.accountNumber);
+}
+
+// Per wedding, until couples can enter their own details in settings (phase 3).
+// Any other wedding shows "details coming soon".
+const EMPTY_FUND: WeddingFundConfig = { accountName: null, sortCode: null, accountNumber: null, reference: "Wedding gift", payLink: null };
+export function fundFor(slug: string | null): WeddingFundConfig {
+  return slug === "nickellie" ? NICK_ELLIE_FUND : EMPTY_FUND;
 }

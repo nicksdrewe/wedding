@@ -20,6 +20,8 @@ import { getCurrentProfile } from "@/lib/auth/roles";
 import { sendEmail } from "@/lib/email/resend";
 import { inviteEmail } from "./invite-email";
 import { findAuthUserByEmail, isBanned } from "./status";
+import { getCurrentWedding } from "@/lib/wedding/current";
+import { weddingUrl } from "@/lib/wedding/host";
 
 type Result = { error: string | null; notice?: string };
 
@@ -80,13 +82,20 @@ async function audit(
 }
 
 async function sendInviteTo(contact: { full_name: string | null }, email: string, reason: "new" | "reset") {
-  const { subject, html } = inviteEmail({ fullName: contact.full_name, email, reason });
+  const wedding = await getCurrentWedding();
+  const { subject, html } = inviteEmail({
+    fullName: contact.full_name,
+    email,
+    reason,
+    coupleName: wedding?.display_name ?? "Weddings Weddings",
+    baseUrl: wedding && wedding.slug !== "nickellie" ? weddingUrl(wedding.slug) : undefined,
+  });
   return sendEmail({ to: email, subject, html });
 }
 
 export async function createAccount(contactId: string, sendInvite: boolean): Promise<Result> {
   const actor = await requireCouple();
-  if (!actor) return { error: "Only Nick or Ellie can do that." };
+  if (!actor) return { error: "Only the couple can do that." };
 
   const target = await loadTarget(contactId);
   if (!target.ok) return { error: target.error };
@@ -132,7 +141,7 @@ export async function createAccount(contactId: string, sendInvite: boolean): Pro
 
 export async function sendAccountInvite(contactId: string): Promise<Result> {
   const actor = await requireCouple();
-  if (!actor) return { error: "Only Nick or Ellie can do that." };
+  if (!actor) return { error: "Only the couple can do that." };
 
   const target = await loadTarget(contactId);
   if (!target.ok) return { error: target.error };
@@ -151,7 +160,7 @@ export async function sendAccountInvite(contactId: string): Promise<Result> {
 
 export async function resetAccount(contactId: string): Promise<Result> {
   const actor = await requireCouple();
-  if (!actor) return { error: "Only Nick or Ellie can do that." };
+  if (!actor) return { error: "Only the couple can do that." };
 
   const target = await loadTarget(contactId);
   if (!target.ok) return { error: target.error };
@@ -189,7 +198,7 @@ export async function resetAccount(contactId: string): Promise<Result> {
 
 export async function signOutEverywhere(contactId: string): Promise<Result> {
   const actor = await requireCouple();
-  if (!actor) return { error: "Only Nick or Ellie can do that." };
+  if (!actor) return { error: "Only the couple can do that." };
 
   const target = await loadTarget(contactId);
   if (!target.ok) return { error: target.error };
@@ -207,7 +216,7 @@ export async function signOutEverywhere(contactId: string): Promise<Result> {
 
 export async function setAccountDisabled(contactId: string, disabled: boolean): Promise<Result> {
   const actor = await requireCouple();
-  if (!actor) return { error: "Only Nick or Ellie can do that." };
+  if (!actor) return { error: "Only the couple can do that." };
 
   const target = await loadTarget(contactId);
   if (!target.ok) return { error: target.error };

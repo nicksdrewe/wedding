@@ -6,7 +6,7 @@ import { getCurrentProfile } from "@/lib/auth/roles";
 
 export async function clearErrors(): Promise<{ error: string | null }> {
   const profile = await getCurrentProfile();
-  if (!profile || profile.role !== "couple") return { error: "Only Nick or Ellie can do that." };
+  if (!profile || profile.role !== "couple") return { error: "Only the couple can do that." };
 
   const supabase = await createClient();
   // The policy only lets the couple delete; filtering on a column that is

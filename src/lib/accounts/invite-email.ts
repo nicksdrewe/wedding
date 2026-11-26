@@ -15,13 +15,17 @@ export function inviteEmail({
   fullName,
   email,
   reason,
+  coupleName,
+  baseUrl,
 }: {
   fullName: string | null;
   email: string;
   reason: "new" | "reset";
+  coupleName: string;
+  baseUrl?: string;
 }): { subject: string; html: string } {
   const first = (fullName ?? "").trim().split(/\s+/)[0] || "there";
-  const loginUrl = `${siteUrl()}/login`;
+  const loginUrl = `${(baseUrl ?? siteUrl()).replace(/\/$/, "")}/login`;
   const intro =
     reason === "reset"
       ? "Your sign-in on our wedding site has been reset — any old password no longer works, and you&rsquo;ve been signed out everywhere. Here&rsquo;s how to get back in:"
@@ -31,7 +35,7 @@ export function inviteEmail({
 <div style="background-color:#faf6ef; padding:40px 20px; font-family: Georgia, 'Times New Roman', serif; color:#2b2620;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px; margin:0 auto;">
     <tr><td style="text-align:center; padding-bottom:8px;">
-      <p style="margin:0; font-size:12px; letter-spacing:3px; text-transform:uppercase; color:#574f43;">Nick &amp; Ellie</p>
+      <p style="margin:0; font-size:12px; letter-spacing:3px; text-transform:uppercase; color:#574f43;">${escapeHtml(coupleName)}</p>
     </td></tr>
     <tr><td style="padding:20px 8px 8px; text-align:center;">
       <h1 style="margin:0; font-size:24px; font-weight:normal;">Hi ${escapeHtml(first)},</h1>
@@ -49,13 +53,13 @@ export function inviteEmail({
       </p>
     </td></tr>
     <tr><td style="padding:24px 16px 0; text-align:center;">
-      <p style="margin:0; font-size:13px; color:#8a8174;">With love, Nick &amp; Ellie</p>
+      <p style="margin:0; font-size:13px; color:#8a8174;">With love, ${escapeHtml(coupleName)}</p>
     </td></tr>
   </table>
 </div>`;
 
   return {
-    subject: reason === "reset" ? "Your sign-in on Nick & Ellie's wedding site" : "You're invited to Nick & Ellie's wedding site",
+    subject: reason === "reset" ? `Your sign-in on ${coupleName}\u2019s wedding site` : `You\u2019re invited to ${coupleName}\u2019s wedding site`,
     html,
   };
 }

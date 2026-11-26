@@ -5,22 +5,24 @@ import Link from "next/link";
 import { LogoMark } from "@/components/LogoMark";
 import { Botanical } from "@/components/Botanical";
 import { GalaxyButton } from "@/components/auth/GalaxyButton";
+import { useWedding } from "@/components/WeddingProvider";
+import { checkGateCode } from "@/lib/gate/actions";
 
-// A soft deterrent, not real security: purely client-side, checked against
-// a shared code baked into the bundle. It stops a casual link-share or
-// search-engine crawl from landing straight in the hero before they've even
-// scrolled — it will not stop someone who opens devtools. Real access
-// control still lives in Supabase auth/RLS for everything past the landing
-// page.
-const GATE_CODES = ["N&E2028", "9762"];
+// A gentle front door: each wedding can set its own access code (or none) in
+// settings. The code is checked by the server, so it never sits in the page.
+// Real access control still lives in Supabase auth/RLS for everything past the
+// landing page.
+//
 // Exported so /i/[token]'s InviteRedirect can unlock the gate the same way
-// entering the code does, without duplicating the key as a second string
-// literal that could silently drift out of sync with this one.
+// entering the code does. Remembered per wedding.
 export const GATE_STORAGE_KEY = "site-gate-unlocked";
+export const gateStorageKey = (slug: string) => (slug && slug !== "nickellie" ? `${GATE_STORAGE_KEY}:${slug}` : GATE_STORAGE_KEY);
 
 type Status = "checking" | "locked" | "unlocked";
 
-export function SiteGate({ children }: { children: React.ReactNode }) {
+export function SiteGate({ children, enabled = true }: { children: React.ReactNode; enabled?: boolean }) {
+  const wedding = useWedding();
+  const key = gateStorageKey(wedding.slug);
   const [status, setStatus] = useState<Status>("checking");
   const [value, setValue] = useState("");
   const [wrong, setWrong] = useState(false);
@@ -31,18 +33,18 @@ export function SiteGate({ children }: { children: React.ReactNode }) {
   // for someone who's already unlocked it.
   useEffect(() => {
     try {
-      const stored = window.localStorage.getItem(GATE_STORAGE_KEY);
-      setStatus(stored === "true" ? "unlocked" : "locked");
+      const stored = window.localStorage.getItem(key);
+      setStatus(!enabled || stored === "true" ? "unlocked" : "locked");
     } catch {
       setStatus("locked");
     }
-  }, []);
+  }, [enabled, key]);
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (GATE_CODES.includes(value.trim().toUpperCase())) {
+    if (await checkGateCode(value.trim())) {
       try {
-        window.localStorage.setItem(GATE_STORAGE_KEY, "true");
+        window.localStorage.setItem(key, "true");
       } catch {
         // private mode etc. — they'll just be asked again next visit
       }
@@ -90,7 +92,7 @@ export function SiteGate({ children }: { children: React.ReactNode }) {
         <LogoMark size={56} />
       </span>
       <p className="relative z-10 font-ui text-[11px] font-semibold tracking-[0.3em] text-ink-soft uppercase">
-        Nick &amp; Ellie
+        {wedding.displayName}
       </p>
       <h1 className="relative z-10 mt-3 font-title text-4xl font-medium text-forest">This one&rsquo;s private</h1>
       <p className="relative z-10 mt-3 max-w-xs font-reading text-sm text-ink-soft italic">

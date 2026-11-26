@@ -6,6 +6,8 @@ import { AuthScene } from "./AuthScene";
 import { SplitWord } from "./SplitWord";
 import { GalaxyButton } from "./GalaxyButton";
 import { Whoosh } from "./Whoosh";
+import { useWedding } from "@/components/WeddingProvider";
+import { eitherOf } from "@/lib/wedding/names";
 
 // Sign-in as an experience. The first time: email, the code from the email,
 // then straight on to choosing a password (twice), so every later visit is
@@ -43,6 +45,7 @@ function recall(key: string) {
 }
 
 export function LoginExperience({ next = "/hub", startAt }: { next?: string; startAt?: string | null }) {
+  const wedding = useWedding();
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -108,7 +111,7 @@ export function LoginExperience({ next = "/hub", startAt }: { next?: string; sta
     if (!eligibility.ok) {
       setBusy(false);
       const body = await eligibility.json().catch(() => null);
-      setError(body?.error ?? "We don't have that email on our guest list. Check with Nick or Ellie.");
+      setError(body?.error ?? `We don't have that email on our guest list. Check with ${eitherOf(wedding)}.`);
       return;
     }
     // Sign-in never creates an account: those are made by the couple.

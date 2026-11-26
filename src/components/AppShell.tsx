@@ -20,6 +20,7 @@ import {
   Users,
   Wallet,
   type LucideIcon,
+  Settings,
 } from "lucide-react";
 import { Botanical } from "@/components/Botanical";
 import { LogoMark } from "@/components/LogoMark";
@@ -28,6 +29,7 @@ import { canAccess, type Profile, type RoleTier } from "@/lib/auth/role-types";
 import useClickOutside from "@/hooks/useClickOutside";
 import { Backdrop } from "@/components/ui/Backdrop";
 import { sectionFor } from "@/lib/design/sections";
+import { useWedding } from "@/components/WeddingProvider";
 
 // App Shell Design Spec §1 — the shared top nav (+ mobile bottom tab bar)
 // for every signed-in page. One instance of this, mounted by each route
@@ -129,6 +131,7 @@ const NAV_LINKS: NavLink[] = [
   // "Edit my page" — the guest/wedding_party self-service surface. Couple
   // and family don't need this in nav (they're not personally RSVPing).
   { href: "/account", label: "My Details", icon: User, roles: ["guest", "wedding_party", "couple"] },
+  { href: "/wedding", label: "Settings", icon: Settings, roles: ["couple"] },
 ];
 
 // Desktop nav order: grouped dropdowns first (Planning, then People, each
@@ -248,6 +251,7 @@ export type AppShellProps = {
 };
 
 export function AppShell({ profile, tags = [], children }: AppShellProps) {
+  const wedding = useWedding();
   const pathname = usePathname();
   const links = NAV_LINKS.filter(
     (link) => canAccess(profile.role, link.roles) || link.tags?.some((t) => tags.includes(t))
@@ -311,7 +315,7 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
           {/* Left: wordmark — this IS the "back to landing" affordance. */}
           <Link href="/" className="flex shrink-0 items-center gap-2">
             <LogoMark size={34} className="shrink-0" />
-            <span className="font-title text-[17px] tracking-tight">Nick &amp; Ellie</span>
+            <span className="font-title text-[17px] tracking-tight">{wedding.displayName}</span>
           </Link>
 
           {/* Centre: role-filtered nav, hidden below md in favour of the

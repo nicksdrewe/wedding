@@ -3,6 +3,8 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getWeddingId } from "@/lib/wedding/current";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { getCurrentWedding } from "@/lib/wedding/current";
+import { eitherOf, namesFrom } from "@/lib/wedding/names";
 
 // Public, unauthenticated self-service RSVP for any event created through
 // the events system (see 0017_events_system.sql) — generalized from what
@@ -116,7 +118,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ eve
     // request uses, just applied here instead.
     if (!event.rsvp_open) {
       return NextResponse.json(
-        { error: "We don't have that email on our guest list — check with Nick or Ellie." },
+        { error: `We don't have that email on our guest list — check with ${eitherOf(namesFrom(await getCurrentWedding()))}.` },
         { status: 404 }
       );
     }

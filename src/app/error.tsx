@@ -1,4 +1,5 @@
 "use client";
+import { useWedding } from "@/components/WeddingProvider";
 
 // The app had NO error boundary anywhere — any thrown server component
 // error (a Supabase outage, a bad query) fell straight through to Next's
@@ -11,9 +12,10 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const names = useWedding();
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-cream px-6 text-center">
-      <p className="font-serif text-xs tracking-[0.3em] text-ink-soft uppercase">Nick &amp; Ellie</p>
+      <p className="font-serif text-xs tracking-[0.3em] text-ink-soft uppercase">{names.displayName}</p>
       <h1 className="mt-3 font-display text-3xl text-ink">Something went wrong</h1>
       <p className="mt-3 max-w-xs font-reading text-sm text-ink-soft italic">
         That&rsquo;s on us, not you — please try again in a moment.
