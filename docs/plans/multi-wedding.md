@@ -31,6 +31,22 @@ moved over and checked.
   `x-wedding-id` on every database call (server, browser, admin). Admin-client
   reads of wedding data filter by `wedding_id` explicitly.
 
+- Phase 2: couple names everywhere, palettes + day/night, settings page at
+  /wedding, private per-wedding access codes (0057).
+- Phase 3: commercial site in `src/app/www` (landing one-pager, /start signup,
+  /login "which wedding?"), SEO/GEO (metadata, Organization/Product/FAQPage
+  schema, sitemap, robots, llms.txt, sharing image). Signup shows the price
+  (`src/lib/commercial/pricing.ts`) and a code takes it to £0; no payment
+  provider. `0058_signup_codes.sql`: codes table (server only), address check,
+  `fn_create_wedding` (wedding + pages copied from the first wedding + the
+  couple on its guest list). The new couple signs in at their address with an
+  emailed code (no password set at signup). Tests: `signup_new_wedding` (22).
+  - Previews: the commercial site is at `/www`. The main domain only switches
+    to it when `COMMERCIAL_APEX=1` is set, which must wait until Nick & Ellie's
+    site has moved to nickellie.weddingsweddings.co.uk.
+  - Wedding sites now tell search engines and AI crawlers to keep out
+    (`app/robots.ts`).
+
 ## Phases
 
 1. **Foundations** (no visible change)

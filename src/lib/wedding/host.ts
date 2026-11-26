@@ -1,9 +1,9 @@
 // Which wedding an address belongs to. Edge-safe (used by middleware).
 //
 //   jonsarah.weddingsweddings.co.uk  -> "jonsarah"
-//   weddingsweddings.co.uk / www     -> the default wedding for now (phase 3
-//                                        turns the main domain into the
-//                                        commercial site)
+//   weddingsweddings.co.uk / www     -> the commercial site once
+//                                        COMMERCIAL_APEX=1 (see middleware),
+//                                        the default wedding until then
 //   *.vercel.app, localhost          -> the default wedding, or the one picked
 //                                        with ?wedding=<slug> (kept in a cookie)
 
@@ -11,6 +11,9 @@ export const WEDDING_HEADER = "x-wedding-id";
 export const WEDDING_SLUG_HEADER = "x-wedding-slug";
 export const WEDDING_COOKIE = "ww-wedding";
 export const WEDDING_PICK_COOKIE = "ww-wedding-pick";
+// Where the commercial site's pages live in this address: "" on the main
+// domain, "/www" on previews.
+export const SITE_BASE_HEADER = "x-site-base";
 
 export const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "weddingsweddings.co.uk";
 export const DEFAULT_WEDDING_SLUG = process.env.DEFAULT_WEDDING_SLUG || "nickellie";

@@ -4,6 +4,7 @@ import { STASH_PREFIX, VIEW_AS_COOKIE, verifyViewAs } from "@/lib/view-as/cookie
 import {
   DEFAULT_WEDDING_SLUG,
   ROOT_DOMAIN,
+  SITE_BASE_HEADER,
   WEDDING_COOKIE,
   WEDDING_HEADER,
   WEDDING_PICK_COOKIE,
@@ -100,6 +101,8 @@ const PUBLIC_PREFIXES = [
   // lib/google/drive.ts) — an anonymous event visitor has to be able to
   // load it the same way they can reach the event's own page.
   "/api/drive-image",
+  // Tells search engines and AI crawlers to keep out (app/robots.ts).
+  "/robots.txt",
 ];
 
 // The reusable invite link (/i/[token], see lib/invite) — checked
@@ -145,7 +148,44 @@ async function resolveWedding(request: NextRequest) {
   return { slug, id, unknownSubdomain: !!fromHost && !id, pick };
 }
 
+// The commercial site (app/www). On the main domain it is the whole site, so
+// "/pricing" there is served from /www/pricing. That switch is held behind
+// COMMERCIAL_APEX=1 until the live wedding has moved to its own subdomain.
+// Anywhere else (previews, localhost) it is reachable at /www directly.
+const COMMERCIAL_PREFIX = "/www";
+function commercial(request: NextRequest): NextResponse | null {
+  const { pathname } = request.nextUrl;
+  const host = (request.headers.get("host") ?? "").split(":")[0].replace(/^www\./, "");
+  const onApex = host === ROOT_DOMAIN && process.env.COMMERCIAL_APEX === "1";
+  const forwarded = new Headers(request.headers);
+  forwarded.delete(WEDDING_HEADER);
+  forwarded.delete(WEDDING_SLUG_HEADER);
+  if (onApex) {
+    forwarded.set(SITE_BASE_HEADER, "");
+    if (pathname.startsWith("/api/") || pathname === COMMERCIAL_PREFIX || pathname.startsWith(`${COMMERCIAL_PREFIX}/`)) {
+      // keep one address per page
+      if (pathname.startsWith(COMMERCIAL_PREFIX)) {
+        const url = request.nextUrl.clone();
+        url.pathname = pathname.slice(COMMERCIAL_PREFIX.length) || "/";
+        return NextResponse.redirect(url, 308);
+      }
+      return NextResponse.next({ request: { headers: forwarded } });
+    }
+    const url = request.nextUrl.clone();
+    url.pathname = `${COMMERCIAL_PREFIX}${pathname === "/" ? "" : pathname}`;
+    return NextResponse.rewrite(url, { request: { headers: forwarded } });
+  }
+  if (pathname === COMMERCIAL_PREFIX || pathname.startsWith(`${COMMERCIAL_PREFIX}/`)) {
+    forwarded.set(SITE_BASE_HEADER, COMMERCIAL_PREFIX);
+    return NextResponse.next({ request: { headers: forwarded } });
+  }
+  return null;
+}
+
 export async function updateSession(request: NextRequest) {
+  const site = commercial(request);
+  if (site) return site;
+
   const guarded = await viewAsGuard(request);
   if (guarded) return guarded;
 
