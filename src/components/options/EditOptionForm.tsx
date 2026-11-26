@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { LocationInput } from "@/components/LocationInput";
 import { updateOption } from "@/lib/options/actions";
 import type { OptionDetail } from "./OptionCard";
 import type { OptionFields } from "@/lib/options/kinds";
@@ -139,26 +140,7 @@ export function EditOptionForm({
       <div className="flex flex-wrap gap-2">
         {fields.location && (
           <>
-        <input
-          name="latitude"
-          type="number"
-          step="any"
-          min={-90}
-          max={90}
-          defaultValue={option.latitude ?? ""}
-          placeholder="Latitude"
-          className="field w-32"
-        />
-        <input
-          name="longitude"
-          type="number"
-          step="any"
-          min={-180}
-          max={180}
-          defaultValue={option.longitude ?? ""}
-          placeholder="Longitude"
-          className="field w-32"
-        />
+        <LocationInput className="w-full sm:w-96" defaultLat={option.latitude} defaultLng={option.longitude} />
           </>
         )}
         {fields.stay && (
