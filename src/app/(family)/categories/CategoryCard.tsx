@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { LocationInput } from "@/components/LocationInput";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, EyeOff, FolderTree } from "lucide-react";
@@ -163,10 +164,7 @@ export function CategoryCard({
         )}
         <div>
           <span className="field-label">Place on the map (optional)</span>
-          <div className="flex gap-2">
-            <input name="latitude" type="number" step="any" min={-90} max={90} defaultValue={category.latitude ?? ""} placeholder="Latitude" className="field" />
-            <input name="longitude" type="number" step="any" min={-180} max={180} defaultValue={category.longitude ?? ""} placeholder="Longitude" className="field" />
-          </div>
+          <LocationInput defaultLat={category.latitude} defaultLng={category.longitude} />
           <p className="mt-1 font-reading text-[11px] text-ink-soft">
             For a place, like Porto. The page above it then shows it on a map with its cost. Leave blank for anything that is not a place.
           </p>

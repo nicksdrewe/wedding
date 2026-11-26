@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { applyTypedLocation } from "@/lib/geo/form";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
@@ -135,7 +136,8 @@ export async function updateCategoryPage(formData: FormData) {
   // Slug is left untouched on edit (unlike create's dedupe dance) so the
   // category's URL — and anything already linking to it — keeps working.
   const optionKind = parseOptionKind(formData.get("optionKind"));
-  // Optional map pin (0048). Blank clears it.
+  // Optional map pin (0048). Blank clears it; a typed place is looked up.
+  await applyTypedLocation(formData);
   const num = (v: FormDataEntryValue | null) => {
     const n = v === null || v === "" ? null : Number(v);
     return n !== null && Number.isFinite(n) ? n : null;

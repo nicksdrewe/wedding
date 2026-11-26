@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { LocationInput } from "@/components/LocationInput";
 import type { OptionFields } from "@/lib/options/kinds";
 import { addOption } from "@/lib/options/actions";
 
@@ -104,24 +105,7 @@ export function AddOptionForm({
       />
       {fields.location && (
         <>
-      <input
-        name="latitude"
-        type="number"
-        step="any"
-        min={-90}
-        max={90}
-        placeholder="Latitude"
-        className="field w-28"
-      />
-      <input
-        name="longitude"
-        type="number"
-        step="any"
-        min={-180}
-        max={180}
-        placeholder="Longitude"
-        className="field w-28"
-      />
+      <LocationInput className="w-full sm:w-96" />
         </>
       )}
       {fields.stay && (

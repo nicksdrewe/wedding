@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { applyTypedLocation } from "@/lib/geo/form";
 import { after } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
@@ -112,6 +113,7 @@ const optionSchema = z
   );
 
 export async function addOption(formData: FormData) {
+  await applyTypedLocation(formData);
   const parsed = optionSchema.parse({
     groupId: formData.get("groupId"),
     name: formData.get("name"),
@@ -194,6 +196,7 @@ const updateOptionSchema = z
 // web_link — addOption never exposed those (they were only ever set
 // elsewhere, if at all), so this is the first form that can write them.
 export async function updateOption(formData: FormData) {
+  await applyTypedLocation(formData);
   const parsed = updateOptionSchema.parse({
     id: formData.get("id"),
     name: formData.get("name"),
