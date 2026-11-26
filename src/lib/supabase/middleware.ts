@@ -97,6 +97,8 @@ const PUBLIC_PREFIXES = [
   "/api/rsvp",
   "/api/events",
   "/api/auth/request-code",
+  // Resend delivering a guest's reply; checks its own signature.
+  "/api/email/inbound",
   // Every uploaded photo's <img src> now points here (see
   // lib/google/drive.ts) — an anonymous event visitor has to be able to
   // load it the same way they can reach the event's own page.

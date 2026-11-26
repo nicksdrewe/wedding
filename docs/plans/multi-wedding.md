@@ -47,6 +47,17 @@ moved over and checked.
   - Wedding sites now tell search engines and AI crawlers to keep out
     (`app/robots.ts`).
 
+- Phase 4: per-wedding email. Sending (`src/lib/email/sender.ts`): guest
+  emails and account invites come from the couple's names, at
+  `<slug>@WEDDING_EMAIL_DOMAIN` when set (else the site-wide address), with
+  replies to `<slug>@WEDDING_INBOX_DOMAIN`. Receiving: Resend inbound calls
+  `/api/email/inbound` (Svix signature, `RESEND_WEBHOOK_SECRET`), which files
+  the reply under that wedding (`0059_wedding_inbox.sql`, couple-only),
+  matches the guest, and sends the couple a "guest_reply" notification. Inbox
+  tab on /comms: read, reply from the site, mark unread, delete. Tests:
+  `rls_wedding_inbox` (9). Sign-in code emails still come from Supabase's
+  own mail settings (one sender for every wedding).
+
 ## Phases
 
 1. **Foundations** (no visible change)

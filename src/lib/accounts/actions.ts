@@ -18,6 +18,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getWeddingId } from "@/lib/wedding/current";
 import { getCurrentProfile } from "@/lib/auth/roles";
 import { sendEmail } from "@/lib/email/resend";
+import { weddingFrom, weddingReplyTo } from "@/lib/email/sender";
 import { inviteEmail } from "./invite-email";
 import { findAuthUserByEmail, isBanned } from "./status";
 import { getCurrentWedding } from "@/lib/wedding/current";
@@ -90,7 +91,7 @@ async function sendInviteTo(contact: { full_name: string | null }, email: string
     coupleName: wedding?.display_name ?? "Weddings Weddings",
     baseUrl: wedding && wedding.slug !== "nickellie" ? weddingUrl(wedding.slug) : undefined,
   });
-  return sendEmail({ to: email, subject, html });
+  return sendEmail({ to: email, subject, html, from: weddingFrom(wedding), replyTo: weddingReplyTo(wedding) });
 }
 
 export async function createAccount(contactId: string, sendInvite: boolean): Promise<Result> {

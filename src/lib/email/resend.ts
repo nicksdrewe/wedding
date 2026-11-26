@@ -13,17 +13,24 @@
 // limit, would run well past Vercel's serverless function time limit on
 // a single request. Sending one at a time from the client sidesteps that
 // entirely and gets a natural progress indicator for free.
+//
+// `from` and `replyTo` let each wedding send under its own names and address
+// (see ./sender.ts); without them the site-wide RESEND_FROM_EMAIL is used.
 export async function sendEmail({
   to,
   subject,
   html,
+  from: fromOverride,
+  replyTo,
 }: {
   to: string;
   subject: string;
   html: string;
+  from?: string | null;
+  replyTo?: string | null;
 }): Promise<{ error: string | null }> {
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL;
+  const from = fromOverride || process.env.RESEND_FROM_EMAIL;
   if (!apiKey || !from) {
     return {
       error:
@@ -37,7 +44,7 @@ export async function sendEmail({
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ from, to, subject, html }),
+    body: JSON.stringify({ from, to, subject, html, ...(replyTo ? { reply_to: replyTo } : {}) }),
   });
 
   if (!res.ok) {
