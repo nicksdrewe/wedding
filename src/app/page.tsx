@@ -48,7 +48,9 @@ export default async function LandingPage() {
 
   return (
     <main className="relative">
-      <SiteGate enabled={await weddingHasGate()}>
+      {/* The access code is for visitors; anyone signed in is already on the
+          guest list, so they go straight in. */}
+      <SiteGate enabled={state.status !== "ok" && (await weddingHasGate())}>
         <ScrollFlowerHero
           cta={cta}
           landingCta={
