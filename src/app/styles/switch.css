@@ -127,6 +127,7 @@
   right: 22px;
   width: 44px;
   height: 46px;
+  pointer-events: none;
   color: var(--color-forest);
   animation: hintBob 1.6s ease-in-out infinite;
 }
