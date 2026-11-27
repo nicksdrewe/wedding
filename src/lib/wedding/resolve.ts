@@ -1,3 +1,4 @@
+import { SUPABASE_URL } from "@/lib/supabase/url";
 // Slug -> wedding id, for middleware. Reads the public weddings list with the
 // anon key and keeps answers for a few minutes, so most requests don't wait
 // on the database at all.
@@ -17,7 +18,7 @@ export async function weddingIdForSlug(slug: string): Promise<string | null> {
 
   try {
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
-    const base = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim().replace(/\/+$/, "");
+    const base = SUPABASE_URL;
     const url = `${base}/rest/v1/weddings?slug=eq.${encodeURIComponent(slug)}&status=eq.active&select=id`;
     // Newer "sb_publishable_" keys go in the apikey header only; the older
     // JWT anon keys also work as a bearer token.
@@ -25,7 +26,7 @@ export async function weddingIdForSlug(slug: string): Promise<string | null> {
       headers: key.startsWith("sb_") ? { apikey: key } : { apikey: key, Authorization: `Bearer ${key}` },
       cache: "no-store",
     });
-    lastLookup = `${slug}:${res.status}:${key.slice(0, 6)}:${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "none").slice(8, 20)}`;
+    lastLookup = `${slug}:${res.status}:${key.slice(0, 6)}:${(SUPABASE_URL || "none").slice(8, 20)}`;
     if (!res.ok) return hit?.id ?? null;
     const rows = (await res.json()) as { id: string }[];
     const id = rows[0]?.id ?? null;

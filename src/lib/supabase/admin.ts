@@ -1,3 +1,4 @@
+import { SUPABASE_URL } from "@/lib/supabase/url";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { WEDDING_HEADER } from "@/lib/wedding/host";
 
@@ -9,7 +10,7 @@ import { WEDDING_HEADER } from "@/lib/wedding/host";
 // wedding_id themselves.
 export function createAdminClient(weddingId?: string | null) {
   return createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
       auth: { persistSession: false },

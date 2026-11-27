@@ -1,3 +1,4 @@
+import { SUPABASE_URL } from "@/lib/supabase/url";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { getWeddingId } from "@/lib/wedding/current";
@@ -10,7 +11,7 @@ export async function createClient() {
   const weddingId = await getWeddingId();
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       global: { headers: weddingId ? { [WEDDING_HEADER]: weddingId } : {} },

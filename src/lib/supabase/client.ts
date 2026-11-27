@@ -1,3 +1,4 @@
+import { SUPABASE_URL } from "@/lib/supabase/url";
 import { createBrowserClient } from "@supabase/ssr";
 
 // Browser client: used for signing in only. Wedding data is always read on the
@@ -12,7 +13,7 @@ import { createBrowserClient } from "@supabase/ssr";
 // signed in from — which is the normal case for email, not the exception.
 export function createClient() {
   return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     { auth: { flowType: "implicit" } }
   );
