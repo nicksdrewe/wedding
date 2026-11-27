@@ -52,6 +52,7 @@ grant all on site_copy, platform_campaigns, platform_campaign_events, platform_s
 grant usage, select on sequence platform_campaign_events_id_seq to service_role;
 -- the commercial pages read copy without signing in
 grant select on site_copy to anon, authenticated;
+drop policy if exists "anyone reads site copy" on site_copy;
 create policy "anyone reads site copy" on site_copy for select using (true);
 
 -- People who've asked not to get the newsletter (the link in every one).
