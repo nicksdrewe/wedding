@@ -140,10 +140,12 @@ create index contacts_wedding_user_idx on contacts (wedding_id, user_id);
 -- gets one, so nobody loses access in the move.
 update contacts c set user_id = p.id from profiles p where p.contact_id = c.id;
 insert into contacts (full_name, email, role, user_id, wedding_id)
-select coalesce(p.full_name, u.email), u.email, p.role, p.id, (select id from weddings where slug = 'nickellie')
+select coalesce(p.full_name, u.email), u.email, coalesce(p.role, 'guest'), p.id, (select id from weddings where slug = 'nickellie')
 from profiles p
 join auth.users u on u.id = p.id
-where p.contact_id is null and p.role <> 'guest';
+-- not yet attached to any entry: no contact at all, or a second login that
+-- shared someone's entry (one entry has one login now)
+where not exists (select 1 from contacts c where c.user_id = p.id);
 
 -- Rules elsewhere that read profiles' role / contact (my RSVPs, my gift claims,
 -- my contact): kept word for word, dropped while profiles changes shape, then
