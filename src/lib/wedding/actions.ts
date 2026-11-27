@@ -193,3 +193,33 @@ export async function disconnectDrive(): Promise<Result> {
   revalidatePath("/wedding");
   return { error: null };
 }
+
+// A budget the couple types in: for the whole wedding (no category) or for one
+// category. Empty clears it. (0064)
+export async function setBudget(input: { categoryId: string | null; amount: string }): Promise<Result> {
+  if (!(await requireCouple())) return { error: "Only the couple can set budgets." };
+  const weddingId = await getWeddingId();
+  if (!weddingId) return { error: "Couldn't tell which wedding this is." };
+  const cleaned = input.amount.replace(/[£,\s]/g, "");
+  const amount = cleaned === "" ? null : Number(cleaned);
+  if (amount != null && (!Number.isFinite(amount) || amount < 0 || amount > 10_000_000)) return { error: "Enter an amount in pounds." };
+
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const admin = createAdminClient(weddingId);
+  if (!input.categoryId) {
+    const { error } = await admin.from("weddings").update({ budget_total: amount }).eq("id", weddingId);
+    if (error) return { error: "Couldn't save the budget just now." };
+  } else {
+    const id = z.string().uuid().safeParse(input.categoryId);
+    if (!id.success) return { error: "Unknown category." };
+    const { data: cat } = await admin.from("category_pages").select("id").eq("id", id.data).eq("wedding_id", weddingId).maybeSingle();
+    if (!cat) return { error: "Unknown category." };
+    const { data: existing } = await admin.from("category_costs").select("id").eq("category_page_id", id.data).eq("wedding_id", weddingId).limit(1).maybeSingle();
+    const { error } = existing
+      ? await admin.from("category_costs").update({ budget: amount }).eq("id", existing.id)
+      : await admin.from("category_costs").insert({ wedding_id: weddingId, category_page_id: id.data, budget: amount });
+    if (error) return { error: "Couldn't save the budget just now." };
+  }
+  revalidatePath("/budget");
+  return { error: null };
+}

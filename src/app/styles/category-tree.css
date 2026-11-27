@@ -209,20 +209,23 @@
 
 /* wide: the bar segment and drop into a decided child light up and pulse */
 @media (min-width: 1024px) {
+  /* steady glow: animating a filter on lines this thin made them strobe */
   .cat-tree ul ul > li[data-lit="true"]::before,
   .cat-tree ul ul > li[data-lit="true"]::after {
     border-color: var(--route);
-    animation: routePulse 3s ease-in-out infinite;
+    filter: drop-shadow(0 0 3px color-mix(in srgb, var(--route-glow) 70%, transparent));
   }
   .cat-tree ul ul > li[data-lit="partial"]::before,
   .cat-tree ul ul > li[data-lit="partial"]::after {
     border-color: color-mix(in srgb, var(--route) 45%, transparent);
   }
   /* the parent's drop down to its children lights when it is fully decided */
+  /* the drop to a decided parent's children: light travels smoothly up it */
   .cat-tree li[data-lit="true"] > ul::before {
-    background: var(--route);
+    background: linear-gradient(180deg, var(--route) 0%, var(--route) 38%, color-mix(in srgb, var(--route-glow) 70%, #fff) 50%, var(--route) 62%, var(--route) 100%);
+    background-size: 100% 300%;
     box-shadow: 0 0 8px var(--route-glow);
-    animation: routePulse 3s ease-in-out infinite;
+    animation: routeFlow 3s linear infinite;
   }
 }
 
@@ -282,4 +285,24 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .cat-hidden-line { animation: none; }
+}
+
+/* Lists inside a card (comments, option lists) are not part of the tree: no
+   connecting lines, no tree layout. Without this the tree drew a line through
+   the comments under an option. */
+.cat-tree .cat-node ul,
+.cat-tree .cat-node li {
+  display: revert;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.cat-tree .cat-node ul { display: flex; flex-direction: column; }
+.cat-tree .cat-node ul::before,
+.cat-tree .cat-node ul::after,
+.cat-tree .cat-node li::before,
+.cat-tree .cat-node li::after {
+  content: none !important;
+  display: none !important;
 }

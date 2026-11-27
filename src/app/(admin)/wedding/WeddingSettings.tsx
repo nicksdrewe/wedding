@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Moon, Sun, Check } from "lucide-react";
-import { PALETTES, SECTIONS, type WeddingTheme } from "@/lib/wedding/theme";
+import { PALETTES, SECTIONS, themeCss, type WeddingTheme } from "@/lib/wedding/theme";
 import { saveGateCodes, saveTheme, saveWeddingDetails } from "@/lib/wedding/actions";
 import { ROOT_DOMAIN } from "@/lib/wedding/host";
 
@@ -36,6 +36,33 @@ export function WeddingSettings(props: {
   const [palette, setPalette] = useState(props.theme.palette ?? "garden");
   const [mode, setMode] = useState<"light" | "dark">(props.theme.mode === "dark" ? "dark" : "light");
   const [accent, setAccent] = useState<string | null>(props.theme.accent ?? null);
+
+  // Live preview: the whole page takes on the chosen colours as you pick them.
+  // Nothing is stored until Save; leaving the page goes back to what's saved.
+  const [saved, setSaved] = useState({
+    palette: props.theme.palette ?? "garden",
+    mode: props.theme.mode === "dark" ? "dark" : "light",
+    accent: props.theme.accent ?? null,
+  });
+  const changed = palette !== saved.palette || mode !== saved.mode || (accent ?? null) !== (saved.accent ?? null);
+  useEffect(() => {
+    const root = document.documentElement;
+    let style = document.getElementById("theme-preview") as HTMLStyleElement | null;
+    if (!style) {
+      style = document.createElement("style");
+      style.id = "theme-preview";
+      document.body.appendChild(style);
+    }
+    style.textContent = themeCss({ palette, mode, accent }, true);
+    root.dataset.mode = mode;
+  }, [palette, mode, accent]);
+  useEffect(() => {
+    const root = document.documentElement;
+    return () => {
+      document.getElementById("theme-preview")?.remove();
+      root.dataset.mode = saved.mode;
+    };
+  }, [saved.mode]);
 
   const [codes, setCodes] = useState("");
 
@@ -189,12 +216,30 @@ export function WeddingSettings(props: {
           onClick={() =>
             start(async () => {
               const r = await saveTheme({ palette, mode, accent });
+              if (!r.error) setSaved({ palette, mode, accent });
               done("theme", r.error, "Saved. The whole site now uses these colours.");
             })
           }
         >
           Save colours
         </button>
+        {changed && (
+          <span className="ml-3 font-serif text-[13px] text-ink-soft">
+            Previewing. Save to keep it, or{" "}
+            <button
+              type="button"
+              className="underline underline-offset-2 hover:text-ink"
+              onClick={() => {
+                setPalette(saved.palette);
+                setMode(saved.mode as "light" | "dark");
+                setAccent(saved.accent);
+              }}
+            >
+              go back
+            </button>
+            .
+          </span>
+        )}
         {note("theme")}
       </section>
 

@@ -61,12 +61,14 @@ export function paletteFor(theme: WeddingTheme | null | undefined): Palette {
 
 const HEX = /^#[0-9a-f]{6}$/i;
 
-/** CSS for a wedding's theme, or "" when it is the original garden in light mode. */
-export function themeCss(theme: WeddingTheme | null | undefined): string {
+/** CSS for a wedding's theme, or "" when it is the original garden in light
+ *  mode. `always` gives the full set even then (the live preview in settings
+ *  needs it to override whatever is saved). */
+export function themeCss(theme: WeddingTheme | null | undefined, always = false): string {
   const p = paletteFor(theme);
   const dark = theme?.mode === "dark";
   const accent = theme?.accent && HEX.test(theme.accent) ? theme.accent : null;
-  if (p.id === "garden" && !dark && !accent) return "";
+  if (p.id === "garden" && !dark && !accent && !always) return "";
 
   const sections = { ...p.sections, ...(accent ? { planning: accent } : {}) };
   const paper = dark ? "#1e2620" : p.base.paper;
