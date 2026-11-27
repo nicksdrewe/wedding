@@ -17,7 +17,8 @@ export async function weddingIdForSlug(slug: string): Promise<string | null> {
 
   try {
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
-    const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/weddings?slug=eq.${encodeURIComponent(slug)}&status=eq.active&select=id`;
+    const base = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim().replace(/\/+$/, "");
+    const url = `${base}/rest/v1/weddings?slug=eq.${encodeURIComponent(slug)}&status=eq.active&select=id`;
     // Newer "sb_publishable_" keys go in the apikey header only; the older
     // JWT anon keys also work as a bearer token.
     const res = await fetch(url, {
