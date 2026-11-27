@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { applyCode, checkAddress, createWedding, type SignupResult } from "@/lib/commercial/actions";
-import { PRICE } from "@/lib/commercial/pricing";
 import { suggestSlug, tidySlug } from "@/lib/commercial/slug";
 import { ROOT_DOMAIN } from "@/lib/wedding/host";
 
@@ -47,9 +46,7 @@ export function StartForm() {
     return () => clearTimeout(t);
   }, [slug]);
 
-  const off = discount ? Math.round((PRICE.amount * discount.percent) / 100) : 0;
-  const total = PRICE.amount - off;
-  const money = (n: number) => `£${n.toLocaleString("en-GB")}`;
+  const accepted = !!discount && discount.percent >= 100;
 
   function apply() {
     setCodeNote(null);
@@ -57,9 +54,7 @@ export function StartForm() {
       const r = await applyCode(code);
       if (r.percent != null) {
         setDiscount({ code: code.trim().toUpperCase(), percent: r.percent });
-        setCodeNote(
-          r.percent < 100 ? `${r.percent}% off applied. Card payment opens soon; an alpha code covers it all.` : "Code applied."
-        );
+        setCodeNote(r.percent < 100 ? "That code isn't an alpha invite. Check the code you were sent." : "You're in. Welcome to the alpha.");
       } else {
         setDiscount(null);
         setCodeNote(r.error);
@@ -70,12 +65,12 @@ export function StartForm() {
   function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!discount || total > 0) {
-      setError({ text: "Card payment opens soon. During the alpha, add your invite code to continue.", field: "code" });
+    if (!accepted) {
+      setError({ text: "Add your invite code to continue. We're invite-only during the alpha.", field: "code" });
       return;
     }
     startSubmit(async () => {
-      const r = await createWedding({ partnerOne: one, partnerTwo: two, dateLabel, slug, fullName, email, code: discount.code });
+      const r = await createWedding({ partnerOne: one, partnerTwo: two, dateLabel, slug, fullName, email, code: discount!.code });
       if (r.ok) {
         setDone(r);
         window.scrollTo({ top: 0 });
@@ -193,30 +188,14 @@ export function StartForm() {
         </fieldset>
       </div>
 
-      <aside className="ww-order" aria-label="Your order">
-        <h2>Your order</h2>
-        <dl className="ww-lines">
-          <div>
-            <dt>One wedding site</dt>
-            <dd>{PRICE.label}</dd>
-          </div>
-          {discount && (
-            <div className="off">
-              <dt>Code {discount.code}</dt>
-              <dd>&minus;{money(off)}</dd>
-            </div>
-          )}
-          <div className="total">
-            <dt>Total</dt>
-            <dd>
-              {discount && <s>{PRICE.label}</s>}
-              {money(total)}
-            </dd>
-          </div>
-        </dl>
-
+      <aside className="ww-order" aria-label="Your invite">
+        <h2>Your invite</h2>
+        <p className="ww-note" style={{ fontSize: 14, lineHeight: 1.55 }}>
+          We&rsquo;re invite-only while we build this with our first couples, and it&rsquo;s free for alpha couples. Add the
+          code you were sent.
+        </p>
         <label className="ww-label">
-          Invite or discount code
+          Invite code
           <span className="ww-code">
             <input
               className="ww-input"
@@ -245,7 +224,7 @@ export function StartForm() {
           </span>
         </label>
         {codeNote && (
-          <p className={`ww-note ${discount ? "ok" : "bad"}`} aria-live="polite">
+          <p className={`ww-note ${accepted ? "ok" : "bad"}`} aria-live="polite">
             {codeNote}
           </p>
         )}
@@ -257,10 +236,10 @@ export function StartForm() {
         )}
 
         <button type="submit" className="ww-btn ww-btn-primary ww-btn-block" disabled={submitting}>
-          {submitting ? "Making your site…" : discount && total === 0 ? "Create our wedding site" : `Pay ${money(total)} and create`}
+          {submitting ? "Making your site…" : "Create our wedding site"}
         </button>
         <p className="ww-fine ww-center" style={{ margin: 0 }}>
-          {PRICE.label} {PRICE.per}. In alpha, invited couples pay nothing.
+          No invite yet? Ask the couple who told you about us.
         </p>
       </aside>
     </form>

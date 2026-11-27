@@ -1,11 +1,11 @@
-import { PRICE, SITE_NAME, SITE_URL } from "@/lib/commercial/pricing";
+import { SITE_NAME, SITE_URL } from "@/lib/commercial/pricing";
 import { FAQ } from "../_components/faq";
 
 // A plain summary for AI assistants and answer engines (llmstxt.org).
 export function GET() {
   const body = `# ${SITE_NAME}
 
-> Private wedding websites for couples in the UK. Each wedding gets its own site at its own address (for example jonsarah.weddingsweddings.co.uk), with the guest list, RSVPs, planning, budget, messages and the day's running order in one place. ${PRICE.label} per wedding, paid once. No subscription, no adverts.
+> Private wedding websites for couples in the UK. Each wedding gets its own site at its own address (for example jonsarah.weddingsweddings.co.uk), with the guest list, RSVPs, planning, budget, messages and the day's running order in one place. Currently a free, invite-only alpha. No adverts.
 
 ## What a wedding site includes
 
@@ -20,10 +20,9 @@ export function GET() {
 - Five colour palettes and a day or night look
 - Sign-in with an emailed code, no passwords
 
-## Pricing
+## Availability
 
-- ${PRICE.label} ${PRICE.per}
-- During the alpha, invited couples sign up free with an invite code
+- Invite-only alpha: couples with an invite code can start a wedding site free
 
 ## Questions
 

@@ -2,27 +2,125 @@ import Link from "next/link";
 import { LogoMark } from "@/components/LogoMark";
 import { Botanical } from "@/components/Botanical";
 import { siteBase } from "@/lib/commercial/base";
-import { PRICE, SITE_NAME, SITE_URL } from "@/lib/commercial/pricing";
-import { AddressBar } from "./_components/AddressBar";
-import { PaletteDemo } from "./_components/PaletteDemo";
+import { SITE_NAME, SITE_URL } from "@/lib/commercial/pricing";
 import { SiteHeader, SiteFooter } from "./_components/Chrome";
 import { FAQ } from "./_components/faq";
+import { SystemDemo } from "./_components/SystemDemo";
+import { Magnetic, Reveal, Sunlight } from "./_components/Interactive";
+import { BoardScene, BudgetScene, DayScene, GuestsScene, MessagesScene, PartyScene, TreeScene } from "./_components/Scenes";
 
 export const dynamic = "force-dynamic";
 
-const INCLUDED = [
-  "Your own address: you.weddingsweddings.co.uk",
-  "Guest list, households and plus ones",
-  "RSVPs for every event, with dietary needs",
-  "Planning boards for venue, food, flowers and the rest",
-  "Budget, costs and who's paying for what",
-  "Diary, tasks and reminders",
-  "Emails and updates to guests, from your site",
-  "Wedding party pages: stag, hen, speeches",
-  "The day itself: running order for everyone",
-  "Five colour palettes, day or night garden",
-  "Everyone signs in with an emailed code",
-  "No adverts. Your guests' details stay yours",
+const CHAPTERS = [
+  {
+    key: "board",
+    colour: "sage",
+    kicker: "Planning boards",
+    title: "Every decision, side by side.",
+    body: "Venues, caterers, the band, the cake. Line the options up with photos, prices, a pin on the map and your notes. Let the people you trust vote and comment, then pick the winner. The others step aside, and the price goes straight into your budget.",
+    points: ["Photos, prices and map pins", "Votes and comments from family", "Winners lock into the budget"],
+    Scene: BoardScene,
+  },
+  {
+    key: "tree",
+    colour: "plum",
+    kicker: "The whole picture",
+    title: "See the entire wedding on one page.",
+    body: "Every decision sits in one tree, from the ceremony to the hen do. Open any branch to see what's decided, what's still up for grabs and what it's costing. When someone asks how it's all going, you can actually show them.",
+    points: ["Decided, deciding, not started", "Costs rolled up at every level", "Branches for the stag and hen too"],
+    Scene: TreeScene,
+  },
+  {
+    key: "budget",
+    colour: "gold",
+    kicker: "Budget",
+    title: "Know what it costs before your bank does.",
+    body: "Rough figures while you're choosing, real ones once you've chosen, and a clear line on who's paying for what. Shared costs for the stag or the hen split themselves, so nobody has to send the awkward message.",
+    points: ["Estimates, then actuals", "Who's contributing what", "Group costs split fairly"],
+    Scene: BudgetScene,
+  },
+  {
+    key: "guests",
+    colour: "rose",
+    kicker: "Guests & RSVPs",
+    title: "Every guest, every event, every dietary need.",
+    body: "Households, plus ones, the engagement party, the ceremony and the evening do. Guests reply from one link without a password, and you see who's coming to what, live. Nobody reconciles three spreadsheets the night before the caterer needs numbers.",
+    points: ["RSVPs per event", "Plus ones and dietary needs", "No passwords for guests"],
+    Scene: GuestsScene,
+  },
+  {
+    key: "party",
+    colour: "plum",
+    kicker: "The wedding party",
+    title: "Secrets, kept.",
+    body: "The best man gets a planning board for the stag that the two of you can't see. The bridesmaids get theirs. Everyone gets exactly the pages you've given them, right down to whether they can see the prices.",
+    points: ["Private boards for stag and hen", "Access by role or by person", "Prices shown only where you want"],
+    Scene: PartyScene,
+  },
+  {
+    key: "messages",
+    colour: "teal",
+    kicker: "Messages",
+    title: "Send it from your own address. Read the replies here.",
+    body: "Save the dates, coach times, the polite nudge to the people who haven't replied. Emails go out from your wedding's own address, to everyone or just the people who need it, and the answers land back in your inbox on the site.",
+    points: ["Your names, your address", "Send to exactly the right people", "Replies collected in one inbox"],
+    Scene: MessagesScene,
+  },
+  {
+    key: "day",
+    colour: "blue",
+    kicker: "The day itself",
+    title: "On the day, nobody needs to ask.",
+    body: "Publish the running order and it's on every phone, with a nudge when something changes. The people helping know where to be, the guests know when to eat, and you get to just be there.",
+    points: ["A running order on every phone", "Notifications when plans change", "Works like an app, no download"],
+    Scene: DayScene,
+  },
+] as const;
+
+const BREADTH = [
+  "Diary and deadlines",
+  "Tasks with reminders",
+  "Phone notifications",
+  "Add to your home screen",
+  "Idea boards",
+  "A gift list guests can claim",
+  "Your wedding fund details",
+  "Engagement party pages",
+  "An access code for the whole site",
+  "Couple, family, wedding party and guest roles",
+  "Page-by-page permissions",
+  "Hide prices from some people",
+  "See the site as any guest",
+  "One sign-in for every wedding you're part of",
+  "Your names on every page",
+  "Your own web address",
+  "Map pins for every venue",
+  "Comments on every option",
+  "Expense splitting",
+  "Day and night looks",
+];
+
+const ROLES = [
+  {
+    who: "The two of you",
+    line: "Everything, everywhere.",
+    detail: "Every board, every cost, every guest and every setting. You decide what everyone else sees.",
+  },
+  {
+    who: "Family",
+    line: "In on the planning, if you want them.",
+    detail: "Options, votes, comments and the budget, without the parts you'd rather keep to yourselves.",
+  },
+  {
+    who: "Wedding party",
+    line: "Their own corner.",
+    detail: "Private boards for the stag and hen, their tasks, their bit of the day. Their surprises stay surprises.",
+  },
+  {
+    who: "Guests",
+    line: "Exactly what they need.",
+    detail: "Reply for each event, see the plan for the day, find the gift list. Nothing to install, nothing to remember.",
+  },
 ];
 
 export default async function CommercialHome() {
@@ -39,18 +137,13 @@ export default async function CommercialHome() {
     },
     {
       "@context": "https://schema.org",
-      "@type": "Product",
-      name: `${SITE_NAME} wedding website`,
+      "@type": "WebApplication",
+      name: SITE_NAME,
+      applicationCategory: "LifestyleApplication",
+      operatingSystem: "Any (web)",
+      url: SITE_URL,
       description:
-        "A private website for one wedding: guest list, RSVPs, planning, budget, messages and the day's running order, at the couple's own address.",
-      brand: { "@type": "Brand", name: SITE_NAME },
-      offers: {
-        "@type": "Offer",
-        price: PRICE.amount,
-        priceCurrency: PRICE.currency,
-        availability: "https://schema.org/PreOrder",
-        url: `${SITE_URL}/start`,
-      },
+        "A private website for one wedding that runs the planning as well as the RSVPs: guest list, planning boards with votes and comments, budget, tasks, messages to guests and the running order on the day.",
     },
     {
       "@context": "https://schema.org",
@@ -71,194 +164,219 @@ export default async function CommercialHome() {
       <main id="top">
         {/* ── hero ─────────────────────────────────────────── */}
         <section className="ww-hero">
+          <Sunlight />
           <Botanical seed={3} stems={4} width={220} height={360} spread={60} className="ww-hero-flora ww-hero-flora-l" />
-          <Botanical seed={11} stems={3} width={180} height={300} spread={50} className="ww-hero-flora ww-hero-flora-r" />
           <div className="ww-wrap ww-hero-grid">
             <div className="ww-hero-copy">
               <p className="ww-eyebrow">
-                <span className="ww-pill">Alpha</span> Now open to invited couples
+                <span className="ww-pill">Alpha</span> Invite-only, and free while we build it
               </p>
               <h1 className="ww-h1">
-                Your whole wedding, <em>at your own address.</em>
+                Most wedding websites stop at the RSVP.
+                <em>Ours is where the planning happens.</em>
               </h1>
               <p className="ww-lede">
-                One private site with your names on it. Guests RSVP, you plan, the wedding party gets their own corner, and on the
-                day everyone knows where to be.
+                A private site for your wedding, at your own address, that runs the whole thing: every guest and every reply,
+                the venues you&rsquo;re torn between, what it all costs and who&rsquo;s paying, the stag do you&rsquo;re not
+                allowed to see, and where everyone needs to be at quarter past three.
               </p>
               <div className="ww-cta-row">
-                <Link href={start} className="ww-btn ww-btn-primary">
-                  Start your wedding site
-                </Link>
-                <a href="#inside" className="ww-btn ww-btn-ghost">
-                  See what&rsquo;s inside
+                <Magnetic>
+                  <Link href={start} className="ww-btn ww-btn-primary ww-btn-shine">
+                    Start your wedding site
+                    <span className="ww-arrow" aria-hidden="true">→</span>
+                  </Link>
+                </Magnetic>
+                <a href="#system" className="ww-btn ww-btn-ghost">
+                  See how it fits together
                 </a>
               </div>
-              <p className="ww-fine">
-                {PRICE.label} {PRICE.per}. No subscription.
-              </p>
+              <p className="ww-fine">You&rsquo;ll need an invite code during the alpha.</p>
             </div>
-            <AddressBar />
+            <div id="system">
+              <SystemDemo />
+            </div>
           </div>
         </section>
 
-        {/* ── what's inside ────────────────────────────────── */}
+        {/* ── the gap ──────────────────────────────────────── */}
+        <section className="ww-section ww-dark">
+          <div className="ww-wrap">
+            <Reveal>
+              <p className="ww-kicker">Why this exists</p>
+              <h2 className="ww-h2">The website is the easy bit.</h2>
+              <p className="ww-sub">
+                The hard bit is the eighteen months before it, scattered across a spreadsheet, three group chats, a mood
+                board and someone&rsquo;s notes app. Wedding websites give you a pretty page. Planning apps give you a
+                checklist. Neither gives you the place where you, your families and your friends actually decide things
+                together.
+              </p>
+            </Reveal>
+            <div className="ww-compare">
+              <Reveal className="ww-compare-col ww-compare-them">
+                <p className="ww-compare-head">A typical wedding website</p>
+                <ul>
+                  <li>A page about the two of you</li>
+                  <li>An RSVP form</li>
+                  <li>A link to a gift list</li>
+                  <li>Then you&rsquo;re back in the spreadsheet</li>
+                </ul>
+              </Reveal>
+              <Reveal className="ww-compare-col ww-compare-us" delay={120}>
+                <p className="ww-compare-head">
+                  <LogoMark size={22} tone="light" /> Weddings Weddings
+                </p>
+                <ul>
+                  <li>All of that, at your own address</li>
+                  <li>RSVPs for every event, with dietary needs</li>
+                  <li>Planning boards with votes, comments and winners</li>
+                  <li>A budget that fills itself as you decide</li>
+                  <li>Tasks, deadlines and reminders for the people helping</li>
+                  <li>Private boards for the stag and hen</li>
+                  <li>Emails from your own address, replies collected</li>
+                  <li>The running order on every phone on the day</li>
+                </ul>
+              </Reveal>
+            </div>
+          </div>
+        </section>
+
+        {/* ── the parts ────────────────────────────────────── */}
         <section id="inside" className="ww-section">
           <div className="ww-wrap">
-            <p className="ww-kicker">What&rsquo;s inside</p>
-            <h2 className="ww-h2">Everything the wedding needs, and nothing it doesn&rsquo;t.</h2>
-            <p className="ww-sub">
-              Six parts, each with its own colour, so you always know where you are. Everyone sees only what you let them.
-            </p>
-
-            <div className="ww-bento">
-              <article className="ww-tile ww-tile-people ww-tile-wide">
-                <div>
-                  <h3>Guests &amp; RSVPs</h3>
-                  <p>Households, plus ones and dietary needs. Guests answer for each event, and you see the count change live.</p>
-                </div>
-                <div className="ww-mock ww-mock-rsvp" aria-hidden="true">
-                  <div className="ww-mock-row"><span className="ww-dot" />Aunt Jo &amp; Pete<b className="yes">Attending</b></div>
-                  <div className="ww-mock-row"><span className="ww-dot" />The Okafors (4)<b className="yes">Attending</b></div>
-                  <div className="ww-mock-row"><span className="ww-dot" />Sam Reid +1<b className="wait">Waiting</b></div>
-                  <div className="ww-mock-row"><span className="ww-dot" />Grandma Rose<b className="no">Can&rsquo;t make it</b></div>
-                  <div className="ww-mock-count"><strong>86</strong> of 112 replied</div>
-                </div>
-              </article>
-
-              <article className="ww-tile ww-tile-planning">
-                <h3>Planning boards</h3>
-                <p>Venues, caterers, florists: options side by side, with costs, photos, pins on a map and a vote.</p>
-                <div className="ww-mock ww-mock-board" aria-hidden="true">
-                  <span>Venue</span>
-                  <i><b>The Old Barn</b><em>£8,400</em></i>
-                  <i className="pick"><b>Hill House</b><em>£9,100 ♥ 3</em></i>
-                </div>
-              </article>
-
-              <article className="ww-tile ww-tile-money">
-                <h3>Budget</h3>
-                <p>What it costs, what&rsquo;s paid, and who&rsquo;s chipping in.</p>
-                <div className="ww-mock ww-mock-bars" aria-hidden="true">
-                  <span style={{ ["--w" as string]: "82%" }}>Venue</span>
-                  <span style={{ ["--w" as string]: "54%" }}>Food</span>
-                  <span style={{ ["--w" as string]: "31%" }}>Flowers</span>
-                  <span style={{ ["--w" as string]: "18%" }}>Music</span>
-                </div>
-              </article>
-
-              <article className="ww-tile ww-tile-diary">
-                <h3>Diary &amp; tasks</h3>
-                <p>Deadlines, fittings and tastings, with reminders to whoever&rsquo;s on it.</p>
-                <div className="ww-mock ww-mock-cal" aria-hidden="true">
-                  {Array.from({ length: 21 }, (_, i) => (
-                    <span key={i} className={i === 9 ? "on" : i === 15 ? "soft" : ""} />
-                  ))}
-                </div>
-              </article>
-
-              <article className="ww-tile ww-tile-comms">
-                <h3>Messages</h3>
-                <p>Save the dates and updates, emailed from your own site, to everyone or just the coach party.</p>
-                <div className="ww-mock ww-mock-mail" aria-hidden="true">
-                  <b>To: Everyone (112)</b>
-                  <span>Coaches leave the hotel at 1.30pm…</span>
-                </div>
-              </article>
-
-              <article className="ww-tile ww-tile-party ww-tile-wide">
-                <div>
-                  <h3>The wedding party, and the day itself</h3>
-                  <p>
-                    The best man plans the stag without you seeing it. On the day, everyone has the running order on their phone,
-                    and the photos land in one place.
-                  </p>
-                </div>
-                <ol className="ww-mock ww-mock-day" aria-hidden="true">
-                  <li><time>13:30</time>Coaches leave</li>
-                  <li><time>14:00</time>Ceremony</li>
-                  <li className="now"><time>15:15</time>Drinks on the lawn</li>
-                  <li><time>17:30</time>Dinner &amp; speeches</li>
-                </ol>
-              </article>
-            </div>
-          </div>
-        </section>
-
-        {/* ── make it yours ────────────────────────────────── */}
-        <section id="yours" className="ww-section ww-section-tint">
-          <div className="ww-wrap ww-split">
-            <div>
-              <p className="ww-kicker">Make it yours</p>
-              <h2 className="ww-h2">Your names, your colours, day or night.</h2>
+            <Reveal>
+              <p className="ww-kicker">What&rsquo;s inside</p>
+              <h2 className="ww-h2">One system, not a pile of features.</h2>
               <p className="ww-sub">
-                Pick from five palettes drawn from real gardens and seasons, and switch to a night garden for an evening do. Your
-                names run through every page, every email and the app on your guests&rsquo; phones.
+                Choose a venue and the budget knows. Give someone a job and their phone knows. Change the plan and everyone
+                knows. Each part below is moving in time with the others, because that&rsquo;s how it works.
               </p>
+            </Reveal>
+
+            <div className="ww-chapters">
+              {CHAPTERS.map((c, i) => (
+                <Reveal key={c.key} className={`ww-chapter ${i % 2 ? "flip" : ""}`}>
+                  <div className={`ww-chapter-art tone-${c.colour}`}>
+                    <c.Scene />
+                  </div>
+                  <div className={`ww-chapter-copy tone-${c.colour}`}>
+                    <p className="ww-chapter-kicker">{c.kicker}</p>
+                    <h3>{c.title}</h3>
+                    <p>{c.body}</p>
+                    <ul>
+                      {c.points.map((p) => (
+                        <li key={p}>{p}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </Reveal>
+              ))}
             </div>
-            <PaletteDemo />
           </div>
         </section>
 
-        {/* ── how it works ─────────────────────────────────── */}
+        {/* ── breadth ──────────────────────────────────────── */}
+        <section className="ww-section ww-breadth" aria-label="Everything else that's included">
+          <div className="ww-wrap">
+            <Reveal>
+              <p className="ww-kicker">And the rest</p>
+              <h2 className="ww-h2">The small things you&rsquo;d otherwise build yourself.</h2>
+            </Reveal>
+          </div>
+          <div className="ww-marquee" aria-hidden="true">
+            <div className="ww-marquee-row">
+              {[...BREADTH.slice(0, 10), ...BREADTH.slice(0, 10)].map((b, i) => (
+                <span key={i}>{b}</span>
+              ))}
+            </div>
+            <div className="ww-marquee-row rev">
+              {[...BREADTH.slice(10), ...BREADTH.slice(10)].map((b, i) => (
+                <span key={i}>{b}</span>
+              ))}
+            </div>
+          </div>
+          <ul className="ww-sr-only">
+            {BREADTH.map((b) => (
+              <li key={b}>{b}</li>
+            ))}
+          </ul>
+        </section>
+
+        {/* ── who sees what ────────────────────────────────── */}
+        <section className="ww-section ww-section-tint">
+          <div className="ww-wrap">
+            <Reveal>
+              <p className="ww-kicker">For everyone involved</p>
+              <h2 className="ww-h2">Everyone gets the right amount of wedding.</h2>
+              <p className="ww-sub">One site, four very different views of it. Hover to see what each person gets.</p>
+            </Reveal>
+            <div className="ww-roles">
+              {ROLES.map((r, i) => (
+                <Reveal key={r.who} delay={i * 80} className="ww-role">
+                  <p className="ww-role-who">{r.who}</p>
+                  <p className="ww-role-line">{r.line}</p>
+                  <p className="ww-role-detail">{r.detail}</p>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── how it starts ────────────────────────────────── */}
         <section id="how" className="ww-section">
           <div className="ww-wrap">
-            <p className="ww-kicker">How it works</p>
-            <h2 className="ww-h2">Set up in an evening. Useful for the whole engagement.</h2>
+            <Reveal>
+              <p className="ww-kicker">Getting going</p>
+              <h2 className="ww-h2">Set up in an evening. Useful until the last dance.</h2>
+            </Reveal>
             <ol className="ww-steps">
-              <li>
-                <span className="ww-step-n">1</span>
-                <h3>Choose your address</h3>
-                <p>Your names make the address, like jonsarah.weddingsweddings.co.uk. Pay once and it&rsquo;s yours.</p>
-              </li>
-              <li>
-                <span className="ww-step-n">2</span>
-                <h3>Add your people</h3>
-                <p>Bring in your guest list, set who sees what, and invite family and the wedding party to help.</p>
-              </li>
-              <li>
-                <span className="ww-step-n">3</span>
-                <h3>Plan, then celebrate</h3>
-                <p>Collect RSVPs, compare suppliers, keep the budget honest, and share the running order on the day.</p>
-              </li>
+              {[
+                ["Claim your address", "Your names make your address, like jonsarah.weddingsweddings.co.uk. It's yours from the moment you sign up."],
+                ["Bring your people", "Add your guests, then invite the helpers: parents, the best man, the bridesmaids. Decide what each of them can see."],
+                ["Plan it together", "Put the options up, let people weigh in, choose, and watch the budget and the plan take shape around you."],
+              ].map(([t, b], i) => (
+                <Reveal key={t} delay={i * 100} className="ww-step">
+                  <span className="ww-step-n">{i + 1}</span>
+                  <h3>{t}</h3>
+                  <p>{b}</p>
+                </Reveal>
+              ))}
             </ol>
           </div>
         </section>
 
-        {/* ── pricing ──────────────────────────────────────── */}
-        <section id="pricing" className="ww-section ww-section-tint">
-          <div className="ww-wrap ww-pricing">
-            <div>
-              <p className="ww-kicker">Pricing</p>
-              <h2 className="ww-h2">One price. Paid once.</h2>
+        {/* ── alpha ────────────────────────────────────────── */}
+        <section id="alpha" className="ww-section ww-section-tint">
+          <div className="ww-wrap ww-alpha">
+            <Reveal>
+              <p className="ww-kicker">The alpha</p>
+              <h2 className="ww-h2">We&rsquo;re building this with a small group of couples.</h2>
               <p className="ww-sub">
-                No monthly fee, no per-guest charges, no upgrades to unlock the useful bits.
+                It started as the site for one real wedding and grew from there. Right now it&rsquo;s invite-only and
+                free. If you&rsquo;ve been sent a code, you&rsquo;re in.
               </p>
-            </div>
-            <div className="ww-price-card">
-              <Botanical seed={21} stems={2} width={120} height={180} spread={30} className="ww-price-flora" />
-              <p className="ww-price-name">One wedding</p>
-              <p className="ww-price">
-                {PRICE.label}
-                <span>{PRICE.per}</span>
-              </p>
-              <ul className="ww-ticks">
-                {INCLUDED.map((x) => (
-                  <li key={x}>{x}</li>
-                ))}
-              </ul>
-              <Link href={start} className="ww-btn ww-btn-primary ww-btn-block">
-                Start your wedding site
-              </Link>
-              <p className="ww-fine ww-center">In alpha: free with an invite code.</p>
-            </div>
+            </Reveal>
+            <Reveal className="ww-alpha-card" delay={120}>
+              <Botanical seed={21} stems={2} width={120} height={180} spread={30} className="ww-alpha-flora" />
+              <p className="ww-alpha-title">Got an invite code?</p>
+              <p className="ww-alpha-body">Your site is ready in about a minute. You can change the names, date and look whenever you like.</p>
+              <Magnetic strength={6}>
+                <Link href={start} className="ww-btn ww-btn-primary ww-btn-shine ww-btn-block">
+                  Start your wedding site
+                </Link>
+              </Magnetic>
+              <p className="ww-fine ww-center">No code yet? Ask the couple who told you about us.</p>
+            </Reveal>
           </div>
         </section>
 
         {/* ── questions ────────────────────────────────────── */}
         <section id="faq" className="ww-section">
           <div className="ww-wrap ww-narrow">
-            <p className="ww-kicker">Questions</p>
-            <h2 className="ww-h2">Good to know</h2>
+            <Reveal>
+              <p className="ww-kicker">Questions</p>
+              <h2 className="ww-h2">Good to know</h2>
+            </Reveal>
             <div className="ww-faq">
               {FAQ.map((f) => (
                 <details key={f.q}>
@@ -272,12 +390,15 @@ export default async function CommercialHome() {
 
         {/* ── last word ────────────────────────────────────── */}
         <section className="ww-final">
+          <Sunlight />
           <div className="ww-wrap ww-final-inner">
             <LogoMark size={64} tone="light" />
-            <h2 className="ww-h2">Make the site. Then go and enjoy being engaged.</h2>
-            <Link href={start} className="ww-btn ww-btn-light">
-              Start your wedding site
-            </Link>
+            <h2 className="ww-h2">You&rsquo;ve got a wedding to plan. Give it somewhere to live.</h2>
+            <Magnetic>
+              <Link href={start} className="ww-btn ww-btn-light ww-btn-shine">
+                Start your wedding site
+              </Link>
+            </Magnetic>
           </div>
         </section>
       </main>

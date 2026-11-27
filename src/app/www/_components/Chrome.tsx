@@ -15,7 +15,7 @@ export function SiteHeader({ base, minimal = false }: { base: string; minimal?: 
         {!minimal && (
           <nav className="ww-nav" aria-label="Main">
             <a href={at("inside")}>Inside</a>
-            <a href={at("pricing")}>Pricing</a>
+            <a href={at("alpha")}>Alpha</a>
             <a href={at("faq")}>Questions</a>
             <Link href={`${base}/signin`}>Sign in</Link>
             <Link href={`${base}/start`} className="ww-btn ww-btn-primary ww-btn-sm">

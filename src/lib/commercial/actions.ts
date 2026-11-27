@@ -7,10 +7,9 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { findAuthUserByEmail, isBanned } from "@/lib/accounts/status";
 import { sendEmail } from "@/lib/email/resend";
 import { ROOT_DOMAIN, isValidSlug, weddingUrl } from "@/lib/wedding/host";
-import { PRICE } from "./pricing";
 
-// Signing up a new wedding from the commercial site. No payment yet: the
-// order shows the price and a code takes it to nothing. The database makes
+// Signing up a new wedding from the commercial site. Free, invite-only alpha:
+// an invite code is needed. The database makes
 // the final call on the code and the address (fn_create_wedding).
 
 async function ip() {
@@ -70,7 +69,7 @@ export async function createWedding(input: z.input<typeof signup>): Promise<Sign
   const code = await applyCode(d.code);
   if (code.percent == null) return { ok: false, error: code.error ?? "That code isn't valid.", field: "code" };
   if (code.percent < 100) {
-    return { ok: false, error: `That code takes ${code.percent}% off. Card payment opens soon, so for now you'll need an alpha code.`, field: "code" };
+    return { ok: false, error: "That code isn't an alpha invite. Check the code you were sent.", field: "code" };
   }
 
   const admin = createAdminClient();
@@ -132,7 +131,7 @@ function welcomeEmail(names: string, url: string) {
     <p style="font-size:16px;line-height:1.6;color:#5b5a52">It lives at <a href="${esc(url)}" style="color:#4c6b52">${esc(url.replace(/^https:\/\//, "").replace(/\/$/, ""))}</a>.
     Sign in with this email and we'll send you a code. No password to remember.</p>
     <p style="margin:24px 0"><a href="${esc(url)}login" style="background:#1d2a21;color:#f4f1ec;text-decoration:none;padding:12px 22px;border-radius:999px;font-family:Arial,sans-serif;font-size:14px">Open your site</a></p>
-    <p style="font-size:14px;color:#5b5a52">Your order: one wedding, ${PRICE.label}, paid once. Alpha code applied: £0.</p>
+    <p style="font-size:14px;color:#5b5a52">You're one of our alpha couples, so it's free while we build it together.</p>
   </div>
 </div>`;
 }

@@ -1,11 +1,4 @@
-// The one price, shown on the commercial site. There is no payment yet: during
-// the alpha a code takes it to nothing (see 0058_signup_codes.sql).
-export const PRICE = {
-  amount: 149,
-  currency: "GBP",
-  label: "£149",
-  per: "per wedding, paid once",
-} as const;
-
+// The commercial site's name and address. No prices: during the alpha the
+// site is free and invite-only (a code is needed to start a wedding).
 export const SITE_NAME = "Weddings Weddings";
 export const SITE_URL = `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN || "weddingsweddings.co.uk"}`;
