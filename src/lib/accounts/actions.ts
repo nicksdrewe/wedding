@@ -15,10 +15,14 @@ import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getWeddingId } from "@/lib/wedding/current";
 import { getCurrentProfile } from "@/lib/auth/roles";
 import { sendEmail } from "@/lib/email/resend";
+import { weddingFrom, weddingReplyTo } from "@/lib/email/sender";
 import { inviteEmail } from "./invite-email";
 import { findAuthUserByEmail, isBanned } from "./status";
+import { getCurrentWedding } from "@/lib/wedding/current";
+import { weddingUrl } from "@/lib/wedding/host";
 
 type Result = { error: string | null; notice?: string };
 
@@ -35,7 +39,7 @@ async function loadTarget(contactId: string) {
   const parsed = idSchema.safeParse(contactId);
   if (!parsed.success) return { ok: false as const, error: "That guest couldn't be found." };
 
-  const admin = createAdminClient();
+  const admin = createAdminClient(await getWeddingId());
   const { data: contact } = await admin
     .from("contacts")
     .select("id, full_name, email, role, parent_contact_id")
@@ -68,7 +72,7 @@ async function audit(
 ) {
   // Best effort: a failure to write the trail shouldn't undo a change that
   // already happened, but it is reported to the server log.
-  const { error } = await createAdminClient().from("admin_audit").insert({
+  const { error } = await createAdminClient(await getWeddingId()).from("admin_audit").insert({
     actor_id: actorId,
     action,
     target_contact_id: target.contactId,
@@ -79,13 +83,20 @@ async function audit(
 }
 
 async function sendInviteTo(contact: { full_name: string | null }, email: string, reason: "new" | "reset") {
-  const { subject, html } = inviteEmail({ fullName: contact.full_name, email, reason });
-  return sendEmail({ to: email, subject, html });
+  const wedding = await getCurrentWedding();
+  const { subject, html } = inviteEmail({
+    fullName: contact.full_name,
+    email,
+    reason,
+    coupleName: wedding?.display_name ?? "Weddings Weddings",
+    baseUrl: wedding ? weddingUrl(wedding.slug) : undefined,
+  });
+  return sendEmail({ to: email, subject, html, from: weddingFrom(wedding), replyTo: weddingReplyTo(wedding) });
 }
 
 export async function createAccount(contactId: string, sendInvite: boolean): Promise<Result> {
   const actor = await requireCouple();
-  if (!actor) return { error: "Only Nick or Ellie can do that." };
+  if (!actor) return { error: "Only the couple can do that." };
 
   const target = await loadTarget(contactId);
   if (!target.ok) return { error: target.error };
@@ -93,7 +104,7 @@ export async function createAccount(contactId: string, sendInvite: boolean): Pro
 
   if (await findAuthUserByEmail(email)) return { error: "They already have an account." };
 
-  const admin = createAdminClient();
+  const admin = createAdminClient(await getWeddingId());
   // email_confirm: true — the couple vouching for the address is the
   // confirmation. That also means their first sign-in email is the regular
   // sign-in-code one, not Supabase's "confirm your email" link.
@@ -131,7 +142,7 @@ export async function createAccount(contactId: string, sendInvite: boolean): Pro
 
 export async function sendAccountInvite(contactId: string): Promise<Result> {
   const actor = await requireCouple();
-  if (!actor) return { error: "Only Nick or Ellie can do that." };
+  if (!actor) return { error: "Only the couple can do that." };
 
   const target = await loadTarget(contactId);
   if (!target.ok) return { error: target.error };
@@ -150,7 +161,7 @@ export async function sendAccountInvite(contactId: string): Promise<Result> {
 
 export async function resetAccount(contactId: string): Promise<Result> {
   const actor = await requireCouple();
-  if (!actor) return { error: "Only Nick or Ellie can do that." };
+  if (!actor) return { error: "Only the couple can do that." };
 
   const target = await loadTarget(contactId);
   if (!target.ok) return { error: target.error };
@@ -161,7 +172,7 @@ export async function resetAccount(contactId: string): Promise<Result> {
   if (user.id === actor.id) return { error: "Use My Details to change your own password." };
   if (contact.role === "couple") return { error: "That would lock out one of you — not done from here." };
 
-  const admin = createAdminClient();
+  const admin = createAdminClient(await getWeddingId());
   // There is no way to "clear" a password through the admin API, so replace
   // it with a long random one nobody (including us) ever sees. The person is
   // then in the same position as someone who never set one: sign in with a
@@ -188,7 +199,7 @@ export async function resetAccount(contactId: string): Promise<Result> {
 
 export async function signOutEverywhere(contactId: string): Promise<Result> {
   const actor = await requireCouple();
-  if (!actor) return { error: "Only Nick or Ellie can do that." };
+  if (!actor) return { error: "Only the couple can do that." };
 
   const target = await loadTarget(contactId);
   if (!target.ok) return { error: target.error };
@@ -197,7 +208,7 @@ export async function signOutEverywhere(contactId: string): Promise<Result> {
   const user = await findAuthUserByEmail(email);
   if (!user) return { error: "They don't have an account." };
 
-  const { error } = await createAdminClient().rpc("fn_admin_revoke_sessions", { p_user_id: user.id });
+  const { error } = await createAdminClient(await getWeddingId()).rpc("fn_admin_revoke_sessions", { p_user_id: user.id });
   if (error) return { error: `${error.message} — has migration 0035 been run?` };
 
   await audit(actor.id, "account.signout", { contactId: contact.id, email });
@@ -206,7 +217,7 @@ export async function signOutEverywhere(contactId: string): Promise<Result> {
 
 export async function setAccountDisabled(contactId: string, disabled: boolean): Promise<Result> {
   const actor = await requireCouple();
-  if (!actor) return { error: "Only Nick or Ellie can do that." };
+  if (!actor) return { error: "Only the couple can do that." };
 
   const target = await loadTarget(contactId);
   if (!target.ok) return { error: target.error };
@@ -217,7 +228,7 @@ export async function setAccountDisabled(contactId: string, disabled: boolean): 
   if (user.id === actor.id) return { error: "You can't switch off your own account." };
   if (contact.role === "couple") return { error: "That would lock out one of you — not done from here." };
 
-  const admin = createAdminClient();
+  const admin = createAdminClient(await getWeddingId());
   // 100 years is "indefinitely" to Supabase; "none" lifts it.
   const { error } = await admin.auth.admin.updateUserById(user.id, { ban_duration: disabled ? "876000h" : "none" });
   if (error) return { error: error.message };

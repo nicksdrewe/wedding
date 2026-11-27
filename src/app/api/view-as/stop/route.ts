@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getWeddingId } from "@/lib/wedding/current";
 import {
   AUTH_COOKIE_PATTERN,
   STASH_PREFIX,
@@ -54,7 +55,7 @@ async function stop(request: Request) {
   }
 
   if (payload) {
-    const { error } = await createAdminClient().from("admin_audit").insert({
+    const { error } = await createAdminClient(await getWeddingId()).from("admin_audit").insert({
       actor_id: payload.actorId,
       action: "viewas.stop",
       target_contact_id: payload.targetContactId,

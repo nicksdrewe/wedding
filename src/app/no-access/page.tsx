@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { getAuthState, getCurrentContactTags, homeFor } from "@/lib/auth/roles";
+import { getCurrentWedding } from "@/lib/wedding/current";
+import { eitherOf, namesFrom } from "@/lib/wedding/names";
 
 // Terminus for "signed in, but not allowed here". Crucially this is NOT a
 // redirect back to /login — sending an already-authenticated user to the
@@ -7,6 +9,7 @@ import { getAuthState, getCurrentContactTags, homeFor } from "@/lib/auth/roles";
 export const dynamic = "force-dynamic";
 
 export default async function NoAccessPage() {
+  const names = namesFrom(await getCurrentWedding());
   const state = await getAuthState();
   const tags = state.status === "ok" ? await getCurrentContactTags(state.profile) : [];
 
@@ -23,8 +26,8 @@ export default async function NoAccessPage() {
                 as <span className="text-ink">{state.email}</span>
               </>
             ) : null}
-            , but we haven&rsquo;t added you to the guest list yet. Give Nick or
-            Ellie a nudge and they&rsquo;ll sort it.
+            , but we haven&rsquo;t added you to the guest list yet. Give {eitherOf(names)} a
+            nudge and they&rsquo;ll sort it.
           </>
         ) : (
           <>That part of the site isn&rsquo;t open to your account.</>

@@ -1,7 +1,9 @@
 import { ScrollFlowerHero, type HeroCta } from "@/components/ScrollFlowerHero";
 import { SiteGate } from "@/components/SiteGate";
+import { weddingHasGate } from "@/lib/gate/actions";
 import { getAuthState, getCurrentContactTags, homeFor } from "@/lib/auth/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getWeddingId } from "@/lib/wedding/current";
 
 // Reads the session so a signed-in visitor is never shown the anonymous
 // call-to-action — previously this page looked identical either way, which
@@ -35,17 +37,18 @@ export default async function LandingPage() {
   // not null — a signed-out visitor got zero rows back here, silently
   // hiding the CTA for exactly the audience it's meant for. Only
   // non-sensitive landing copy is selected below, so bypassing RLS is safe.
-  const supabase = createAdminClient();
+  const supabase = createAdminClient(await getWeddingId());
   const { data: landingEvent } = await supabase
     .from("events")
     .select("slug, landing_cta_copy, landing_cta_eyebrow, landing_cta_heading, landing_cta_body")
+    .eq("wedding_id", (await getWeddingId())!)
     .eq("is_landing_cta", true)
     .not("slug", "is", null)
     .maybeSingle();
 
   return (
     <main className="relative">
-      <SiteGate>
+      <SiteGate enabled={await weddingHasGate()}>
         <ScrollFlowerHero
           cta={cta}
           landingCta={

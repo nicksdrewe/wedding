@@ -4,6 +4,10 @@ import "./globals.css";
 import { ViewAsBanner } from "@/components/ViewAsBanner";
 import { RegisterServiceWorker } from "@/components/RegisterServiceWorker";
 import { NavProgress } from "@/components/NavProgress";
+import { WeddingProvider } from "@/components/WeddingProvider";
+import { getCurrentWedding } from "@/lib/wedding/current";
+import { namesFrom, possessive } from "@/lib/wedding/names";
+import { themeCss, type WeddingTheme } from "@/lib/wedding/theme";
 import { Suspense } from "react";
 
 // Grotesque carries UI, structure and numbers; serif carries reading copy.
@@ -44,14 +48,21 @@ const title = Fraunces({
   axes: ["opsz"],
 });
 
-export const metadata: Metadata = {
-  title: "Nick & Ellie — Summer 2028",
-  description: "Nick & Ellie's wedding hub",
-  manifest: "/manifest.json",
-  // Added to a phone's home screen it opens like an app.
-  appleWebApp: { capable: true, title: "N & E", statusBarStyle: "default" },
-  icons: { apple: "/icons/icon-192.png" },
-};
+// Title, description and home-screen name come from the wedding this address
+// belongs to.
+export async function generateMetadata(): Promise<Metadata> {
+  const names = namesFrom(await getCurrentWedding());
+  const title = names.dateLabel ? `${names.displayName} — ${names.dateLabel}` : names.displayName;
+  const short = names.partnerTwo ? `${names.partnerOne[0]} & ${names.partnerTwo[0]}` : names.displayName;
+  return {
+    title,
+    description: `${possessive(names)} wedding hub`,
+    manifest: "/api/manifest",
+    // Added to a phone's home screen it opens like an app.
+    appleWebApp: { capable: true, title: short, statusBarStyle: "default" },
+    icons: { apple: "/icons/icon-192.png" },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: "#f4f1ec",
@@ -75,9 +86,13 @@ export const viewport: Viewport = {
   colorScheme: "light",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const wedding = await getCurrentWedding();
+  const theme = (wedding?.theme ?? {}) as WeddingTheme;
+  const css = themeCss(theme);
   return (
     <html
+      data-mode={theme.mode === "dark" ? "dark" : "light"}
       lang="en"
       className={`${ui.variable} ${display.variable} ${reading.variable} ${hero.variable} ${title.variable} antialiased`}
     >
@@ -89,7 +104,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           keeps the flex-col layout filling short pages without capping tall
           ones. */}
       <body className="min-h-screen flex flex-col bg-cream text-ink font-serif">
-        {children}
+        {/* The couple's palette and mode (see lib/wedding/theme.ts). */}
+        {css && <style dangerouslySetInnerHTML={{ __html: css }} />}
+        <WeddingProvider names={namesFrom(wedding)}>{children}</WeddingProvider>
         <ViewAsBanner />
         <Suspense fallback={null}>
           <NavProgress />

@@ -1,9 +1,11 @@
+import { SUPABASE_URL } from "@/lib/supabase/url";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getWeddingId } from "@/lib/wedding/current";
 import { getCurrentProfile } from "@/lib/auth/roles";
 import { findAuthUserByEmail, isBanned } from "@/lib/accounts/status";
 import {
@@ -60,7 +62,7 @@ export async function POST(request: Request) {
   const contactId = z.string().uuid().safeParse(form.get("contactId"));
   if (!contactId.success) return fail("That guest couldn't be found.");
 
-  const admin = createAdminClient();
+  const admin = createAdminClient(await getWeddingId());
   const { data: contact } = await admin
     .from("contacts")
     .select("id, full_name, email, role, parent_contact_id")
@@ -97,7 +99,7 @@ export async function POST(request: Request) {
   if (linkError || !tokenHash) return fail(`Couldn't start view-as: ${linkError?.message ?? "no token returned"}`);
 
   const throwaway = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     { auth: { persistSession: false, autoRefreshToken: false } }
   );
@@ -136,7 +138,7 @@ export async function POST(request: Request) {
   // chunking) is exactly what the rest of the app reads. getAll() is empty
   // on purpose: this client must not see, refresh or sign out the couple's
   // session — it only writes the new one.
-  const writer = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+  const writer = createServerClient(SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     cookies: {
       getAll: () => [],
       setAll: (toSet) => toSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options)),

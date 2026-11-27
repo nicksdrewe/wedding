@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getWeddingId } from "@/lib/wedding/current";
 import { normalizeTags } from "@/lib/tags";
 
 // The people shown in the group chart under the Groomsmen / Bridesmaids
@@ -31,12 +32,13 @@ function toMember(c: Row): GroupMember {
 }
 
 export async function loadGroupChart(kind: GroupKind): Promise<GroupChartData> {
-  const admin = createAdminClient();
+  const weddingId = await getWeddingId();
+  const admin = createAdminClient(weddingId);
   // Everyone (not just a filtered few), and the tags compared after
   // normalising them in code: a tag typed as "Bridesmaid" or "bridesmaid "
   // still counts, which a database-side match would silently miss.
   // Plus-ones are included: someone added under another guest can still be tagged into the group.
-  const query = (cols: string) => admin.from("contacts").select(cols).order("full_name").limit(2000);
+  const query = (cols: string) => admin.from("contacts").select(cols).eq("wedding_id", weddingId!).order("full_name").limit(2000);
   // With photos once migration 0045 has been run; without them until then.
   let res = await query("id, full_name, role, tags, photo_url");
   if (res.error) res = await query("id, full_name, role, tags");

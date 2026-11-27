@@ -2,6 +2,8 @@
 
 import { use, useEffect, useState } from "react";
 import { Botanical } from "@/components/Botanical";
+import { useWedding } from "@/components/WeddingProvider";
+import { eitherOf } from "@/lib/wedding/names";
 import {
   Disclosure,
   DisclosureTrigger,
@@ -24,6 +26,7 @@ export default function RsvpTokenPage({
 }: {
   params: Promise<{ token: string }>;
 }) {
+  const wedding = useWedding();
   const { token } = use(params);
   const [contact, setContact] = useState<Contact | null>(null);
   const [events, setEvents] = useState<EventRow[]>([]);
@@ -113,7 +116,7 @@ export default function RsvpTokenPage({
       <main className="flex flex-1 flex-col items-center justify-center px-6 text-center">
         <h1 className="font-display text-4xl">We couldn&rsquo;t find that invitation</h1>
         <p className="mt-4 font-reading text-ink-soft">
-          Double-check the link, or reach out to Nick or Ellie.
+          Double-check the link, or reach out to {eitherOf(wedding)}.
         </p>
       </main>
     );
@@ -133,7 +136,7 @@ export default function RsvpTokenPage({
       />
 
       <p className="relative z-10 font-serif text-xs tracking-[0.25em] text-ink-soft uppercase">
-        Summer 2028
+        {wedding.dateLabel}
       </p>
       <h1 className="relative z-10 mt-3 font-display text-[44px] tracking-tight">
         Hello, {contact.full_name}

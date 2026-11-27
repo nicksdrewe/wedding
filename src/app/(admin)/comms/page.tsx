@@ -3,9 +3,14 @@ import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
+import Link from "next/link";
 import { CommsComposer, type CommsContact } from "./CommsComposer";
+import { Inbox, type InboundItem } from "./Inbox";
+import { getCurrentWedding } from "@/lib/wedding/current";
+import { weddingReplyTo } from "@/lib/email/sender";
 
-export default async function CommsPage() {
+export default async function CommsPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+  const tab = (await searchParams).tab === "inbox" ? "inbox" : "send";
   // The (admin) layout now admits couple OR family (see 0028), but comms
   // must stay couple-only — this explicit check is the defense-in-depth
   // backstop for that, independent of the shared layout guard.
@@ -14,7 +19,7 @@ export default async function CommsPage() {
 
   const supabase = await createClient();
 
-  const [{ data: contacts }, { data: rsvpEvents }, { data: messages }] = await Promise.all([
+  const [{ data: contacts }, { data: rsvpEvents }, { data: messages }, { data: inbound }, wedding] = await Promise.all([
     supabase
       .from("contacts")
       .select("id, full_name, email, role, tags, rsvp_status, rsvps(event_id, attending)")
@@ -27,6 +32,13 @@ export default async function CommsPage() {
       .from("comms_messages")
       .select("id, subject, created_at, comms_recipients(contact_id, email, status, sent_at, error)")
       .order("created_at", { ascending: false }),
+    // Guests' replies (0059). Missing table before that runs: just empty.
+    supabase
+      .from("inbound_emails")
+      .select("id, from_email, from_name, contact_id, subject, body_text, received_at, read_at, replied_at, attachment_count")
+      .order("received_at", { ascending: false })
+      .limit(200),
+    getCurrentWedding(),
   ]);
 
   const events = rsvpEvents ?? [];
@@ -72,6 +84,25 @@ export default async function CommsPage() {
     };
   });
 
+  const inbox: InboundItem[] = (inbound ?? []).map((m) => ({
+    id: m.id,
+    fromName: m.from_name,
+    fromEmail: m.from_email,
+    guestName: m.contact_id ? nameByContactId.get(m.contact_id) ?? null : null,
+    subject: m.subject,
+    body: m.body_text,
+    receivedAt: m.received_at,
+    read: !!m.read_at,
+    repliedAt: m.replied_at,
+    attachments: m.attachment_count,
+  }));
+  const unread = inbox.filter((m) => !m.read).length;
+  const inboxAddress = weddingReplyTo(wedding)?.match(/<([^>]+)>/)?.[1] ?? null;
+  const tabClass = (on: boolean) =>
+    `inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold transition ${
+      on ? "bg-forest text-cream" : "text-ink-soft hover:text-ink"
+    }`;
+
   return (
     <div>
       <PageHeader
@@ -80,7 +111,23 @@ export default async function CommsPage() {
         infoText="Compose a message once, pick who it's for, and send — every send is logged so you always know who's already heard what."
       />
 
-      {commsContacts.length > 0 ? (
+      <nav className="mt-6 inline-flex rounded-full border border-ink/10 bg-paper p-1" aria-label="Messages">
+        <Link href="/comms" className={tabClass(tab === "send")} aria-current={tab === "send" ? "page" : undefined}>
+          Send
+        </Link>
+        <Link href="/comms?tab=inbox" className={tabClass(tab === "inbox")} aria-current={tab === "inbox" ? "page" : undefined}>
+          Inbox
+          {unread > 0 && (
+            <span className={`rounded-full px-1.5 text-[11px] tabular-nums ${tab === "inbox" ? "bg-cream text-forest" : "bg-sec text-cream"}`}>
+              {unread}
+            </span>
+          )}
+        </Link>
+      </nav>
+
+      {tab === "inbox" ? (
+        <Inbox items={inbox} address={inboxAddress} />
+      ) : commsContacts.length > 0 ? (
         <CommsComposer contacts={commsContacts} events={events} history={history} />
       ) : (
         <EmptyState

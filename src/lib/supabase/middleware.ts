@@ -1,6 +1,19 @@
+import { SUPABASE_URL } from "@/lib/supabase/url";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { STASH_PREFIX, VIEW_AS_COOKIE, verifyViewAs } from "@/lib/view-as/cookie";
+import {
+  DEFAULT_WEDDING_SLUG,
+  ROOT_DOMAIN,
+  SITE_BASE_HEADER,
+  WEDDING_COOKIE,
+  WEDDING_HEADER,
+  WEDDING_PICK_COOKIE,
+  WEDDING_SLUG_HEADER,
+  isValidSlug,
+  slugFromHost,
+} from "@/lib/wedding/host";
+import { lastLookup, weddingIdForSlug } from "@/lib/wedding/resolve";
 
 const VIEW_AS_STOP_PATH = "/api/view-as/stop";
 
@@ -85,10 +98,16 @@ const PUBLIC_PREFIXES = [
   "/api/rsvp",
   "/api/events",
   "/api/auth/request-code",
+  // Resend delivering a guest's reply; checks its own signature.
+  "/api/email/inbound",
   // Every uploaded photo's <img src> now points here (see
   // lib/google/drive.ts) — an anonymous event visitor has to be able to
   // load it the same way they can reach the event's own page.
   "/api/drive-image",
+  // The home-screen app details; phones fetch it without signing in.
+  "/api/manifest",
+  // Tells search engines and AI crawlers to keep out (app/robots.ts).
+  "/robots.txt",
 ];
 
 // The reusable invite link (/i/[token], see lib/invite) — checked
@@ -111,14 +130,98 @@ function isPublic(pathname: string) {
   return PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
 }
 
+// Which wedding this address is for (see lib/wedding/host.ts). On preview and
+// local addresses ?wedding=<slug> picks one, remembered in a cookie.
+async function resolveWedding(request: NextRequest) {
+  const host = request.headers.get("host");
+  const fromHost = slugFromHost(host);
+  const isMainDomain = (host ?? "").split(":")[0].replace(/^www\./, "") === ROOT_DOMAIN;
+  let pick: string | null = null;
+  let slug = fromHost;
+  if (!slug && !isMainDomain) {
+    const q = request.nextUrl.searchParams.get("wedding");
+    const c = request.cookies.get(WEDDING_PICK_COOKIE)?.value;
+    pick = isValidSlug(q) ? q : null;
+    slug = pick ?? (isValidSlug(c) ? c : null);
+  }
+  slug = slug ?? DEFAULT_WEDDING_SLUG;
+  let id = await weddingIdForSlug(slug);
+  if (!id && !fromHost) {
+    slug = DEFAULT_WEDDING_SLUG;
+    id = await weddingIdForSlug(slug);
+  }
+  return { slug, id, unknownSubdomain: !!fromHost && !id, pick };
+}
+
+// The commercial site (app/www). On the main domain it is the whole site, so
+// "/pricing" there is served from /www/pricing. That switch is held behind
+// COMMERCIAL_APEX=1 until the live wedding has moved to its own subdomain.
+// Anywhere else (previews, localhost) it is reachable at /www directly.
+const COMMERCIAL_PREFIX = "/www";
+// The commercial site's own pages on the main domain. Anything else there is
+// an old link from before the switch (invites, RSVP links, sign-in emails,
+// home-screen icons) and is sent on to the first wedding's own address.
+const COMMERCIAL_PATHS = ["/", "/start", "/signin", "/robots.txt", "/sitemap.xml", "/llms.txt", "/opengraph-image"];
+const LEGACY_WEDDING_SLUG = process.env.LEGACY_WEDDING_SLUG || DEFAULT_WEDDING_SLUG;
+function commercial(request: NextRequest): NextResponse | null {
+  const { pathname } = request.nextUrl;
+  const host = (request.headers.get("host") ?? "").split(":")[0].replace(/^www\./, "");
+  const onApex = host === ROOT_DOMAIN && process.env.COMMERCIAL_APEX === "1";
+  const forwarded = new Headers(request.headers);
+  forwarded.delete(WEDDING_HEADER);
+  forwarded.delete(WEDDING_SLUG_HEADER);
+  if (onApex) {
+    forwarded.set(SITE_BASE_HEADER, "");
+    if (pathname.startsWith("/api/") || pathname === COMMERCIAL_PREFIX || pathname.startsWith(`${COMMERCIAL_PREFIX}/`)) {
+      // keep one address per page
+      if (pathname.startsWith(COMMERCIAL_PREFIX)) {
+        const url = request.nextUrl.clone();
+        url.pathname = pathname.slice(COMMERCIAL_PREFIX.length) || "/";
+        return NextResponse.redirect(url, 308);
+      }
+      return NextResponse.next({ request: { headers: forwarded } });
+    }
+    if (!COMMERCIAL_PATHS.includes(pathname)) {
+      const target = new URL(`${pathname}${request.nextUrl.search}`, `https://${LEGACY_WEDDING_SLUG}.${ROOT_DOMAIN}`);
+      return NextResponse.redirect(target, 308);
+    }
+    const url = request.nextUrl.clone();
+    url.pathname = `${COMMERCIAL_PREFIX}${pathname === "/" ? "" : pathname}`;
+    return NextResponse.rewrite(url, { request: { headers: forwarded } });
+  }
+  if (pathname === COMMERCIAL_PREFIX || pathname.startsWith(`${COMMERCIAL_PREFIX}/`)) {
+    forwarded.set(SITE_BASE_HEADER, COMMERCIAL_PREFIX);
+    return NextResponse.next({ request: { headers: forwarded } });
+  }
+  return null;
+}
+
 export async function updateSession(request: NextRequest) {
+  const site = commercial(request);
+  if (site) return site;
+
   const guarded = await viewAsGuard(request);
   if (guarded) return guarded;
 
-  let supabaseResponse = NextResponse.next({ request });
+  const wedding = await resolveWedding(request);
+  if (wedding.unknownSubdomain) {
+    // no such wedding: send them to the main site
+    return NextResponse.redirect(new URL(`https://${ROOT_DOMAIN}/`));
+  }
+
+  // Pass the wedding on to the app. Overwrites anything the browser sent, so
+  // the wedding can only ever come from the address.
+  const forwarded = new Headers(request.headers);
+  forwarded.delete(WEDDING_HEADER);
+  forwarded.delete(WEDDING_SLUG_HEADER);
+  if (wedding.id) forwarded.set(WEDDING_HEADER, wedding.id);
+  forwarded.set(WEDDING_SLUG_HEADER, wedding.slug);
+  const next = () => NextResponse.next({ request: { headers: forwarded } });
+
+  let supabaseResponse = next();
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
@@ -129,7 +232,7 @@ export async function updateSession(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
-          supabaseResponse = NextResponse.next({ request });
+          supabaseResponse = next();
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );
@@ -174,5 +277,17 @@ export async function updateSession(request: NextRequest) {
     return withCookies(NextResponse.redirect(url));
   }
 
+  // Preview builds only: say how the wedding was found, for troubleshooting.
+  if (process.env.VERCEL_ENV !== "production") {
+    supabaseResponse.headers.set("x-ww-wedding", `${wedding.slug}|${wedding.id ? "found" : "missing"}|${lastLookup}`);
+  }
+
+  // The browser's own database client reads the wedding from this cookie.
+  if (wedding.id) {
+    supabaseResponse.cookies.set(WEDDING_COOKIE, wedding.id, { path: "/", sameSite: "lax", secure: true });
+  }
+  if (wedding.pick) {
+    supabaseResponse.cookies.set(WEDDING_PICK_COOKIE, wedding.pick, { path: "/", sameSite: "lax", secure: true, httpOnly: true });
+  }
   return supabaseResponse;
 }

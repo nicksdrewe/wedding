@@ -7,10 +7,9 @@ import { parseBoard } from "./boards";
 // hasn't added yet are dropped one group at a time (newest first) so nothing
 // breaks in the gap before it is run.
 
-type Rows = PromiseLike<{ data: unknown; error: unknown }>;
-type Client = {
-  from: (table: string) => { select: (cols: string) => Rows };
-};
+type Result = PromiseLike<{ data: unknown; error: unknown }>;
+type Query = Result & { eq: (col: string, v: string) => Result };
+type Client = { from: (table: string) => { select: (cols: string) => Query } };
 
 export type CategoryRow = {
   id: string;
@@ -27,10 +26,15 @@ export type CategoryRow = {
 // In the order the migrations added them.
 const OPTIONAL_GROUPS = ["option_kind", "board_tag", "latitude, longitude", "feedback_enabled", "hidden_from_couple"];
 
-export async function fetchCategoryRows(client: Client): Promise<CategoryRow[]> {
+// weddingId: required when client is the admin client (it ignores row security).
+// (client is typed loosely on purpose: matching it against the full Supabase
+// client type is too deep for TypeScript.)
+export async function fetchCategoryRows(anyClient: unknown, weddingId?: string | null): Promise<CategoryRow[]> {
+  const client = anyClient as Client;
   for (let n = OPTIONAL_GROUPS.length; n >= 0; n--) {
     const cols = ["id", "slug", "parent_id", ...OPTIONAL_GROUPS.slice(0, n)].join(", ");
-    const res = await client.from("category_pages").select(cols);
+    const q = client.from("category_pages").select(cols);
+    const res = await (weddingId ? q.eq("wedding_id", weddingId) : q);
     if (res.error) continue;
     return ((res.data ?? []) as unknown as Record<string, unknown>[]).map((r) => ({
       id: r.id as string,

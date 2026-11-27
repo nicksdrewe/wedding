@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email/resend";
+import { weddingFrom, weddingReplyTo } from "@/lib/email/sender";
+import { getCurrentWedding } from "@/lib/wedding/current";
 
 // Couple-only reads/writes, enforced by RLS (see 0015_comms.sql) — same
 // session-aware-client pattern as guests/actions.ts.
@@ -94,7 +96,15 @@ export async function sendToRecipient(messageId: string, contactId: string) {
   // would both break their layout and show the couple's own tags as
   // literal text in the recipient's inbox.
   const html = message.body_type === "html" ? rendered : toHtml(rendered);
-  const { error: sendError } = await sendEmail({ to: contact.email, subject: message.subject, html });
+  // From the couple, at their own address; replies come back to their inbox.
+  const wedding = await getCurrentWedding();
+  const { error: sendError } = await sendEmail({
+    to: contact.email,
+    subject: message.subject,
+    html,
+    from: weddingFrom(wedding),
+    replyTo: weddingReplyTo(wedding),
+  });
 
   const { error: upsertError } = await supabase.from("comms_recipients").upsert(
     {
@@ -127,4 +137,70 @@ export async function deleteMessage(messageId: string) {
 
   revalidatePath("/comms");
   return { error: error?.message ?? null };
+}
+
+// ── the inbox: guests' replies (see 0059_wedding_inbox.sql) ──────────────────
+
+export async function markInboundRead(id: string, read: boolean) {
+  const parsed = z.string().uuid().parse(id);
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("inbound_emails")
+    .update({ read_at: read ? new Date().toISOString() : null })
+    .eq("id", parsed);
+  revalidatePath("/comms");
+  return { error: error?.message ?? null };
+}
+
+export async function deleteInbound(id: string) {
+  const parsed = z.string().uuid().parse(id);
+  const supabase = await createClient();
+  const { error } = await supabase.from("inbound_emails").delete().eq("id", parsed);
+  revalidatePath("/comms");
+  return { error: error?.message ?? null };
+}
+
+// Answer a reply from the site: it goes from the couple's address, so the
+// guest's next answer comes back here too.
+export async function replyToInbound(id: string, body: string) {
+  const parsed = z
+    .object({ id: z.string().uuid(), body: z.string().trim().min(1, "Write a reply first.").max(20000) })
+    .safeParse({ id, body });
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  const supabase = await createClient();
+  const { data: mail } = await supabase
+    .from("inbound_emails")
+    .select("from_email, subject, body_text, received_at, from_name")
+    .eq("id", parsed.data.id)
+    .maybeSingle();
+  if (!mail) return { error: "That email has gone." };
+
+  const subject = /^re:/i.test(mail.subject) ? mail.subject : `Re: ${mail.subject || "your email"}`;
+  const quoted = (mail.body_text as string)
+    .split("\n")
+    .slice(0, 60)
+    .map((l) => `> ${l}`)
+    .join("\n");
+  const when = new Date(mail.received_at as string).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
+  const html =
+    toHtml(parsed.data.body) +
+    `<div style="font-family:Georgia,serif;font-size:13px;color:#5b5a52;max-width:560px;border-left:2px solid #ddd;padding-left:12px;margin-top:8px;white-space:pre-wrap;">On ${when}, ${(mail.from_name ?? mail.from_email)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")} wrote:\n${quoted.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>`;
+
+  const wedding = await getCurrentWedding();
+  const { error } = await sendEmail({
+    to: mail.from_email as string,
+    subject,
+    html,
+    from: weddingFrom(wedding),
+    replyTo: weddingReplyTo(wedding),
+  });
+  if (error) return { error };
+
+  const now = new Date().toISOString();
+  await supabase.from("inbound_emails").update({ replied_at: now, read_at: now }).eq("id", parsed.data.id);
+  revalidatePath("/comms");
+  return { error: null };
 }

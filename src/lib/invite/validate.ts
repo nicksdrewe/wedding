@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getWeddingId } from "@/lib/wedding/current";
 
 // Not a Server Action (no "use server" here, unlike lib/invite/actions.ts)
 // — this is only ever called from /i/[token]'s own server-rendered page,
@@ -8,10 +9,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // scope an RLS-restricted read to.
 export async function isValidInviteToken(token: string) {
   if (!token) return false;
-  const supabase = createAdminClient();
+  const supabase = createAdminClient(await getWeddingId());
   const { data } = await supabase
     .from("invite_links")
     .select("id")
+    .eq("wedding_id", (await getWeddingId())!)
     .eq("token", token)
     .is("revoked_at", null)
     .maybeSingle();

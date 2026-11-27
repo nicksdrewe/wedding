@@ -3,14 +3,22 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { GiftAmbience } from "@/components/gifts/GiftAmbience";
 import { BankDetails } from "@/components/gifts/BankDetails";
-import { WEDDING_FUND, hasBankDetails } from "@/lib/gifts/config";
+import { fundFor, hasBankDetails } from "@/lib/gifts/config";
+import { getCurrentWedding } from "@/lib/wedding/current";
+import { namesFrom, possessive } from "@/lib/wedding/names";
 
-export const metadata: Metadata = {
-  title: "Gifts — Nick & Ellie",
-  description: "A note on gifts, and how to contribute to Nick & Ellie's wedding fund.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const names = namesFrom(await getCurrentWedding());
+  return {
+    title: `Gifts \u2014 ${names.displayName}`,
+    description: `A note on gifts, and how to contribute to ${possessive(names)} wedding fund.`,
+  };
+}
 
-export default function GiftsPage() {
+export default async function GiftsPage() {
+  const wedding = await getCurrentWedding();
+  const names = namesFrom(wedding);
+  const WEDDING_FUND = fundFor(wedding?.slug ?? null);
   const fund = WEDDING_FUND;
   const bankReady = hasBankDetails(fund);
 
@@ -86,7 +94,7 @@ export default function GiftsPage() {
           </div>
 
           <p className="mt-10 text-center font-reading text-lg text-cream/75 italic">
-            With love, Nick &amp; Ellie
+            With love, {names.displayName}
           </p>
         </section>
       </div>

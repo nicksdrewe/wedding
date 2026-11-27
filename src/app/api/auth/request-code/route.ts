@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getWeddingId } from "@/lib/wedding/current";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { findAuthUserByEmail, isBanned } from "@/lib/accounts/status";
+import { getCurrentWedding } from "@/lib/wedding/current";
+import { eitherOf, namesFrom } from "@/lib/wedding/names";
 
 // Gate for the sign-in code request: the browser has no read access to
 // `contacts` (RLS restricts it to the couple and self), so this runs the
@@ -44,10 +47,12 @@ export async function POST(request: Request) {
   // live exploit (* isn't valid in a real email address) but defensive.
   const escaped = body.data.email.replace(/[%_\\*]/g, "\\$&");
 
-  const supabase = createAdminClient();
+  const either = eitherOf(namesFrom(await getCurrentWedding()));
+  const supabase = createAdminClient(await getWeddingId());
   const { data: contact } = await supabase
     .from("contacts")
     .select("id")
+    .eq("wedding_id", (await getWeddingId())!)
     .ilike("email", escaped)
     .maybeSingle();
 
@@ -55,7 +60,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "We don't have that email on our guest list. Double-check it, or ask Nick or Ellie to add you.",
+          `We don't have that email on our guest list. Double-check it, or ask ${either} to add you.`,
       },
       { status: 404 }
     );
@@ -71,14 +76,14 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "You're on the guest list, but your account isn't set up yet. Ask Nick or Ellie to send you an invite.",
+          `You're on the guest list, but your account isn't set up yet. Ask ${either} to send you an invite.`,
       },
       { status: 403 }
     );
   }
   if (isBanned(user)) {
     return NextResponse.json(
-      { error: "This account has been switched off. Please check with Nick or Ellie." },
+      { error: `This account has been switched off. Please check with ${either}.` },
       { status: 403 }
     );
   }
