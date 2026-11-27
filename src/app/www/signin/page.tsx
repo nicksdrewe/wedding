@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 async function go(formData: FormData) {
   "use server";
   const slug = tidySlug(String(formData.get("slug") ?? ""));
-  if (!isValidSlug(slug)) redirect(`${await siteBase()}/login?bad=1`);
+  if (!isValidSlug(slug)) redirect(`${await siteBase()}/signin?bad=1`);
   const host = (await headers()).get("host")?.split(":")[0].replace(/^www\./, "") ?? "";
   redirect(host === ROOT_DOMAIN ? weddingUrl(slug, "/login") : `/login?wedding=${slug}`);
 }

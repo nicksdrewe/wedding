@@ -17,7 +17,7 @@ export function SiteHeader({ base, minimal = false }: { base: string; minimal?: 
             <a href={at("inside")}>Inside</a>
             <a href={at("pricing")}>Pricing</a>
             <a href={at("faq")}>Questions</a>
-            <Link href={`${base}/login`}>Sign in</Link>
+            <Link href={`${base}/signin`}>Sign in</Link>
             <Link href={`${base}/start`} className="ww-btn ww-btn-primary ww-btn-sm">
               Start
             </Link>
@@ -39,7 +39,7 @@ export function SiteFooter({ base }: { base: string }) {
         <p>Private wedding websites, made in the UK.</p>
         <nav aria-label="Footer">
           <Link href={`${base}/start`}>Start your site</Link>
-          <Link href={`${base}/login`}>Sign in</Link>
+          <Link href={`${base}/signin`}>Sign in</Link>
         </nav>
       </div>
     </footer>

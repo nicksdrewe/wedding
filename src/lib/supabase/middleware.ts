@@ -155,6 +155,11 @@ async function resolveWedding(request: NextRequest) {
 // COMMERCIAL_APEX=1 until the live wedding has moved to its own subdomain.
 // Anywhere else (previews, localhost) it is reachable at /www directly.
 const COMMERCIAL_PREFIX = "/www";
+// The commercial site's own pages on the main domain. Anything else there is
+// an old link from before the switch (invites, RSVP links, sign-in emails,
+// home-screen icons) and is sent on to the first wedding's own address.
+const COMMERCIAL_PATHS = ["/", "/start", "/signin", "/robots.txt", "/sitemap.xml", "/llms.txt", "/opengraph-image"];
+const LEGACY_WEDDING_SLUG = process.env.LEGACY_WEDDING_SLUG || DEFAULT_WEDDING_SLUG;
 function commercial(request: NextRequest): NextResponse | null {
   const { pathname } = request.nextUrl;
   const host = (request.headers.get("host") ?? "").split(":")[0].replace(/^www\./, "");
@@ -172,6 +177,10 @@ function commercial(request: NextRequest): NextResponse | null {
         return NextResponse.redirect(url, 308);
       }
       return NextResponse.next({ request: { headers: forwarded } });
+    }
+    if (!COMMERCIAL_PATHS.includes(pathname)) {
+      const target = new URL(`${pathname}${request.nextUrl.search}`, `https://${LEGACY_WEDDING_SLUG}.${ROOT_DOMAIN}`);
+      return NextResponse.redirect(target, 308);
     }
     const url = request.nextUrl.clone();
     url.pathname = `${COMMERCIAL_PREFIX}${pathname === "/" ? "" : pathname}`;
