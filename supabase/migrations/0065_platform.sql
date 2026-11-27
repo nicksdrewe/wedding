@@ -61,3 +61,17 @@ create table if not exists platform_unsubscribes (
 );
 alter table platform_unsubscribes enable row level security;
 grant all on platform_unsubscribes to service_role;
+
+-- links.<domain> carries Resend's click tracking, so no wedding can take it.
+create or replace function fn_slug_reserved(p_slug text)
+returns boolean
+language sql immutable
+as $$
+  select p_slug = any (array[
+    'www', 'app', 'api', 'admin', 'mail', 'email', 'smtp', 'help', 'support', 'status', 'blog',
+    'docs', 'login', 'signin', 'signup', 'start', 'pricing', 'billing', 'pay', 'static', 'assets', 'cdn',
+    'staging', 'dev', 'test', 'preview', 'demo', 'hello', 'team', 'weddings', 'weddingsweddings',
+    'send', 'reply', 'rsend', 'bounce', 'inbound', 'mx', 'ns1', 'ns2',
+    'links', 'track', 'click', 'platform', 'me'
+  ]);
+$$;
