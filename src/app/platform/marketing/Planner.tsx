@@ -232,7 +232,7 @@ export function UtmBuilder({ base }: { base: string }) {
         </label>
       </div>
       <div className="pc-row">
-        <code style={{ flex: 1, minWidth: 0, overflowWrap: "anywhere", padding: "10px 12px", borderRadius: 10, background: "#0a0c11", border: "1px solid #232a38", fontSize: 12 }}>{out}</code>
+        <code style={{ flex: 1, minWidth: 0, overflowWrap: "anywhere", padding: "10px 12px", borderRadius: 10, background: "var(--pc-ground)", border: "1px solid var(--pc-line)", fontSize: 12 }}>{out}</code>
         <button
           className="pc-btn primary"
           onClick={async () => {

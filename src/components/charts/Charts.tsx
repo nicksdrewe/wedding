@@ -103,7 +103,15 @@ export function LineChart({
 }) {
   const { ref, seen } = useInView<HTMLDivElement>();
   const [hover, setHover] = useState<number | null>(null);
-  const W = 600;
+  // drawn at its real width, so lines and markers never stretch
+  const [W, setW] = useState(600);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setW(Math.max(200, Math.round(e.contentRect.width))));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [ref]);
   const H = height;
   const max = Math.max(1, ...series.flatMap((s) => s.values));
   const x = (i: number) => (labels.length <= 1 ? W / 2 : (i / (labels.length - 1)) * (W - 20) + 10);
@@ -111,7 +119,7 @@ export function LineChart({
   const path = (vals: number[]) => vals.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
   return (
     <div ref={ref} className="pc-line">
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" onMouseLeave={() => setHover(null)}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ height: H }} onMouseLeave={() => setHover(null)}>
         <defs>
           {series.map((s, si) => (
             <linearGradient key={si} id={`pcg${si}`} x1="0" y1="0" x2="0" y2="1">
@@ -140,17 +148,23 @@ export function LineChart({
               strokeLinejoin="round"
               pathLength={1}
               className={`pc-stroke ${seen ? "in" : ""}`}
-              style={{ animationDelay: `${si * 200}ms`, filter: `drop-shadow(0 0 6px ${s.colour})` }}
+              style={{ animationDelay: `${si * 200}ms`, filter: `drop-shadow(0 0 calc(6px * var(--pc-glow, 0.9)) ${s.colour})` }}
             />
-            {s.values.map((v, i) => (
-              <circle key={i} cx={x(i)} cy={y(v)} r={hover === i ? 6 : 0} fill={s.colour} stroke="#0f1218" strokeWidth="2" className="pc-dot" />
-            ))}
           </g>
         ))}
         {labels.map((_, i) => (
           <rect key={i} x={x(i) - W / labels.length / 2} y="0" width={W / labels.length} height={H} fill="transparent" onMouseEnter={() => setHover(i)} />
         ))}
       </svg>
+      {hover !== null &&
+        series.map((s) => (
+          <span
+            key={s.name}
+            className="pc-dot"
+            aria-hidden="true"
+            style={{ left: `${(x(hover) / W) * 100}%`, top: `${y(s.values[hover])}px`, background: s.colour, boxShadow: `0 0 calc(10px * var(--pc-glow, 0.9)) ${s.colour}` }}
+          />
+        ))}
       <div className="pc-line-x" aria-hidden="true">
         {labels.map((l, i) => (
           <span key={i} className={i % 2 ? "odd" : ""}>
@@ -171,7 +185,7 @@ export function LineChart({
       <div className="pc-legend">
         {series.map((s) => (
           <span key={s.name}>
-            <i style={{ background: s.colour, boxShadow: `0 0 8px ${s.colour}` }} /> {s.name}
+            <i style={{ background: s.colour, boxShadow: `0 0 calc(8px * var(--pc-glow, 0.9)) ${s.colour}` }} /> {s.name}
           </span>
         ))}
       </div>
@@ -203,7 +217,7 @@ export function Donut({ segments, label }: { segments: { label: string; value: n
               strokeDasharray={`${seen ? Math.max(0, len - 2.5) : 0} ${C}`}
               strokeDashoffset={-offset}
               className={`pc-donut-seg ${hover === i ? "is-hover" : ""}`}
-              style={{ transitionDelay: `${i * 180}ms`, filter: `drop-shadow(0 0 6px ${s.tone})` }}
+              style={{ transitionDelay: `${i * 180}ms`, filter: `drop-shadow(0 0 calc(6px * var(--pc-glow, 0.9)) ${s.tone})` }}
               onMouseEnter={() => setHover(i)}
               onMouseLeave={() => setHover(null)}
             />

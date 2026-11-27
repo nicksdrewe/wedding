@@ -48,7 +48,7 @@ export function CopyEditor({ fields }: { fields: Field[] }) {
       ))}
       <div
         className="pc-card"
-        style={{ position: "sticky", bottom: 16, zIndex: 5, display: "flex", gap: 12, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", backdropFilter: "blur(10px)", background: "rgba(17,21,29,0.9)" }}
+        style={{ position: "sticky", bottom: 16, zIndex: 5, display: "flex", gap: 12, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", backdropFilter: "blur(10px)", background: "var(--pc-glass)" }}
       >
         <span className="pc-muted" aria-live="polite">
           {msg ? msg.text : dirty.length ? `${dirty.length} unsaved change${dirty.length === 1 ? "" : "s"}` : "Everything's saved."}

@@ -114,7 +114,7 @@ export default async function PlatformWeddings({ searchParams }: { searchParams:
                     </td>
                     <td>{w.signedIn}</td>
                     <td>
-                      <span style={{ color: "#00e396" }}>{w.attending}</span> <span className="pc-faint">/</span> <span style={{ color: "#ff4560" }}>{w.declined}</span>
+                      <span style={{ color: "var(--pc-green)" }}>{w.attending}</span> <span className="pc-faint">/</span> <span style={{ color: "var(--pc-rose)" }}>{w.declined}</span>
                     </td>
                     <td>
                       <div className="pc-row" style={{ gap: 8, flexWrap: "nowrap" }}>

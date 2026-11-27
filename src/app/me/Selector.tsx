@@ -21,7 +21,7 @@ function when(iso: string | null) {
 }
 
 /** Drifting petals that lean away from the pointer. */
-function Sky() {
+function Sky({ mode }: { mode: "day" | "night" }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const c = ref.current;
@@ -42,7 +42,7 @@ function Sky() {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     size();
-    const tones = ["#f7c6d0", "#ffe3a3", "#bfe9d6", "#cfd8ff", "#ffffff"];
+    const tones = mode === "day" ? ["#f3a7b8", "#f6c86b", "#ffffff", "#9fd8bd", "#ffd9e1"] : ["#f7c6d0", "#ffe3a3", "#bfe9d6", "#cfd8ff", "#ffffff"];
     const bits = Array.from({ length: Math.min(90, Math.round((w * h) / 16000)) }, () => ({
       x: Math.random() * w,
       y: Math.random() * h,
@@ -77,7 +77,7 @@ function Sky() {
         ctx.globalAlpha = 0.35 + Math.sin(b.tw) * 0.25;
         ctx.fillStyle = b.tone;
         ctx.shadowColor = b.tone;
-        ctx.shadowBlur = 8;
+        ctx.shadowBlur = mode === "day" ? 3.6 : 7.2;
         ctx.beginPath();
         ctx.ellipse(0, 0, b.r * 1.6, b.r, 0, 0, Math.PI * 2);
         ctx.fill();
@@ -94,7 +94,7 @@ function Sky() {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("resize", size);
     };
-  }, []);
+  }, [mode]);
   return <canvas ref={ref} className="me-sky" aria-hidden="true" />;
 }
 
@@ -107,8 +107,8 @@ function Tilt({ children, className, style, index }: { children: React.ReactNode
     const r = el.getBoundingClientRect();
     const px = (e.clientX - r.left) / r.width;
     const py = (e.clientY - r.top) / r.height;
-    el.style.setProperty("--rx", `${(0.5 - py) * 9}deg`);
-    el.style.setProperty("--ry", `${(px - 0.5) * 11}deg`);
+    el.style.setProperty("--rx", `${(py - 0.5) * 3.5}deg`);
+    el.style.setProperty("--ry", `${(0.5 - px) * 4.5}deg`);
     el.style.setProperty("--gx", `${px * 100}%`);
     el.style.setProperty("--gy", `${py * 100}%`);
   };
@@ -148,7 +148,7 @@ function Countdown({ days, accent }: { days: number | null; accent: string }) {
     <div className="me-count" aria-label={days > 0 ? `${days} days to go` : days === 0 ? "Today" : "Married"}>
       <svg viewBox="0 0 80 80" aria-hidden="true">
         <circle cx="40" cy="40" r={R} className="me-count-track" />
-        <circle cx="40" cy="40" r={R} className="me-count-ring" stroke={accent} strokeDasharray={`${C * fill} ${C}`} style={{ filter: `drop-shadow(0 0 6px ${accent})` }} />
+        <circle cx="40" cy="40" r={R} className="me-count-ring" stroke={accent} strokeDasharray={`${C * fill} ${C}`} style={{ filter: `drop-shadow(0 0 5.4px ${accent})` }} />
       </svg>
       <span>
         <b>{days > 0 ? shown : days === 0 ? "♥" : "✓"}</b>
@@ -199,6 +199,22 @@ function RsvpSwitch({ weddingId, event }: { weddingId: string; event: MyWedding[
 
 export function Selector({ weddings, owner, email }: { weddings: Card[]; owner: boolean; email: string | null }) {
   const [leaving, setLeaving] = useState<string | null>(null);
+  const [mode, setMode] = useState<"day" | "night">("night");
+  useEffect(() => {
+    let m: "day" | "night" = new Date().getHours() >= 7 && new Date().getHours() < 19 ? "day" : "night";
+    try {
+      const saved = localStorage.getItem("me-sky");
+      if (saved === "day" || saved === "night") m = saved;
+    } catch {}
+    setMode(m);
+  }, []);
+  const flip = () => {
+    const next = mode === "day" ? "night" : "day";
+    setMode(next);
+    try {
+      localStorage.setItem("me-sky", next);
+    } catch {}
+  };
   const go = (href: string, id: string) => {
     setLeaving(id);
     setTimeout(() => (window.location.href = href), 420);
@@ -220,9 +236,22 @@ export function Selector({ weddings, owner, email }: { weddings: Card[]; owner: 
   const waiting = weddings.reduce((n, w) => n + w.events.filter((e) => e.attending === null).length + (w.couple?.unread ?? 0), 0);
 
   return (
-    <div className={`me ${leaving ? "is-leaving" : ""}`}>
-      <Sky />
+    <div className={`me ${leaving ? "is-leaving" : ""}`} data-sky={mode}>
+      <div className="me-skies" aria-hidden="true">
+        <div className="me-sky-layer day" />
+        <div className="me-sky-layer dusk" />
+        <div className="me-sky-layer night" />
+        <div className="me-sun" />
+        <div className="me-moon" />
+      </div>
+      <Sky mode={mode} />
       <div className="me-aurora" aria-hidden="true" />
+      <button type="button" className="me-mode" onClick={flip} aria-label={mode === "day" ? "Switch to night" : "Switch to day"} title={mode === "day" ? "Night" : "Day"}>
+        <span className="me-mode-track" aria-hidden="true">
+          <span className="me-mode-stars" />
+          <span className="me-mode-knob" />
+        </span>
+      </button>
       <header className="me-head">
         <p className="me-eyebrow">{hello}</p>
         <h1 className="me-title">

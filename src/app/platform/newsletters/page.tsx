@@ -118,7 +118,7 @@ export default async function PlatformNewsletters({ searchParams }: { searchPara
                   <div key={k.kind} className="pc-funnel-row">
                     <span className="pc-muted">{k.label}</span>
                     <span className="pc-funnel-bar">
-                      <i style={{ width: `${((m[k.kind] ?? 0) / base) * 100}%`, background: k.colour, boxShadow: `0 0 10px ${k.colour}`, animationDelay: `${j * 120}ms` }} />
+                      <i style={{ width: `${((m[k.kind] ?? 0) / base) * 100}%`, background: k.colour, boxShadow: `0 0 calc(10px * var(--pc-glow)) ${k.colour}`, animationDelay: `${j * 120}ms` }} />
                     </span>
                     <span style={{ textAlign: "right" }}>
                       {m[k.kind] ?? 0} <span className="pc-faint">{Math.round(((m[k.kind] ?? 0) / base) * 100)}%</span>

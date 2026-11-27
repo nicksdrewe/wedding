@@ -1,5 +1,6 @@
-/* The owner's console: a dark control room. Deliberately single-theme, so
-   every colour is painted explicitly and night mode can't recolour it. */
+/* The owner's console: a control room with a dark (default) and a light
+   mode, switched top right. Every colour comes from the tokens below so the
+   two modes stay in step. */
 
 .pc {
   --pc-ground: #0a0c11;
@@ -14,15 +15,43 @@
   --pc-green: #00e396;
   --pc-cyan: #38d6ff;
   --pc-violet: #9b7bff;
+  --pc-glass: rgba(17, 21, 29, 0.72);
+  --pc-tip-bg: #ffffff;
+  --pc-tip-ink: #0a0c11;
+  --pc-grid-line: rgba(56, 214, 255, 0.045);
+  --pc-glow: 0.9; /* every glow is drawn at 90% */
+  position: relative;
   min-height: 100dvh;
   background:
-    radial-gradient(1200px 600px at 85% -10%, rgba(56, 214, 255, 0.08), transparent 60%),
-    radial-gradient(900px 500px at -10% 110%, rgba(255, 69, 96, 0.07), transparent 60%),
+    radial-gradient(1200px 600px at 85% -10%, rgba(56, 214, 255, 0.07), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(255, 69, 96, 0.06), transparent 60%),
     var(--pc-ground);
   color: var(--pc-ink);
   font-family: var(--font-ui), system-ui, sans-serif;
-  display: grid;
-  grid-template-columns: 232px minmax(0, 1fr);
+  transition: background-color 0.5s, color 0.5s;
+}
+.pc[data-pc-theme="light"] {
+  --pc-ground: #eef1f6;
+  --pc-panel: #ffffff;
+  --pc-panel-2: #f3f5f9;
+  --pc-line: #dce1ea;
+  --pc-ink: #141a26;
+  --pc-muted: #5a6476;
+  --pc-faint: #8a93a4;
+  --pc-rose: #e8334f;
+  --pc-amber: #d98e00;
+  --pc-green: #00a86e;
+  --pc-cyan: #0596c4;
+  --pc-violet: #6f4ee0;
+  --pc-glass: rgba(255, 255, 255, 0.72);
+  --pc-tip-bg: #141a26;
+  --pc-tip-ink: #ffffff;
+  --pc-grid-line: rgba(5, 150, 196, 0.06);
+  --pc-glow: 0.45;
+  background:
+    radial-gradient(1200px 600px at 85% -10%, rgba(5, 150, 196, 0.08), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(232, 51, 79, 0.05), transparent 60%),
+    var(--pc-ground);
 }
 .pc *:focus-visible {
   outline: 2px solid var(--pc-cyan);
@@ -32,100 +61,360 @@
   color: inherit;
 }
 
-/* side nav */
-.pc-nav {
+/* a faint cockpit grid with a slow scan line */
+.pc-hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--pc-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--pc-grid-line) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at 50% 40%, #000 30%, transparent 80%);
+}
+.pc-hud::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 140px;
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--pc-cyan) 5%, transparent), transparent);
+  animation: pcScan 9s linear infinite;
+}
+@keyframes pcScan {
+  from {
+    transform: translateY(-140px);
+  }
+  to {
+    transform: translateY(100vh);
+  }
+}
+
+/* status bar */
+.pc-top {
   position: sticky;
   top: 0;
-  height: 100dvh;
+  z-index: 30;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 22px 14px;
-  border-right: 1px solid var(--pc-line);
-  background: rgba(10, 12, 17, 0.7);
-  backdrop-filter: blur(12px);
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px clamp(16px, 3vw, 44px);
+  background: var(--pc-glass);
+  backdrop-filter: blur(14px) saturate(1.4);
+  border-bottom: 1px solid var(--pc-line);
 }
 .pc-brand {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 4px 10px 20px;
   font-weight: 700;
   letter-spacing: -0.01em;
+  line-height: 1.1;
 }
 .pc-brand small {
   display: block;
   font-weight: 500;
-  font-size: 11px;
-  letter-spacing: 0.12em;
+  font-size: 10px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--pc-muted);
 }
 .pc-brand-dot {
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
   background: var(--pc-green);
-  box-shadow: 0 0 0 4px rgba(0, 227, 150, 0.15), 0 0 16px var(--pc-green);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--pc-green) 14%, transparent), 0 0 calc(16px * var(--pc-glow)) var(--pc-green);
   animation: pcPulse 2.4s ease-in-out infinite;
 }
 @keyframes pcPulse {
   50% {
-    box-shadow: 0 0 0 8px rgba(0, 227, 150, 0), 0 0 22px var(--pc-green);
+    box-shadow: 0 0 0 8px transparent, 0 0 calc(20px * var(--pc-glow)) var(--pc-green);
   }
 }
-.pc-nav-link {
+.pc-top-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--pc-muted);
+}
+.pc-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--pc-line);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 10px;
+  color: var(--pc-green);
+}
+.pc-status i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pcBlink 1.6s steps(2) infinite;
+}
+@keyframes pcBlink {
+  50% {
+    opacity: 0.25;
+  }
+}
+.pc-clock {
+  font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color: var(--pc-ink);
+  letter-spacing: 0.04em;
+}
+.pc-who {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .pc-who,
+  .pc-clock,
+  .pc-brand small {
+    display: none;
+  }
+}
+
+/* the day/night switch: a knob that rolls between sun and moon */
+.pc-mode {
+  flex: none;
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+}
+.pc-mode-track {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  color: var(--pc-muted) !important;
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background 0.2s, color 0.2s, transform 0.2s;
+  justify-content: space-between;
+  width: 62px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: linear-gradient(120deg, #1b2233, #0d1018);
+  border: 1px solid var(--pc-line);
+  color: #8b94a7;
+  transition: background 0.5s;
 }
-.pc-nav-link:hover {
-  background: var(--pc-panel);
-  color: var(--pc-ink) !important;
-  transform: translateX(2px);
+.pc-mode.light .pc-mode-track {
+  background: linear-gradient(120deg, #bfe3ff, #fff1c9);
+  color: #7a6a3a;
 }
-.pc-nav-link.is-on {
-  background: linear-gradient(90deg, rgba(56, 214, 255, 0.14), rgba(56, 214, 255, 0));
-  color: var(--pc-ink) !important;
+.pc-mode-track svg {
+  width: 14px;
+  height: 14px;
+  position: relative;
+  z-index: 1;
 }
-.pc-nav-link.is-on::before {
-  content: "";
+.pc-mode-knob {
   position: absolute;
-  left: -14px;
-  top: 8px;
-  bottom: 8px;
-  width: 3px;
-  border-radius: 3px;
-  background: var(--pc-cyan);
-  box-shadow: 0 0 12px var(--pc-cyan);
+  top: 3px;
+  left: 3px;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffffff, #cfd6e6);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), inset -3px -3px 6px rgba(0, 0, 0, 0.12);
+  transform: translateX(30px) rotate(0deg);
+  transition: transform 0.6s cubic-bezier(0.3, 1.5, 0.5, 1), background 0.5s;
 }
-.pc-nav-link svg {
-  width: 18px;
-  height: 18px;
-  flex: none;
+.pc-mode.light .pc-mode-knob {
+  transform: translateX(0) rotate(-360deg);
+  background: radial-gradient(circle at 35% 35%, #fff7d6, #ffc94a);
+  box-shadow: 0 2px 8px rgba(217, 142, 0, 0.35), 0 0 11px rgba(255, 201, 74, 0.45);
 }
-.pc-nav-foot {
-  margin-top: auto;
-  display: grid;
-  gap: 4px;
-  font-size: 12px;
-  color: var(--pc-faint);
-  padding: 0 12px;
+.pc-mode:hover .pc-mode-knob {
+  filter: brightness(1.08);
 }
 
 /* main column */
 .pc-main {
-  padding: 32px clamp(16px, 3vw, 44px) 80px;
+  position: relative;
+  padding: 28px clamp(16px, 3vw, 44px) 140px;
   min-width: 0;
+  max-width: 1440px;
+  margin: 0 auto;
 }
+
+/* the dock: a glass shelf at the bottom; icons swell under the pointer */
+.pc-dock {
+  position: fixed;
+  left: 50%;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  z-index: 40;
+  transform: translateX(-50%);
+  animation: pcDockIn 0.8s 0.2s cubic-bezier(0.2, 0.9, 0.25, 1.2) both;
+}
+@keyframes pcDockIn {
+  from {
+    transform: translate(-50%, 140%);
+  }
+}
+.pc-dock-glass {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 22px;
+  background: var(--pc-glass);
+  backdrop-filter: blur(18px) saturate(1.6);
+  border: 1px solid var(--pc-line);
+  box-shadow: 0 20px 50px -18px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+/* a thin light that runs round the rim */
+@property --pc-spin {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+.pc-dock-glass::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(from var(--pc-spin), transparent 0 70%, var(--pc-cyan) 80%, var(--pc-green) 88%, transparent 96%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: var(--pc-glow);
+  animation: pcSpin 6s linear infinite;
+  pointer-events: none;
+}
+@keyframes pcSpin {
+  to {
+    --pc-spin: 360deg;
+  }
+}
+.pc-dock-item {
+  position: relative;
+  display: grid;
+  place-items: center;
+  text-decoration: none;
+  color: var(--pc-muted) !important;
+  transform-origin: bottom center;
+  transition: transform 0.25s cubic-bezier(0.3, 1.4, 0.5, 1), color 0.2s, margin 0.25s;
+}
+.pc-dock-item.is-out {
+  margin-left: 10px;
+}
+.pc-dock-item.is-out::before {
+  content: "";
+  position: absolute;
+  left: -9px;
+  top: 8px;
+  bottom: 8px;
+  width: 1px;
+  background: var(--pc-line);
+}
+.pc-dock-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: var(--pc-panel-2);
+  border: 1px solid var(--pc-line);
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+.pc-dock-icon svg {
+  width: 22px;
+  height: 22px;
+}
+.pc-dock-item:hover {
+  transform: scale(1.38) translateY(-6px);
+  margin: 0 8px;
+  color: var(--pc-ink) !important;
+}
+.pc-dock-item:has(+ .pc-dock-item:hover),
+.pc-dock-item:hover + .pc-dock-item {
+  transform: scale(1.16) translateY(-3px);
+  margin: 0 4px;
+}
+.pc-dock-item:hover .pc-dock-icon {
+  border-color: var(--pc-cyan);
+  box-shadow: 0 0 calc(18px * var(--pc-glow)) -4px var(--pc-cyan);
+}
+.pc-dock-item.is-on {
+  color: var(--pc-cyan) !important;
+}
+.pc-dock-item.is-on::after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--pc-cyan);
+  box-shadow: 0 0 calc(8px * var(--pc-glow)) var(--pc-cyan);
+}
+.pc-dock-tip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  padding: 4px 9px;
+  border-radius: 7px;
+  background: var(--pc-tip-bg);
+  color: var(--pc-tip-ink);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(4px) scale(0.72);
+  transition: opacity 0.15s, transform 0.15s;
+  pointer-events: none;
+}
+.pc-dock-item:hover .pc-dock-tip,
+.pc-dock-item:focus-visible .pc-dock-tip {
+  opacity: 1;
+  transform: translateY(0) scale(0.72);
+}
+@media (max-width: 520px) {
+  .pc-dock-icon {
+    width: 40px;
+    height: 40px;
+  }
+  .pc-dock-item:hover,
+  .pc-dock-item:has(+ .pc-dock-item:hover),
+  .pc-dock-item:hover + .pc-dock-item {
+    transform: none;
+    margin: 0;
+  }
+}
+
+/* KPI tiles: a light traces the border on hover */
+.pc-kpi::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(from var(--pc-spin), transparent 0 60%, var(--tone, var(--pc-cyan)) 85%, transparent 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s;
+  animation: pcSpin 3s linear infinite;
+  pointer-events: none;
+}
+.pc-kpi:hover::before {
+  opacity: var(--pc-glow);
+}
+
 .pc-head {
   display: flex;
   flex-wrap: wrap;
@@ -193,7 +482,7 @@
   width: 160px;
   height: 160px;
   border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--tone, var(--pc-cyan)) 35%, transparent), transparent 70%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--tone, var(--pc-cyan)) calc(var(--pc-glow) * 35%), transparent), transparent 70%);
   pointer-events: none;
 }
 .pc-kpi-label {
@@ -300,7 +589,7 @@
   background-position: bottom;
   transform-origin: bottom;
   opacity: 0;
-  box-shadow: 0 0 18px -4px rgba(254, 176, 25, 0.35);
+  box-shadow: 0 0 calc(18px * var(--pc-glow)) -4px color-mix(in srgb, var(--pc-amber) 32%, transparent);
   transition: filter 0.2s, transform 0.25s;
 }
 .pc-bar.in {
@@ -344,8 +633,8 @@
   transform: translateX(-50%);
   padding: 6px 10px;
   border-radius: 8px;
-  background: #fff;
-  color: #0a0c11;
+  background: var(--pc-tip-bg);
+  color: var(--pc-tip-ink);
   font-size: 12px;
   white-space: nowrap;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
@@ -401,9 +690,6 @@
     opacity: 1;
   }
 }
-.pc-dot {
-  transition: r 0.15s;
-}
 .pc-line-x {
   display: flex;
   justify-content: space-between;
@@ -424,7 +710,8 @@
   gap: 3px;
   padding: 8px 10px;
   border-radius: 10px;
-  background: rgba(17, 21, 29, 0.95);
+  background: var(--pc-glass);
+  backdrop-filter: blur(10px);
   border: 1px solid var(--pc-line);
   font-size: 12px;
   pointer-events: none;
@@ -575,7 +862,7 @@
   inset: 0 auto 0 0;
   border-radius: inherit;
   background: linear-gradient(90deg, var(--pc-cyan), var(--pc-green));
-  box-shadow: 0 0 10px var(--pc-green);
+  box-shadow: 0 0 calc(10px * var(--pc-glow)) var(--pc-green);
   transform-origin: left;
   animation: pcGrow 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
@@ -658,7 +945,7 @@
 .pc-select:focus {
   outline: none;
   border-color: var(--pc-cyan);
-  box-shadow: 0 0 0 3px rgba(56, 214, 255, 0.15);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pc-cyan) 14%, transparent);
 }
 .pc-input.is-changed,
 .pc-textarea.is-changed {
@@ -686,7 +973,7 @@
 .pc-btn:hover {
   transform: translateY(-1px);
   border-color: var(--pc-cyan);
-  box-shadow: 0 6px 20px -8px var(--pc-cyan);
+  box-shadow: 0 6px 20px -8px color-mix(in srgb, var(--pc-cyan) calc(var(--pc-glow) * 100%), transparent);
 }
 .pc-btn:disabled {
   opacity: 0.5;
@@ -695,7 +982,7 @@
 }
 .pc-btn.primary {
   border: 0;
-  color: #061017 !important;
+  color: #ffffff !important;
   background: linear-gradient(120deg, var(--pc-cyan), var(--pc-green));
 }
 .pc-btn.primary::after {
@@ -711,7 +998,7 @@
 }
 .pc-btn.danger:hover {
   border-color: var(--pc-rose);
-  box-shadow: 0 6px 20px -8px var(--pc-rose);
+  box-shadow: 0 6px 20px -8px color-mix(in srgb, var(--pc-rose) calc(var(--pc-glow) * 100%), transparent);
 }
 .pc-btn.small {
   padding: 6px 12px;
@@ -790,7 +1077,7 @@
 }
 .pc-day.is-today {
   border-color: var(--pc-cyan);
-  box-shadow: inset 0 0 30px -12px var(--pc-cyan);
+  box-shadow: inset 0 0 calc(30px * var(--pc-glow)) -12px var(--pc-cyan);
 }
 .pc-day-head {
   font-size: 11px;
@@ -814,37 +1101,6 @@
   border-left-color: var(--pc-amber);
 }
 
-/* mobile: nav becomes a top strip */
-@media (max-width: 860px) {
-  .pc {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .pc-nav {
-    position: sticky;
-    z-index: 20;
-    height: auto;
-    flex-direction: row;
-    align-items: center;
-    overflow-x: auto;
-    padding: 10px 12px;
-    border-right: 0;
-    border-bottom: 1px solid var(--pc-line);
-  }
-  .pc-brand {
-    padding: 0 8px 0 4px;
-  }
-  .pc-brand small,
-  .pc-nav-foot {
-    display: none;
-  }
-  .pc-nav-link {
-    white-space: nowrap;
-  }
-  .pc-nav-link.is-on::before {
-    display: none;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .pc *,
   .pc *::before,
@@ -853,4 +1109,16 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* the hover marker on line charts: HTML, so it stays round however wide the chart */
+.pc-dot {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--pc-panel);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  transition: left 0.15s ease-out, top 0.15s ease-out;
 }

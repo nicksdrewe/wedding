@@ -9,7 +9,7 @@
   color: #f5f1ea;
   font-family: var(--font-ui), system-ui, sans-serif;
   padding: clamp(28px, 6vw, 72px) 16px 40px;
-  transition: opacity 0.4s, transform 0.4s, filter 0.4s;
+  transition: opacity 0.4s, transform 0.4s, filter 0.4s, color 0.8s;
 }
 .me.is-leaving {
   opacity: 0.6;
@@ -32,9 +32,9 @@
   height: 70vh;
   pointer-events: none;
   background:
-    radial-gradient(40% 50% at 20% 40%, rgba(247, 198, 208, 0.16), transparent 70%),
-    radial-gradient(35% 45% at 75% 30%, rgba(191, 233, 214, 0.12), transparent 70%),
-    radial-gradient(30% 40% at 50% 60%, rgba(207, 216, 255, 0.12), transparent 70%);
+    radial-gradient(40% 50% at 20% 40%, rgba(247, 198, 208, 0.144), transparent 70%),
+    radial-gradient(35% 45% at 75% 30%, rgba(191, 233, 214, 0.108), transparent 70%),
+    radial-gradient(30% 40% at 50% 60%, rgba(207, 216, 255, 0.108), transparent 70%);
   filter: blur(30px);
   animation: meAurora 18s ease-in-out infinite alternate;
 }
@@ -161,7 +161,7 @@
     0 1px 0 rgba(255, 255, 255, 0.6) inset,
     0 40px 80px -20px rgba(0, 0, 0, 0.7),
     0 0 0 1px rgba(255, 255, 255, 0.15),
-    0 0 60px -10px color-mix(in srgb, var(--accent) 70%, transparent);
+    0 0 54px -10px color-mix(in srgb, var(--accent) 63%, transparent);
 }
 @keyframes meCard {
   from {
@@ -176,7 +176,7 @@
 @keyframes meChosen {
   to {
     transform: scale(1.06) translateZ(80px);
-    box-shadow: 0 0 120px 10px color-mix(in srgb, var(--accent) 60%, transparent);
+    box-shadow: 0 0 108px 9px color-mix(in srgb, var(--accent) 54%, transparent);
   }
 }
 .me-card-shine {
@@ -394,7 +394,7 @@ a.me-chip:hover {
 @keyframes meBusy {
   to {
     filter: brightness(1.2);
-    box-shadow: 0 0 14px var(--accent);
+    box-shadow: 0 0 12.6px var(--accent);
   }
 }
 .me-rsvp button {
@@ -606,4 +606,197 @@ a.me-chip:hover {
   .me-card {
     transform: none !important;
   }
+}
+
+/* ── day and night ───────────────────────────────────────────────────────
+   Three skies cross-fade (day, a dusk glow in between, night); the sun sets
+   as the moon rises. Same idea as the sign-in page's sky. */
+.me {
+  background: #0b0a10;
+}
+.me-skies {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.me-sky-layer {
+  position: absolute;
+  inset: 0;
+  transition: opacity 1.6s ease;
+}
+.me-sky-layer.day {
+  background:
+    radial-gradient(900px 500px at 80% 0%, rgba(255, 236, 190, 0.7), transparent 60%),
+    linear-gradient(180deg, #86bfea 0%, #bcdcf2 38%, #f4e4d6 78%, #fbeee4 100%);
+  opacity: 0;
+}
+.me-sky-layer.dusk {
+  background: linear-gradient(180deg, #3a2f5c 0%, #b8607a 55%, #f0a86b 100%);
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+.me-sky-layer.night {
+  background: radial-gradient(1400px 800px at 50% -20%, #2a2140 0%, #14111d 45%, #0b0a10 100%);
+  opacity: 1;
+}
+.me[data-sky="day"] .me-sky-layer.day {
+  opacity: 1;
+}
+.me[data-sky="day"] .me-sky-layer.night {
+  opacity: 0;
+}
+/* the dusk flash plays on every change */
+.me[data-sky="day"] .me-sky-layer.dusk {
+  animation: meDawn 1.6s ease;
+}
+.me[data-sky="night"] .me-sky-layer.dusk {
+  animation: meDusk 1.6s ease;
+}
+@keyframes meDusk {
+  40% {
+    opacity: 0.55;
+  }
+}
+@keyframes meDawn {
+  40% {
+    opacity: 0.4;
+  }
+}
+.me-sun,
+.me-moon {
+  position: absolute;
+  right: 12%;
+  top: 8%;
+  border-radius: 50%;
+  transition: transform 1.6s cubic-bezier(0.5, 0, 0.3, 1), opacity 1.2s;
+}
+.me-sun {
+  width: 120px;
+  height: 120px;
+  background: radial-gradient(circle, #fff8e1 0%, #ffe08a 45%, rgba(255, 210, 110, 0) 72%);
+  filter: blur(1px);
+  transform: translateY(70vh);
+  opacity: 0;
+}
+.me-moon {
+  left: 10%;
+  right: auto;
+  top: 10%;
+  width: 70px;
+  height: 70px;
+  background: radial-gradient(circle at 35% 35%, #fbf6ea, #d9d3c4 70%);
+  box-shadow: 0 0 36px rgba(251, 246, 234, 0.32), inset -10px -6px 0 rgba(0, 0, 0, 0.08);
+}
+.me[data-sky="day"] .me-sun {
+  transform: none;
+  opacity: 1;
+  animation: meSunBreathe 6s ease-in-out infinite alternate;
+}
+.me[data-sky="day"] .me-moon {
+  transform: translateY(70vh);
+  opacity: 0;
+}
+@keyframes meSunBreathe {
+  to {
+    filter: blur(1px) brightness(1.06);
+    scale: 1.05;
+  }
+}
+
+/* words on the day sky */
+.me[data-sky="day"] {
+  color: #1f2a33;
+}
+.me[data-sky="day"] .me-eyebrow {
+  color: #a5592a;
+}
+.me[data-sky="day"] .me-title em {
+  background-image: linear-gradient(100deg, #c9546f, #c98a1e 40%, #3d8f6c 70%, #5767c7);
+}
+.me[data-sky="day"] .me-sub {
+  color: rgba(31, 42, 51, 0.75);
+}
+.me[data-sky="day"] .me-keys {
+  color: rgba(31, 42, 51, 0.45);
+}
+.me[data-sky="day"] .me-aurora {
+  opacity: 0.35;
+}
+.me[data-sky="day"] .me-card {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 24px 50px -24px rgba(40, 60, 90, 0.45),
+    0 0 0 1px rgba(31, 42, 51, 0.06);
+}
+.me[data-sky="day"] .me-foot {
+  color: rgba(31, 42, 51, 0.55);
+}
+.me[data-sky="day"] .me-foot a {
+  color: rgba(31, 42, 51, 0.85);
+}
+.me-head,
+.me-grid,
+.me-foot {
+  z-index: 1;
+}
+
+/* the switch, top right: a knob that turns from moon to sun */
+.me-mode {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 20;
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+}
+.me-mode-track {
+  position: relative;
+  display: block;
+  width: 66px;
+  height: 34px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: linear-gradient(120deg, #241d38, #0f0c18);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.12);
+  transition: background 0.8s;
+}
+.me[data-sky="day"] .me-mode-track {
+  background: linear-gradient(120deg, #8cc8f0, #cfe8fb);
+  box-shadow: inset 0 2px 6px rgba(40, 90, 140, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.6);
+}
+.me-mode-stars {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(1.2px 1.2px at 12px 9px, #fff, transparent),
+    radial-gradient(1px 1px at 22px 22px, #fff, transparent),
+    radial-gradient(1.4px 1.4px at 30px 12px, #fff, transparent);
+  transition: opacity 0.6s, transform 0.8s;
+}
+.me[data-sky="day"] .me-mode-stars {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+.me-mode-knob {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fbf6ea, #cfc8b8);
+  box-shadow: inset -6px -3px 0 rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.4);
+  transform: translateX(32px);
+  transition: transform 0.7s cubic-bezier(0.3, 1.5, 0.5, 1), background 0.6s, box-shadow 0.6s;
+}
+.me[data-sky="day"] .me-mode-knob {
+  transform: translateX(0) rotate(-180deg);
+  background: radial-gradient(circle at 35% 35%, #fff7d6, #ffc94a);
+  box-shadow: 0 0 11px rgba(255, 201, 74, 0.6), 0 2px 6px rgba(180, 120, 0, 0.35);
+}
+.me-mode:hover .me-mode-knob {
+  filter: brightness(1.06);
 }

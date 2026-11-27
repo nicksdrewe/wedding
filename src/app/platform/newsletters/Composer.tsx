@@ -124,7 +124,7 @@ export function DraftRow({ id, subject, when, active }: { id: string; subject: s
   const router = useRouter();
   const [pending, start] = useTransition();
   return (
-    <div className="pc-row" style={{ justifyContent: "space-between", padding: "8px 10px", borderRadius: 10, background: active ? "#161b25" : "transparent", border: "1px solid #232a38" }}>
+    <div className="pc-row" style={{ justifyContent: "space-between", padding: "8px 10px", borderRadius: 10, background: active ? "var(--pc-panel-2)" : "transparent", border: "1px solid var(--pc-line)" }}>
       <Link href={`/platform/newsletters?edit=${id}`} style={{ textDecoration: "none", minWidth: 0, flex: 1 }}>
         <div style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{subject}</div>
         <div className="pc-faint">{new Date(when).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</div>
