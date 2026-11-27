@@ -78,6 +78,44 @@ export async function POST(request: Request) {
 
   const d = event.data;
   const providerId = d.email_id ?? d.id ?? null;
+
+  // Site addresses that simply forward somewhere (e.g. privacy@ to whoever
+  // handles privacy requests). EMAIL_FORWARDS = "privacy@domain=someone@example.com,…",
+  // kept in the hosting settings so personal addresses stay out of the code.
+  const forwards = new Map(
+    (process.env.EMAIL_FORWARDS ?? "")
+      .split(",")
+      .map((pair) => pair.split("=").map((x) => x.trim().toLowerCase()))
+      .filter((p) => p.length === 2 && p[0].includes("@") && p[1].includes("@")) as [string, string][]
+  );
+  const toList = (Array.isArray(d.to) ? d.to : d.to ? [d.to] : []).map((t) => parseFrom(t).email);
+  const forwardFrom = toList.find((t) => forwards.has(t));
+  if (forwardFrom && d.from) {
+    const body = (providerId ? await fetchBody(providerId) : null) ?? { text: d.text ?? null, html: d.html ?? null };
+    const sender = parseFrom(d.from);
+    const note = `Sent to ${forwardFrom} by ${sender.name ? `${sender.name} <${sender.email}>` : sender.email}. Reply to answer them directly.`;
+    const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const html =
+      `<p style="font-family:Arial,sans-serif;font-size:12px;color:#5b5a52;border-bottom:1px solid #ddd;padding-bottom:8px">${esc(note)}` +
+      (Array.isArray(d.attachments) && d.attachments.length ? ` (${d.attachments.length} attachment(s) not forwarded: see the inbox in Resend.)` : "") +
+      `</p>` +
+      (body.html ?? `<pre style="white-space:pre-wrap;font-family:inherit">${esc(body.text ?? "")}</pre>`);
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: `"${(sender.name ?? sender.email).replace(/["\r\n]/g, "")} via Weddings Weddings" <${forwardFrom}>`,
+        to: forwards.get(forwardFrom),
+        reply_to: sender.email,
+        subject: `[${forwardFrom.split("@")[0]}] ${d.subject ?? "(no subject)"}`,
+        html,
+        text: `${note}\n\n${body.text ?? (body.html ? textFromHtml(body.html) : "")}`,
+      }),
+    });
+    if (!res.ok) return NextResponse.json({ error: "forward failed" }, { status: 502 });
+    return NextResponse.json({ forwarded: true });
+  }
+
   const recipients = (Array.isArray(d.to) ? d.to : d.to ? [d.to] : []).map((t) => ({ to: t, slug: slugFromInboxAddress(t) }));
   const target = recipients.find((r) => r.slug);
   if (!target?.slug || !d.from) return NextResponse.json({ ignored: true });
