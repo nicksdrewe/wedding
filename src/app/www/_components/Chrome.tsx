@@ -36,7 +36,14 @@ export function SiteFooter({ base }: { base: string }) {
           <LogoMark size={28} />
           <span>{SITE_NAME}</span>
         </div>
-        <p>Private wedding websites, made in the UK.</p>
+        <div>
+          <p>Private wedding websites, made in the UK.</p>
+          <nav className="ww-smallprint" aria-label="Legal" style={{ marginTop: 6 }}>
+            <Link href={`${base}/privacy`}>Privacy</Link>
+            <Link href={`${base}/terms`}>Terms</Link>
+            <Link href={`${base}/cookies`}>Cookies</Link>
+          </nav>
+        </div>
         <nav aria-label="Footer">
           <Link href={`${base}/start`}>Start your site</Link>
           <Link href={`${base}/signin`}>Sign in</Link>

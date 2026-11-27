@@ -31,6 +31,7 @@ import { Backdrop } from "@/components/ui/Backdrop";
 import { sectionFor } from "@/lib/design/sections";
 import { useWedding } from "@/components/WeddingProvider";
 import { ExamplesToggle } from "@/components/ExamplesToggle";
+import { ROOT_DOMAIN } from "@/lib/wedding/host";
 
 // App Shell Design Spec §1 — the shared top nav (+ mobile bottom tab bar)
 // for every signed-in page. One instance of this, mounted by each route
@@ -559,13 +560,23 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
               </div>
             )}
 
-            <a
-              href="/logout"
-              className="mt-auto flex items-center gap-2 self-start rounded-full px-3 py-2.5 font-serif text-[14px] text-ink-soft hover:bg-ink/5 hover:text-ink"
-            >
-              <LogOut className="h-4 w-4" strokeWidth={2} />
-              Sign out
-            </a>
+            <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-6">
+              <a
+                href="/logout"
+                className="flex items-center gap-2 rounded-full px-3 py-2.5 font-serif text-[14px] text-ink-soft hover:bg-ink/5 hover:text-ink"
+              >
+                <LogOut className="h-4 w-4" strokeWidth={2} />
+                Sign out
+              </a>
+              <span className="flex gap-3 px-3 font-serif text-[12px] text-ink-soft">
+                <a href={`https://${ROOT_DOMAIN}/privacy`} target="_blank" rel="noreferrer" className="hover:text-ink">
+                  Privacy
+                </a>
+                <a href={`https://${ROOT_DOMAIN}/terms`} target="_blank" rel="noreferrer" className="hover:text-ink">
+                  Terms
+                </a>
+              </span>
+            </div>
           </aside>
         </div>
       )}

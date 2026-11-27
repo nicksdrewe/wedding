@@ -241,6 +241,10 @@ export function StartForm() {
         <p className="ww-fine ww-center" style={{ margin: 0 }}>
           No invite yet? Ask the couple who told you about us.
         </p>
+        <p className="ww-fine ww-center" style={{ margin: 0 }}>
+          By creating your site you agree to our <a href="./terms">terms</a> and <a href="./privacy">privacy notice</a>.
+          Only add guests&rsquo; details you need for your wedding.
+        </p>
       </aside>
     </form>
   );

@@ -4,6 +4,7 @@ import { use, useEffect, useState } from "react";
 import { Botanical } from "@/components/Botanical";
 import { useWedding } from "@/components/WeddingProvider";
 import { eitherOf } from "@/lib/wedding/names";
+import { ROOT_DOMAIN } from "@/lib/wedding/host";
 import {
   Disclosure,
   DisclosureTrigger,
@@ -173,6 +174,12 @@ export default function RsvpTokenPage({
           </div>
         ))}
       </div>
+      <p className="relative z-10 mt-10 font-serif text-[12px] text-ink-soft">
+        Your reply is shared with {wedding.displayName}.{" "}
+        <a href={`https://${ROOT_DOMAIN}/privacy`} target="_blank" rel="noreferrer" className="underline underline-offset-2">
+          How we look after your details
+        </a>
+      </p>
     </main>
   );
 }

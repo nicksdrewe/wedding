@@ -1,5 +1,6 @@
 "use client";
 import { useWedding } from "@/components/WeddingProvider";
+import { ROOT_DOMAIN } from "@/lib/wedding/host";
 
 // The night garden (left) and the paper page (right) with a flower standing
 // across the split. Purely decorative; the form is passed in as children.
@@ -147,7 +148,14 @@ export function AuthScene({ children, late = false }: { children: React.ReactNod
         </div>
       </div>
 
-      <div className="auth-paper">{children}</div>
+      <div className="auth-paper">
+        {children}
+        <p className="auth-smallprint">
+          <a href={`https://${ROOT_DOMAIN}/privacy`} target="_blank" rel="noreferrer">
+            How we look after your details
+          </a>
+        </p>
+      </div>
       <Bee />
     </div>
   );

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import sharp from "sharp";
-import { getDriveFileBuffer } from "@/lib/google/drive";
+import { driveTarget, getDriveFileBuffer } from "@/lib/google/drive";
+import { DEFAULT_WEDDING_SLUG, slugFromHost } from "@/lib/wedding/host";
+import { weddingIdForSlug } from "@/lib/wedding/resolve";
 
 // Public, unauthenticated — deliberately so, matching the security
 // posture of what this replaces. Every uploaded file already gets
@@ -21,7 +23,11 @@ export async function GET(
   const { fileId } = await params;
 
   try {
-    const { buffer, mimeType } = await getDriveFileBuffer(fileId);
+    // This route skips the middleware (it is hit very often), so it works out
+    // the wedding from the address itself, to use that wedding's own Drive.
+    const slug = slugFromHost(request.headers.get("host")) ?? DEFAULT_WEDDING_SLUG;
+    const target = await driveTarget(await weddingIdForSlug(slug)).catch(() => null);
+    const { buffer, mimeType } = await getDriveFileBuffer(fileId, target);
 
     // ?w=<pixels> asks for a smaller, compressed copy (WebP). The original
     // photos can be several MB; a card only needs a few hundred pixels. Each

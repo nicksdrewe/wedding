@@ -100,6 +100,8 @@ const PUBLIC_PREFIXES = [
   "/api/auth/request-code",
   // Resend delivering a guest's reply; checks its own signature.
   "/api/email/inbound",
+  // Google returning from "Connect Google Drive"; checks its own signed note.
+  "/api/google/oauth/callback",
   // Every uploaded photo's <img src> now points here (see
   // lib/google/drive.ts) — an anonymous event visitor has to be able to
   // load it the same way they can reach the event's own page.
@@ -161,7 +163,7 @@ const COMMERCIAL_PREFIX = "/www";
 // The commercial site's own pages on the main domain. Anything else there is
 // an old link from before the switch (invites, RSVP links, sign-in emails,
 // home-screen icons) and is sent on to the first wedding's own address.
-const COMMERCIAL_PATHS = ["/", "/start", "/signin", "/robots.txt", "/sitemap.xml", "/llms.txt", "/opengraph-image"];
+const COMMERCIAL_PATHS = ["/", "/start", "/signin", "/privacy", "/terms", "/cookies", "/robots.txt", "/sitemap.xml", "/llms.txt", "/opengraph-image"];
 const LEGACY_WEDDING_SLUG = process.env.LEGACY_WEDDING_SLUG || DEFAULT_WEDDING_SLUG;
 function commercial(request: NextRequest): NextResponse | null {
   const { pathname } = request.nextUrl;

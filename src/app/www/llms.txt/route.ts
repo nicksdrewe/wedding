@@ -32,6 +32,8 @@ ${FAQ.map((f) => `### ${f.q}\n\n${f.a}`).join("\n\n")}
 
 - [Home](${SITE_URL}/)
 - [Start a wedding site](${SITE_URL}/start)
+- [Privacy notice](${SITE_URL}/privacy)
+- [Terms of use](${SITE_URL}/terms)
 `;
   return new Response(body, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
 }

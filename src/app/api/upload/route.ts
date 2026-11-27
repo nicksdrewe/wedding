@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { explainDriveError, uploadToDrive } from "@/lib/google/drive";
+import { DriveNotConnected, driveTarget, explainDriveError, uploadToDrive } from "@/lib/google/drive";
+import { getWeddingId } from "@/lib/wedding/current";
 
 // Generic image upload endpoint backing every "add a photo" flow in the
 // app (category options, and anywhere else that adopts it later) — one
@@ -56,7 +57,7 @@ export async function POST(request: Request) {
   const safeName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
 
   try {
-    const result = await uploadToDrive(buffer, safeName, file.type);
+    const result = await uploadToDrive(buffer, safeName, file.type, await driveTarget(await getWeddingId()));
     return NextResponse.json({ url: result.imageUrl, fileId: result.fileId });
   } catch (err) {
     // Logged server-side for diagnosis, but never returned verbatim — a
@@ -69,6 +70,9 @@ export async function POST(request: Request) {
     // the generic message.
     if (profile.role === "couple") {
       return NextResponse.json({ error: explainDriveError(err) }, { status: 500 });
+    }
+    if (err instanceof DriveNotConnected) {
+      return NextResponse.json({ error: "Photos aren't switched on for this wedding yet. The couple can turn them on in settings." }, { status: 409 });
     }
     return NextResponse.json({ error: "Upload failed — please try again." }, { status: 500 });
   }

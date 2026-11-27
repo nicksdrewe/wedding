@@ -622,3 +622,8 @@
    own layer, and only transform and opacity are animated. */
 .auth-night { contain: layout paint style; }
 .auth-sky, .auth-sun, .auth-moon, .auth-stars, .auth-garden, .auth-bee__path { will-change: opacity, transform; }
+
+/* privacy link under the sign-in box */
+.auth-smallprint { position: absolute; bottom: 18px; left: 0; right: 0; text-align: center; font-family: var(--font-ui); font-size: 12px; }
+.auth-smallprint a { color: var(--color-ink-soft); text-decoration: underline; text-underline-offset: 3px; opacity: 0.8; }
+.auth-smallprint a:hover { opacity: 1; }

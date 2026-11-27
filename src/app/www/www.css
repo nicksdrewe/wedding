@@ -523,6 +523,29 @@
 .ww-done .ww-url-big { font-family: var(--font-ui), sans-serif; font-size: 16px; background: var(--w-paper); border: 1px solid var(--w-line); border-radius: 999px; padding: 10px 18px; word-break: break-all; }
 .ww-done .ww-url-big b { color: var(--w-sage); }
 
+/* ── legal pages ─────────────────────────────────────── */
+.ww-legal { padding: 56px 0 96px; }
+.ww-legal-meta { font-family: var(--font-ui), sans-serif; font-size: 13px; color: var(--w-ink-soft); margin: 12px 0 0; }
+.ww-legal-intro p { font-size: 19px; line-height: 1.6; color: var(--w-ink-soft); margin: 18px 0 0; }
+.ww-legal-nav { display: flex; gap: 8px; margin: 26px 0 8px; font-family: var(--font-ui), sans-serif; }
+.ww-legal-nav a { font-size: 13px; font-weight: 600; padding: 7px 14px; border-radius: 99px; border: 1px solid var(--w-line); background: var(--w-paper); color: var(--w-ink); text-decoration: none; }
+.ww-legal-nav a:hover { border-color: var(--w-sage); color: var(--w-sage); }
+.ww-legal-body h2 { font-family: var(--font-title), Georgia, serif; font-weight: 500; font-size: 26px; letter-spacing: -0.01em; margin: 40px 0 0; }
+.ww-legal-body p, .ww-legal-body li { font-size: 17px; line-height: 1.7; color: var(--w-ink); }
+.ww-legal-body p { margin: 12px 0 0; }
+.ww-legal-body ul { margin: 12px 0 0; padding-left: 22px; display: grid; gap: 6px; }
+.ww-legal-body a, .ww-legal-contact a { color: var(--w-sage); text-underline-offset: 3px; }
+.ww-legal-table { overflow-x: auto; margin-top: 14px; border: 1px solid var(--w-line); border-radius: 16px; background: var(--w-paper); }
+.ww-legal-table table { width: 100%; border-collapse: collapse; font-family: var(--font-ui), sans-serif; font-size: 14px; }
+.ww-legal-table th, .ww-legal-table td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--w-line); vertical-align: top; }
+.ww-legal-table th { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--w-ink-soft); }
+.ww-legal-table tr:last-child td { border-bottom: 0; }
+.ww-legal-table td:first-child { font-weight: 600; white-space: nowrap; }
+.ww-legal-contact { margin-top: 48px; padding-top: 22px; border-top: 1px solid var(--w-line); font-size: 16px; color: var(--w-ink-soft); }
+.ww-smallprint { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; }
+.ww-smallprint a { color: var(--w-ink-soft); text-decoration: none; }
+.ww-smallprint a:hover { color: var(--w-ink); text-decoration: underline; }
+
 @media (prefers-reduced-motion: reduce) {
   .ww-site *, .ww-site *::before, .ww-site *::after { animation: none !important; transition: none !important; }
   .ww-reveal { opacity: 1; transform: none; }

@@ -103,3 +103,93 @@ export async function setExamples(on: boolean): Promise<Result> {
   revalidatePath("/", "layout");
   return { error: null };
 }
+
+// ── Deleting the whole wedding ──────────────────────────────────────────────
+// Couple only, and only after they type the wedding's address. Removes:
+//   * every row the wedding owns, in every table (wedding_id cascades, 0056)
+//   * its uploaded photos from storage (best effort, one by one)
+//   * the sign-in of anyone who belonged to this wedding and no other
+// The address becomes free again. There is no undo.
+
+const DRIVE_ID = /\/api\/drive-image\/([^/?#]+)|lh3\.googleusercontent\.com\/d\/([^/?#]+)|[?&]id=([^&#]+)/;
+
+export async function deleteWedding(confirmAddress: string): Promise<{ error: string | null; goTo?: string }> {
+  const profile = await requireCouple();
+  if (!profile) return { error: "Only the couple can delete the wedding." };
+  const weddingId = await getWeddingId();
+  if (!weddingId) return { error: "Couldn't tell which wedding this is." };
+
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const admin = createAdminClient(weddingId);
+  const { data: wedding } = await admin.from("weddings").select("id, slug").eq("id", weddingId).maybeSingle();
+  if (!wedding) return { error: "This wedding has already gone." };
+  if (confirmAddress.trim().toLowerCase() !== wedding.slug) {
+    return { error: `Type ${wedding.slug} exactly to confirm.` };
+  }
+
+  // Who belongs here, and which photos are ours, before anything is removed.
+  const { data: members } = await admin.from("contacts").select("user_id").eq("wedding_id", weddingId).not("user_id", "is", null);
+  const userIds = [...new Set((members ?? []).map((m) => m.user_id as string))];
+
+  const photoUrls: string[] = [];
+  for (const [table, column] of [
+    ["page_option_images", "image_url"],
+    ["idea_board_images", "image_url"],
+    ["engagement_photos", "image_url"],
+    ["big_day_items", "image_url"],
+    ["contacts", "photo_url"],
+  ] as const) {
+    const { data } = await admin.from(table).select(column).eq("wedding_id", weddingId);
+    for (const row of (data ?? []) as Record<string, string | null>[]) if (row[column]) photoUrls.push(row[column]!);
+  }
+  const fileIds = [...new Set(photoUrls.map((u) => u.match(DRIVE_ID)?.slice(1).find(Boolean)).filter(Boolean) as string[])];
+
+  // The wedding's own Drive sign-in is stored with the wedding, so take hold
+  // of it before the wedding (and with it the sign-in) is deleted.
+  const { driveTarget, deleteFromDrive } = await import("@/lib/google/drive");
+  const target = fileIds.length ? await driveTarget(weddingId).catch(() => null) : null;
+
+  const { error } = await admin.from("weddings").delete().eq("id", weddingId);
+  if (error) {
+    console.error("deleteWedding failed:", error.message);
+    return { error: "Couldn't delete the wedding just now. Nothing was removed; try again in a moment." };
+  }
+
+  // Photos: best effort, after the records are gone.
+  if (target) await Promise.allSettled(fileIds.map((id) => deleteFromDrive(id, target)));
+
+  // Sign-ins that belonged to this wedding only.
+  for (const id of userIds) {
+    const { count } = await admin.from("contacts").select("id", { count: "exact", head: true }).eq("user_id", id);
+    if ((count ?? 0) === 0) await admin.auth.admin.deleteUser(id).catch(() => null);
+  }
+
+  await (await createClient()).auth.signOut().catch(() => null);
+
+  const { ROOT_DOMAIN } = await import("@/lib/wedding/host");
+  return { error: null, goTo: `https://${ROOT_DOMAIN}/` };
+}
+
+// Stop using the connected Google Drive. Photos already there stay in the
+// couple's Drive; new uploads wait until a Drive is connected again.
+export async function disconnectDrive(): Promise<Result> {
+  if (!(await requireCouple())) return { error: "Only the couple can change this." };
+  const weddingId = await getWeddingId();
+  if (!weddingId) return { error: "Couldn't tell which wedding this is." };
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const admin = createAdminClient(weddingId);
+  const { data } = await admin.from("wedding_secrets").select("*").eq("wedding_id", weddingId).maybeSingle();
+  const sealed = (data as { drive_refresh_token?: string | null } | null)?.drive_refresh_token;
+  if (sealed) {
+    const { openToken } = await import("@/lib/google/secret");
+    const token = openToken(sealed);
+    if (token) await fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(token)}`, { method: "POST" }).catch(() => null);
+  }
+  const { error } = await admin
+    .from("wedding_secrets")
+    .update({ drive_refresh_token: null, drive_folder_id: null, drive_folder_name: null, drive_account: null, drive_connected_at: null })
+    .eq("wedding_id", weddingId);
+  if (error) return { error: "Couldn't disconnect just now. Try again in a moment." };
+  revalidatePath("/wedding");
+  return { error: null };
+}

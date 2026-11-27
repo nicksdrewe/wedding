@@ -3,6 +3,9 @@ import { SITE_URL } from "@/lib/commercial/pricing";
 const PAGES = [
   { path: "/", priority: "1.0" },
   { path: "/start", priority: "0.8" },
+  { path: "/privacy", priority: "0.3" },
+  { path: "/terms", priority: "0.3" },
+  { path: "/cookies", priority: "0.2" },
 ];
 
 export function GET() {

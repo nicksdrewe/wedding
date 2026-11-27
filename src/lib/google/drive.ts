@@ -1,5 +1,8 @@
-import { google } from "googleapis";
+import { google, type drive_v3 } from "googleapis";
 import { Readable } from "node:stream";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { DEFAULT_WEDDING_SLUG } from "@/lib/wedding/host";
+import { openToken } from "./secret";
 
 // Server-only — the client secret and refresh token must never reach the
 // browser. Never import this from a "use client" file or expose the
@@ -50,6 +53,41 @@ function getDriveClient() {
   return google.drive({ version: "v3", auth: oauth2Client });
 }
 
+// Where a wedding's photos go. Each wedding connects its own Google account
+// (Settings > Your wedding > Photos); the sign-in is stored encrypted in
+// wedding_secrets (0063) with the folder the site made in that Drive. The
+// first wedding can still use the original connection in the hosting
+// settings until it connects its own.
+export type DriveTarget = { drive: drive_v3.Drive; folderId: string; source: "wedding" | "original" };
+
+const ORIGINAL_SLUG = process.env.LEGACY_WEDDING_SLUG || DEFAULT_WEDDING_SLUG;
+
+export async function driveTarget(weddingId: string | null): Promise<DriveTarget | null> {
+  if (!weddingId) return null;
+  const admin = createAdminClient(weddingId);
+  const { data } = await admin.from("wedding_secrets").select("*").eq("wedding_id", weddingId).maybeSingle();
+  const row = data as { drive_refresh_token?: string | null; drive_folder_id?: string | null } | null;
+  if (row?.drive_refresh_token && row.drive_folder_id) {
+    const token = openToken(row.drive_refresh_token);
+    if (token) {
+      const client = getOAuthClient();
+      client.setCredentials({ refresh_token: token });
+      return { drive: google.drive({ version: "v3", auth: client }), folderId: row.drive_folder_id, source: "wedding" };
+    }
+  }
+  const { data: w } = await admin.from("weddings").select("slug").eq("id", weddingId).maybeSingle();
+  if (w?.slug === ORIGINAL_SLUG && process.env.GOOGLE_OAUTH_REFRESH_TOKEN && process.env.GOOGLE_DRIVE_FOLDER_ID) {
+    return { drive: getDriveClient(), folderId: getFolderId(), source: "original" };
+  }
+  return null;
+}
+
+export class DriveNotConnected extends Error {
+  constructor() {
+    super("This wedding hasn't connected a Google Drive yet.");
+  }
+}
+
 export type DriveUploadResult = {
   fileId: string;
   // Points at this app's own /api/drive-image/[fileId] proxy (see that
@@ -73,10 +111,11 @@ export type DriveUploadResult = {
 export async function uploadToDrive(
   buffer: Buffer,
   filename: string,
-  mimeType: string
+  mimeType: string,
+  target: DriveTarget | null
 ): Promise<DriveUploadResult> {
-  const folderId = getFolderId();
-  const drive = getDriveClient();
+  if (!target) throw new DriveNotConnected();
+  const { drive, folderId } = target;
 
   const { data } = await drive.files.create({
     requestBody: { name: filename, parents: [folderId] },
@@ -105,6 +144,9 @@ export async function uploadToDrive(
 // at fault.
 export function explainDriveError(err: unknown): string {
   const message = err instanceof Error ? err.message : String(err);
+  if (err instanceof DriveNotConnected) {
+    return "Photos need a Google Drive. Connect yours in Settings > Your wedding > Photos, then try again.";
+  }
   if (/invalid_grant/i.test(message)) {
     return "Google rejected the saved login (invalid_grant): GOOGLE_OAUTH_REFRESH_TOKEN is expired, revoked, or was pasted wrongly. Reconnect at /api/google/oauth/start, paste the new token into Vercel, and redeploy. If it keeps expiring after a week, set the Google OAuth consent screen to 'In production'.";
   }
@@ -143,17 +185,13 @@ export type DriveCheck = {
 // is, (3) the folder is visible to this app, (4) optionally a real write —
 // creates a 4-byte file in the folder and deletes it straight away, which is
 // exactly what an upload does. Nothing is left behind.
-export async function checkDriveConnection(opts: { write?: boolean } = {}): Promise<DriveCheck> {
+export async function checkDriveConnection(target: DriveTarget | null, opts: { write?: boolean } = {}): Promise<DriveCheck> {
   const result: DriveCheck = { ok: false, account: null, steps: [] };
-  let drive: ReturnType<typeof getDriveClient>;
-  let folderId: string;
-  try {
-    folderId = getFolderId();
-    drive = getDriveClient();
-  } catch (err) {
-    result.steps.push({ step: "config", ok: false, detail: explainDriveError(err) });
+  if (!target) {
+    result.steps.push({ step: "config", ok: false, detail: explainDriveError(new DriveNotConnected()) });
     return result;
   }
+  const { drive, folderId } = target;
 
   try {
     const about = await drive.about.get({ fields: "user(emailAddress)" });
@@ -211,9 +249,9 @@ export async function checkDriveConnection(opts: { write?: boolean } = {}): Prom
   return result;
 }
 
-export async function deleteFromDrive(fileId: string): Promise<void> {
-  const drive = getDriveClient();
-  await drive.files.delete({ fileId });
+export async function deleteFromDrive(fileId: string, target: DriveTarget | null): Promise<void> {
+  if (!target) return;
+  await target.drive.files.delete({ fileId });
 }
 
 // Backs /api/drive-image/[fileId] — fetches the file's actual bytes
@@ -221,10 +259,12 @@ export async function deleteFromDrive(fileId: string): Promise<void> {
 // uploadToDrive uses, rather than a public hotlink URL. See
 // DriveUploadResult's imageUrl comment for why this exists at all.
 export async function getDriveFileBuffer(
-  fileId: string
+  fileId: string,
+  target: DriveTarget | null
 ): Promise<{ buffer: Buffer; mimeType: string }> {
   try {
-    const drive = getDriveClient();
+    if (!target) throw new DriveNotConnected();
+    const { drive } = target;
 
     const [{ data: meta }, mediaRes] = await Promise.all([
       drive.files.get({ fileId, fields: "mimeType" }),

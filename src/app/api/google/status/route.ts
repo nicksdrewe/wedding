@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
-import { checkDriveConnection } from "@/lib/google/drive";
+import { checkDriveConnection, driveTarget } from "@/lib/google/drive";
+import { getWeddingId } from "@/lib/wedding/current";
 
 // Couple-only health check for the Google Drive connection: open
 // /api/google/status while signed in and it says whether uploads will work
@@ -17,7 +18,7 @@ export async function GET(request: Request) {
   }
 
   const write = new URL(request.url).searchParams.get("write") !== "0";
-  const result = await checkDriveConnection({ write });
+  const result = await checkDriveConnection(await driveTarget(await getWeddingId()), { write });
   return NextResponse.json(
     { connected: result.ok, account: result.account, steps: result.steps },
     { status: result.ok ? 200 : 503 }
