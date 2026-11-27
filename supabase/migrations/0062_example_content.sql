@@ -4,6 +4,8 @@
 -- board and a running order), so they can see how each page works. Flipping
 -- it off removes every example row and nothing else.
 --
+-- An option's price is its headline cost; its cost items are extras on top
+-- (see lib/options/totals.ts).
 -- Example rows carry is_example = true. Category pages use slugs starting
 -- "ex-", which is how their page_registry rows are found again.
 -- The server calls fn_set_examples with the service role (after checking the
@@ -101,10 +103,10 @@ begin
     values (w, g, 'Riverside Hall', 'Cheapest by far. Smaller garden, and the last train back is at 22:40.', 51.7520, -1.2577)
     returning id into o_river;
   insert into page_option_costs (wedding_id, page_option_id, predicted_cost_min, predicted_cost_max, actual_cost) values
-    (w, o_hill, 8800, 9500, 9100), (w, o_barn, 8000, 8800, null), (w, o_river, 6900, 7600, null)
+    (w, o_hill, 7200, 7800, 7500), (w, o_barn, 8000, 8800, null), (w, o_river, 6900, 7600, null)
     on conflict (page_option_id) do update set predicted_cost_min = excluded.predicted_cost_min, predicted_cost_max = excluded.predicted_cost_max, actual_cost = excluded.actual_cost;
   insert into option_cost_items (wedding_id, page_option_id, name, kind, amount, sort_order) values
-    (w, o_hill, 'Venue hire', 'cost', 7500, 1), (w, o_hill, 'Late licence to 1am', 'cost', 1000, 2), (w, o_hill, 'Corkage', 'cost', 600, 3);
+    (w, o_hill, 'Late licence to 1am', 'cost', 1000, 1), (w, o_hill, 'Corkage', 'cost', 600, 2);
   insert into comments (wedding_id, target_type, target_id, profile_id, author_name, body, is_example) values
     (w, 'page_option', o_hill, null, 'Mum', 'The gardens!! That''s the one.', true),
     (w, 'page_option', o_hill, null, 'Your sister', 'Orangery for the ceremony if it rains. Sold.', true),
@@ -118,10 +120,10 @@ begin
   insert into page_options (wedding_id, option_group_id, name, description)
     values (w, g, 'The Hog Roast Co.', 'Great value, but no sit-down option for the speeches.') returning id into o_cat2;
   insert into page_option_costs (wedding_id, page_option_id, predicted_cost_min, predicted_cost_max, actual_cost) values
-    (w, o_cat1, 6200, 6800, 6480), (w, o_cat2, 4200, 4800, null)
+    (w, o_cat1, 5500, 6100, 5760), (w, o_cat2, 4200, 4800, null)
     on conflict (page_option_id) do update set predicted_cost_min = excluded.predicted_cost_min, predicted_cost_max = excluded.predicted_cost_max, actual_cost = excluded.actual_cost;
   insert into option_cost_items (wedding_id, page_option_id, name, kind, quantity, rate, amount, sort_order) values
-    (w, o_cat1, 'Dinner', 'cost', 120, 48, 5760, 1), (w, o_cat1, 'Evening food', 'cost', 120, 6, 720, 2);
+    (w, o_cat1, 'Evening food', 'cost', 120, 6, 720, 1);
 
   insert into option_groups (wedding_id, category_page_id, title) values (w, c_cake, 'Wedding cake') returning id into g;
   insert into page_options (wedding_id, option_group_id, name, description)
