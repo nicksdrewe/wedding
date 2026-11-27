@@ -82,7 +82,7 @@ export function themeCss(theme: WeddingTheme | null | undefined, always = false)
       `--color-paper: color-mix(in srgb, ${p.base.forest} 82%, #2a332c); --color-ink: #ece7dc; --color-ink-soft: #b8b2a5; ` +
       `--color-forest: ${p.base.forest}; --color-night: ${p.base.night}; color-scheme: dark;`
     : `--color-cream: ${p.base.cream}; --color-cream-deep: ${p.base.creamDeep}; --color-paper: ${p.base.paper}; ` +
-      `--color-forest: ${p.base.forest}; --color-night: ${p.base.night};`;
+      `--color-forest: ${p.base.forest}; --color-night: ${p.base.night}; --color-ink: #232520; --color-ink-soft: #5b5a52; color-scheme: light;`;
 
   const rules = [`:root { ${base} ${sec(sections.planning)} --color-accent: ${sections.planning}; }`];
   for (const s of SECTIONS) rules.push(`[data-section="${s}"] { ${sec(sections[s])} }`);
