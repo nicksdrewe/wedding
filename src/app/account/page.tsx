@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getAuthState, getCurrentContactTags } from "@/lib/auth/roles";
+import { SettingsTabs } from "@/components/SettingsTabs";
 import { createClient } from "@/lib/supabase/server";
 import { AppShell } from "@/components/AppShell";
 import { SetPasswordForm } from "./SetPasswordForm";
@@ -77,6 +78,7 @@ export default async function AccountPage() {
 
   const content = (
     <div className="flex flex-col items-center px-6 py-16">
+      {profile?.role === "couple" && <SettingsTabs className="-mt-8 mb-8" />}
       <div className="w-full max-w-lg">
         <h1 className="text-center font-display text-4xl">Your account</h1>
 

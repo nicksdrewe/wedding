@@ -9,7 +9,7 @@ import {
   ClipboardList,
   ChevronDown,
   FolderKanban,
-
+  KeyRound,
   LogOut,
   Menu,
   X,
@@ -30,6 +30,7 @@ import useClickOutside from "@/hooks/useClickOutside";
 import { Backdrop } from "@/components/ui/Backdrop";
 import { sectionFor } from "@/lib/design/sections";
 import { useWedding } from "@/components/WeddingProvider";
+import { ExamplesToggle } from "@/components/ExamplesToggle";
 
 // App Shell Design Spec §1 — the shared top nav (+ mobile bottom tab bar)
 // for every signed-in page. One instance of this, mounted by each route
@@ -130,8 +131,14 @@ const NAV_LINKS: NavLink[] = [
   { href: "/big-day", label: "The Big Day", icon: CalendarHeart, roles: ["couple", "family", "wedding_party"] },
   // "Edit my page" — the guest/wedding_party self-service surface. Couple
   // and family don't need this in nav (they're not personally RSVPing).
-  { href: "/account", label: "My Details", icon: User, roles: ["guest", "wedding_party", "couple"] },
-  { href: "/wedding", label: "Settings", icon: Settings, roles: ["couple"] },
+];
+
+// Behind the role chip (top right) rather than in the main menu: your own
+// details, and for the couple the wedding's settings.
+const SETTINGS_LINKS: { href: string; label: string; hint: string; icon: LucideIcon; couple?: boolean }[] = [
+  { href: "/wedding", label: "Your wedding", hint: "Names, date, colours, access code", icon: Settings, couple: true },
+  { href: "/access", label: "Roles & access", hint: "Who can see and change each page", icon: KeyRound, couple: true },
+  { href: "/account", label: "My details", hint: "Your name, photo and sign-in", icon: User },
 ];
 
 // Desktop nav order: grouped dropdowns first (Planning, then People, each
@@ -262,9 +269,19 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
   // Phone menu: one burger button instead of a bar holding every link. Closes
   // whenever the page changes, and locks the page behind it from scrolling.
   const [menuOpen, setMenuOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   useEffect(() => {
     setMenuOpen(false);
+    setSettingsOpen(false);
   }, [pathname]);
+  useEffect(() => {
+    if (!settingsOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setSettingsOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [settingsOpen]);
+  const isCouple = profile.role === "couple";
+  const settingsLinks = SETTINGS_LINKS.filter((l) => !l.couple || isCouple);
   useEffect(() => {
     if (!menuOpen) return;
     const previous = document.body.style.overflow;
@@ -356,18 +373,19 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
 
           {/* Right: identity + sign out. */}
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            {name && <span className="hidden text-[13px] text-ink-soft sm:inline">{name}</span>}
-            {profile.role === "couple" ? (
-              <Link
-                href="/access"
-                title="Manage roles & access"
-                className="chip chip-sec !text-[10px] tracking-[0.08em] uppercase transition-opacity hover:opacity-80"
-              >
-                {ROLE_LABEL[profile.role]}
-              </Link>
-            ) : (
-              <span className="chip chip-sec !text-[10px] tracking-[0.08em] uppercase">{ROLE_LABEL[profile.role]}</span>
-            )}
+            {isCouple && <ExamplesToggle withHint />}
+            {name && <span className="hidden text-[13px] text-ink-soft lg:inline">{name}</span>}
+            <button
+              type="button"
+              onClick={() => setSettingsOpen(true)}
+              aria-haspopup="dialog"
+              aria-expanded={settingsOpen}
+              title={isCouple ? "Settings" : "My details"}
+              className="chip chip-sec inline-flex items-center gap-1.5 !text-[10px] tracking-[0.08em] uppercase transition-opacity hover:opacity-80"
+            >
+              <Settings className="h-3 w-3" strokeWidth={2.25} aria-hidden="true" />
+              {ROLE_LABEL[profile.role]}
+            </button>
             <a
               href="/logout"
               aria-label="Sign out"
@@ -390,6 +408,15 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
           </div>
         </div>
       </header>
+
+      {wedding.showExamples && (
+        <div className="relative z-10 mx-auto mt-3 flex w-full max-w-[1760px] justify-center px-4">
+          <p className="chip chip-sec !px-4 !py-1.5 text-center !text-[12px]">
+            You&rsquo;re looking at example plans.{" "}
+            {isCouple ? "Roll the ball back (top right) to clear them." : "The couple can clear them."}
+          </p>
+        </div>
+      )}
 
       <main className="relative z-10 mx-auto w-full max-w-[1760px] flex-1 px-4 pt-6 pb-16 sm:px-6 md:px-10 2xl:px-14">
         {children}
@@ -436,17 +463,110 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
                 </ul>
               </div>
             ))}
-            <div className="flex items-center justify-between border-t border-cream/15 px-3 pt-4 font-serif text-sm text-cream/60">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-cream/15 px-3 pt-4 font-serif text-sm text-cream/60">
               <span>
                 {name ? `${name} · ` : ""}
                 {ROLE_LABEL[profile.role]}
               </span>
-              <a href="/logout" className="inline-flex min-h-11 items-center gap-2 text-cream">
-                <LogOut className="h-4 w-4" strokeWidth={2} />
-                Sign out
-              </a>
+              <span className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setSettingsOpen(true);
+                  }}
+                  className="inline-flex min-h-11 items-center gap-2 text-cream"
+                >
+                  <Settings className="h-4 w-4" strokeWidth={2} />
+                  {isCouple ? "Settings" : "My details"}
+                </button>
+                <a href="/logout" className="inline-flex min-h-11 items-center gap-2 text-cream">
+                  <LogOut className="h-4 w-4" strokeWidth={2} />
+                  Sign out
+                </a>
+              </span>
             </div>
           </nav>
+        </div>
+      )}
+
+      {/* Settings, slid in from the side by the role chip. */}
+      {settingsOpen && (
+        <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Settings">
+          <button
+            type="button"
+            aria-label="Close settings"
+            onClick={() => setSettingsOpen(false)}
+            className="absolute inset-0 bg-night/30 backdrop-blur-[2px]"
+            style={{ animation: "fadeIn 240ms ease both" }}
+          />
+          <aside
+            className="surface surface-raised absolute top-3 right-3 bottom-3 flex w-[min(380px,calc(100vw-24px))] flex-col overflow-y-auto !rounded-[24px] p-5"
+            style={{ animation: "drawerIn 380ms var(--ease-out) both" }}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="eyebrow">Settings</p>
+                <p className="mt-1 font-title text-[24px] leading-tight">{name ?? "You"}</p>
+                <p className="mt-0.5 font-serif text-[13px] text-ink-soft">
+                  {ROLE_LABEL[profile.role]} · {wedding.displayName}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSettingsOpen(false)}
+                aria-label="Close settings"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-ink-soft hover:bg-ink/5 hover:text-ink"
+              >
+                <X className="h-5 w-5" strokeWidth={2} />
+              </button>
+            </div>
+
+            <nav className="mt-6 flex flex-col gap-1.5" aria-label="Settings pages">
+              {settingsLinks.map((l) => {
+                const Icon = l.icon;
+                const active = isActiveHref(pathname, l.href);
+                return (
+                  <Link
+                    key={l.href}
+                    href={l.href}
+                    className={`flex items-center gap-3.5 rounded-[16px] px-3.5 py-3 transition-colors ${
+                      active ? "bg-sec-tint" : "hover:bg-ink/5"
+                    }`}
+                  >
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sec-tint text-sec">
+                      <Icon className="h-[18px] w-[18px]" strokeWidth={1.9} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block font-serif text-[15px] font-semibold text-ink">{l.label}</span>
+                      <span className="block font-serif text-[12.5px] text-ink-soft">{l.hint}</span>
+                    </span>
+                  </Link>
+                );
+              })}
+            </nav>
+
+            {isCouple && (
+              <div className="mt-6 rounded-[18px] border border-ink/10 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-serif text-[15px] font-semibold">Example plans</p>
+                  <ExamplesToggle />
+                </div>
+                <p className="mt-1.5 font-reading text-[13.5px] leading-snug text-ink-soft">
+                  Fill every planning page with a made-up wedding to see how it all works. Switch it off and it all
+                  disappears; your own plans are never touched.
+                </p>
+              </div>
+            )}
+
+            <a
+              href="/logout"
+              className="mt-auto flex items-center gap-2 self-start rounded-full px-3 py-2.5 font-serif text-[14px] text-ink-soft hover:bg-ink/5 hover:text-ink"
+            >
+              <LogOut className="h-4 w-4" strokeWidth={2} />
+              Sign out
+            </a>
+          </aside>
         </div>
       )}
     </div>

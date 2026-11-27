@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
+import { SettingsTabs } from "@/components/SettingsTabs";
 import { getCurrentProfile } from "@/lib/auth/roles";
 import { listPageRegistry, listPagePermissions, listKnownTags } from "@/lib/permissions/actions";
 import { AccessMatrixForm } from "./AccessMatrixForm";
@@ -30,8 +31,9 @@ export default async function AccessPage() {
 
   return (
     <div>
+      <SettingsTabs className="mb-4" />
       <PageHeader
-        eyebrow="Household"
+        eyebrow="Settings"
         title="Roles & Access"
         infoText="Control which roles and contact tags can see each page, and whether they see itemized detail or just the totals."
       />

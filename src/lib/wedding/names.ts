@@ -6,6 +6,8 @@ export type WeddingNames = {
   partnerTwo: string;
   displayName: string; // "Nick & Ellie"
   dateLabel: string | null; // "Summer 2028"
+  /** The couple has the example plans switched on (0062). */
+  showExamples?: boolean;
 };
 
 export const FALLBACK_NAMES: WeddingNames = {
@@ -33,6 +35,7 @@ export function namesFrom(w: {
   display_name: string;
   date_label: string | null;
   wedding_date?: string | null;
+  show_examples?: boolean;
 } | null): WeddingNames {
   if (!w) return FALLBACK_NAMES;
   const date =
@@ -40,5 +43,5 @@ export function namesFrom(w: {
     (w.wedding_date
       ? new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/London" }).format(new Date(w.wedding_date))
       : null);
-  return { slug: w.slug, partnerOne: w.partner_one, partnerTwo: w.partner_two, displayName: w.display_name, dateLabel: date };
+  return { slug: w.slug, partnerOne: w.partner_one, partnerTwo: w.partner_two, displayName: w.display_name, dateLabel: date, showExamples: !!w.show_examples };
 }

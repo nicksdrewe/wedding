@@ -1,0 +1,138 @@
+/* The rolling-ball switch (examples on/off). A cream ball in a sunken track;
+   switching on rolls it across, its shading turning as it goes, and the track
+   fills with the garden green. Sized in em, so font-size sets the scale. */
+
+.ball-switch {
+  --track-off: #e4ddd0;
+  --track-on: #4c6b52;
+  --ball: #fffdf9;
+  position: relative;
+  display: inline-block;
+  width: 3em;
+  height: 1.5em;
+  font-size: 14px;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.ball-switch__input {
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border-radius: 0.75em;
+  cursor: pointer;
+  background: var(--track-off);
+  box-shadow:
+    inset -0.125em 0.25em 0.25em rgba(24, 38, 28, 0.18),
+    inset 0.125em -0.125em 0.25em rgba(255, 255, 255, 0.55),
+    0 0.0625em 0 rgba(255, 255, 255, 0.7);
+  transition: background 450ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 450ms ease;
+}
+.ball-switch__input:checked {
+  background: linear-gradient(90deg, #3d5843, var(--track-on));
+  box-shadow:
+    inset -0.125em 0.25em 0.3em rgba(0, 0, 0, 0.35),
+    inset 0.125em -0.125em 0.25em rgba(156, 196, 164, 0.35),
+    0 0 0.6em rgba(156, 196, 164, 0.55);
+}
+.ball-switch__input:focus-visible { outline: 2px solid var(--sec, #4c6b52); outline-offset: 3px; }
+.ball-switch__input:disabled { cursor: progress; }
+
+/* the ball, its cast shadow, and the shading that turns as it rolls */
+.ball-switch__ball,
+.ball-switch__shade {
+  position: absolute;
+  top: 0.0625em;
+  left: 0.0625em;
+  width: 1.375em;
+  height: 1.375em;
+  border-radius: 50%;
+  pointer-events: none;
+  transition: transform 700ms cubic-bezier(0.34, 1.4, 0.5, 1);
+}
+.ball-switch__ball {
+  overflow: hidden;
+  background: radial-gradient(circle at 35% 30%, #ffffff, var(--ball) 45%, #e8e1d3 100%);
+  box-shadow:
+    0 0.15em 0.3em rgba(24, 38, 28, 0.35),
+    inset -0.12em -0.12em 0.2em rgba(24, 38, 28, 0.18);
+  z-index: 2;
+}
+/* speckles that roll with the ball */
+.ball-switch__ball::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 28% 62%, rgba(76, 107, 82, 0.35) 0 0.06em, transparent 0.07em),
+    radial-gradient(circle at 66% 30%, rgba(168, 71, 90, 0.35) 0 0.05em, transparent 0.06em),
+    radial-gradient(circle at 58% 74%, rgba(134, 100, 26, 0.35) 0 0.05em, transparent 0.06em),
+    radial-gradient(circle at 40% 22%, rgba(76, 107, 82, 0.3) 0 0.04em, transparent 0.05em);
+  transition: transform 700ms cubic-bezier(0.34, 1.4, 0.5, 1);
+}
+/* the soft shadow the ball drops on the track */
+.ball-switch__shade {
+  top: 0.3em;
+  background: radial-gradient(closest-side, rgba(24, 38, 28, 0.35), transparent);
+  filter: blur(0.08em);
+  z-index: 1;
+}
+.ball-switch__input:checked ~ .ball-switch__ball,
+.ball-switch__input:checked ~ .ball-switch__shade {
+  transform: translateX(1.5em);
+}
+.ball-switch__input:checked ~ .ball-switch__ball::before { transform: rotate(250deg); }
+.ball-switch__input:checked ~ .ball-switch__shade { background: radial-gradient(closest-side, rgba(0, 0, 0, 0.45), transparent); }
+@media (prefers-reduced-motion: reduce) {
+  .ball-switch__ball, .ball-switch__shade, .ball-switch__ball::before, .ball-switch__input { transition: none; }
+}
+
+/* the first-visit hint that points at the switch */
+.examples-hint {
+  position: absolute;
+  top: calc(100% + 18px);
+  right: -6px;
+  z-index: 60;
+  width: 260px;
+  padding: 14px 16px 14px;
+  border-radius: 18px;
+  background: var(--color-forest);
+  color: #f4f1ec;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.45;
+  animation: hintIn 600ms cubic-bezier(0.34, 1.4, 0.5, 1) both 900ms;
+}
+.examples-hint b { display: block; font-family: var(--font-title), Georgia, serif; font-weight: 500; font-size: 17px; margin-bottom: 4px; }
+.examples-hint button {
+  margin-top: 10px;
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 14px;
+  background: rgba(244, 241, 236, 0.14);
+  color: #f4f1ec;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.examples-hint button:hover { background: rgba(244, 241, 236, 0.24); }
+/* the hand-drawn arrow, bobbing towards the switch */
+.examples-hint__arrow {
+  position: absolute;
+  top: -40px;
+  right: 22px;
+  width: 44px;
+  height: 46px;
+  color: var(--color-forest);
+  animation: hintBob 1.6s ease-in-out infinite;
+}
+html[data-mode="dark"] .examples-hint { background: #f4f1ec; color: #1d2a21; }
+html[data-mode="dark"] .examples-hint button { background: rgba(29, 42, 33, 0.1); color: #1d2a21; }
+html[data-mode="dark"] .examples-hint__arrow { color: #f4f1ec; }
+@keyframes hintIn { from { opacity: 0; transform: translateY(10px) scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes hintBob { 0%, 100% { transform: translate(0, 0) rotate(0deg); } 50% { transform: translate(3px, -5px) rotate(-6deg); } }
+@media (prefers-reduced-motion: reduce) { .examples-hint, .examples-hint__arrow { animation: none; } }

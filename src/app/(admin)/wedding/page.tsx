@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/auth/roles";
 import { getCurrentWedding } from "@/lib/wedding/current";
 import { PageHeader } from "@/components/PageHeader";
+import { SettingsTabs } from "@/components/SettingsTabs";
 import { WeddingSettings } from "./WeddingSettings";
 import type { WeddingTheme } from "@/lib/wedding/theme";
 
@@ -13,6 +14,7 @@ export default async function WeddingSettingsPage() {
 
   return (
     <div>
+      <SettingsTabs className="mb-4" />
       <PageHeader
         eyebrow="Settings"
         title="Your wedding"

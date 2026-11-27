@@ -88,7 +88,7 @@ export async function createWedding(input: z.input<typeof signup>): Promise<Sign
     user = { id: data.user.id, email: d.email, lastSignInAt: null, bannedUntil: null };
   }
 
-  const { error } = await admin.rpc("fn_create_wedding", {
+  const { data: newWeddingId, error } = await admin.rpc("fn_create_wedding", {
     p_slug: d.slug,
     p_partner_one: d.partnerOne,
     p_partner_two: d.partnerTwo,
@@ -101,8 +101,12 @@ export async function createWedding(input: z.input<typeof signup>): Promise<Sign
   if (error) {
     if (error.message.includes("address taken")) return { ok: false, error: "That address was just taken. Try another.", field: "slug" };
     if (error.message.includes("code not valid")) return { ok: false, error: "That code has just been used up.", field: "code" };
-    return { ok: false, error: "Something went wrong making your site. Nothing was charged; try again in a moment." };
+    return { ok: false, error: "Something went wrong making your site. Try again in a moment." };
   }
+
+  // New sites start with the example plans switched on, so there's something
+  // to explore straight away (the couple can clear them with one switch).
+  if (newWeddingId) await admin.rpc("fn_set_examples", { p_wedding: newWeddingId as string, p_on: true });
 
   const host = (await headers()).get("host")?.split(":")[0] ?? "";
   const onMainDomain = host.replace(/^www\./, "") === ROOT_DOMAIN;

@@ -32,6 +32,7 @@ export type Wedding = {
   theme: Record<string, unknown>;
   status: string;
   plan: string;
+  show_examples?: boolean;
 };
 
 /** The current wedding's details (names, date, theme), once per request. */
@@ -42,7 +43,7 @@ export const getCurrentWedding = cache(async (): Promise<Wedding | null> => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("weddings")
-    .select("id, slug, partner_one, partner_two, display_name, wedding_date, date_label, theme, status, plan")
+    .select("*")
     .eq("id", id)
     .maybeSingle();
   return (data as Wedding | null) ?? null;

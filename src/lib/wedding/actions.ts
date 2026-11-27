@@ -89,3 +89,17 @@ export async function saveGateCodes(raw: string): Promise<Result> {
   revalidatePath("/");
   return { error: null };
 }
+
+// Example plans on or off (0062). The database function runs with the service
+// role so example comments keep their made-up authors; the couple check is
+// here.
+export async function setExamples(on: boolean): Promise<Result> {
+  if (!(await requireCouple())) return { error: "Only the couple can change this." };
+  const weddingId = await getWeddingId();
+  if (!weddingId) return { error: "Couldn't tell which wedding this is." };
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const { error } = await createAdminClient(weddingId).rpc("fn_set_examples", { p_wedding: weddingId, p_on: on });
+  if (error) return { error: "Couldn't change the examples just now. Try again in a moment." };
+  revalidatePath("/", "layout");
+  return { error: null };
+}
