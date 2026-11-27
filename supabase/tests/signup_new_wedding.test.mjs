@@ -54,6 +54,7 @@ const avail = async (s) => (await asRole("anon", `select fn_slug_available($1) a
 check("a free address is available (asked by anyone)", (await avail("jonsarah")) === true);
 check("a taken address is not", (await avail("nickellie")) === false);
 check("a reserved address is not", (await avail("www")) === false);
+check("email-setup names are reserved", (await avail("reply")) === false && (await avail("send")) === false);
 check("a badly formed address is not", (await avail("Jon_Sarah")) === false);
 
 console.log("== codes");

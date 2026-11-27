@@ -89,7 +89,7 @@ async function sendInviteTo(contact: { full_name: string | null }, email: string
     email,
     reason,
     coupleName: wedding?.display_name ?? "Weddings Weddings",
-    baseUrl: wedding && wedding.slug !== "nickellie" ? weddingUrl(wedding.slug) : undefined,
+    baseUrl: wedding ? weddingUrl(wedding.slug) : undefined,
   });
   return sendEmail({ to: email, subject, html, from: weddingFrom(wedding), replyTo: weddingReplyTo(wedding) });
 }

@@ -12,7 +12,7 @@ import {
   isValidSlug,
   slugFromHost,
 } from "@/lib/wedding/host";
-import { weddingIdForSlug } from "@/lib/wedding/resolve";
+import { lastLookup, weddingIdForSlug } from "@/lib/wedding/resolve";
 
 const VIEW_AS_STOP_PATH = "/api/view-as/stop";
 
@@ -103,6 +103,8 @@ const PUBLIC_PREFIXES = [
   // lib/google/drive.ts) — an anonymous event visitor has to be able to
   // load it the same way they can reach the event's own page.
   "/api/drive-image",
+  // The home-screen app details; phones fetch it without signing in.
+  "/api/manifest",
   // Tells search engines and AI crawlers to keep out (app/robots.ts).
   "/robots.txt",
 ];
@@ -272,6 +274,11 @@ export async function updateSession(request: NextRequest) {
     url.pathname = "/hub";
     url.search = "";
     return withCookies(NextResponse.redirect(url));
+  }
+
+  // Preview builds only: say how the wedding was found, for troubleshooting.
+  if (process.env.VERCEL_ENV !== "production") {
+    supabaseResponse.headers.set("x-ww-wedding", `${wedding.slug}|${wedding.id ? "found" : "missing"}|${lastLookup}`);
   }
 
   // The browser's own database client reads the wedding from this cookie.
