@@ -108,6 +108,8 @@ const PUBLIC_PREFIXES = [
   "/api/drive-image",
   // The home-screen app details; phones fetch it without signing in.
   "/api/manifest",
+  // Newsletter one-click unsubscribe; checks its own signed link.
+  "/api/unsubscribe",
   // Tells search engines and AI crawlers to keep out (app/robots.ts).
   "/robots.txt",
 ];
@@ -163,7 +165,7 @@ const COMMERCIAL_PREFIX = "/www";
 // The commercial site's own pages on the main domain. Anything else there is
 // an old link from before the switch (invites, RSVP links, sign-in emails,
 // home-screen icons) and is sent on to the first wedding's own address.
-const COMMERCIAL_PATHS = ["/", "/start", "/signin", "/privacy", "/terms", "/cookies", "/robots.txt", "/sitemap.xml", "/llms.txt", "/opengraph-image"];
+const COMMERCIAL_PATHS = ["/", "/start", "/signin", "/privacy", "/terms", "/cookies", "/unsubscribe", "/robots.txt", "/sitemap.xml", "/llms.txt", "/opengraph-image"];
 const LEGACY_WEDDING_SLUG = process.env.LEGACY_WEDDING_SLUG || DEFAULT_WEDDING_SLUG;
 function commercial(request: NextRequest): NextResponse | null {
   const { pathname } = request.nextUrl;

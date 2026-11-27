@@ -1,19 +1,16 @@
-"use client";
-
 import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import { LoginExperience } from "@/components/auth/LoginExperience";
+import { SiteGate } from "@/components/SiteGate";
+import { weddingHasGate } from "@/lib/gate/actions";
+import { LoginForm } from "./LoginForm";
 
-function LoginForm() {
-  const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/hub";
-  return <LoginExperience next={next} startAt={searchParams.get("step")} />;
-}
-
-export default function LoginPage() {
+// Behind the couple's access code, same as the front page: only people who've
+// been given the code (or arrived by their own invite link) reach sign-in.
+export default async function LoginPage() {
   return (
-    <Suspense>
-      <LoginForm />
-    </Suspense>
+    <SiteGate enabled={await weddingHasGate()}>
+      <Suspense>
+        <LoginForm />
+      </Suspense>
+    </SiteGate>
   );
 }

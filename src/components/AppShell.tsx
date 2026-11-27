@@ -560,6 +560,21 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
               </div>
             )}
 
+            <a
+              href="/me"
+              className="group mt-4 flex items-center justify-between gap-3 rounded-[18px] border border-ink/10 p-4 transition-colors hover:bg-ink/5"
+            >
+              <span>
+                <span className="block font-serif text-[15px] font-semibold">Your weddings</span>
+                <span className="block font-reading text-[13.5px] leading-snug text-ink-soft">
+                  Every wedding you&rsquo;re part of, your RSVPs and what&rsquo;s coming up.
+                </span>
+              </span>
+              <span aria-hidden="true" className="text-[18px] transition-transform group-hover:translate-x-1">
+                →
+              </span>
+            </a>
+
             <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-6">
               <a
                 href="/logout"

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { LogoMark } from "@/components/LogoMark";
 import { Botanical } from "@/components/Botanical";
 import { GalaxyButton } from "@/components/auth/GalaxyButton";
@@ -123,12 +122,6 @@ export function SiteGate({ children, enabled = true }: { children: React.ReactNo
         >
           <GalaxyButton>Enter</GalaxyButton>
         </div>
-        <Link
-          href="/login"
-          className="mt-1 w-56 rounded-full border border-ink/15 px-6 py-3 font-ui text-sm text-ink-soft transition hover:border-ink/35 hover:text-ink"
-        >
-          Log in
-        </Link>
         {wrong && (
           <p className="font-reading text-xs text-alert">That code isn&rsquo;t quite right.</p>
         )}

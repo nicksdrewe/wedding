@@ -64,6 +64,30 @@ function textFromHtml(html: string) {
     .trim();
 }
 
+type CampaignEvent = { type?: string; data?: { to?: string[] | string; tags?: Record<string, string> | { name: string; value: string }[]; click?: { link?: string } } };
+const CAMPAIGN_KINDS: Record<string, string> = {
+  "email.delivered": "delivered",
+  "email.opened": "opened",
+  "email.clicked": "clicked",
+  "email.bounced": "bounced",
+  "email.complained": "complained",
+};
+
+async function recordCampaignEvent(event: CampaignEvent): Promise<boolean> {
+  const kind = CAMPAIGN_KINDS[event.type ?? ""];
+  if (!kind || !event.data) return false;
+  const tags = event.data.tags;
+  const campaign = Array.isArray(tags) ? tags.find((t) => t.name === "campaign")?.value : tags?.campaign;
+  if (!campaign || !/^[0-9a-f-]{36}$/i.test(campaign)) return true; // someone else's email: nothing to record
+  const to = Array.isArray(event.data.to) ? event.data.to[0] : event.data.to;
+  if (!to) return true;
+  const admin = createAdminClient();
+  await admin.from("platform_campaign_events").insert({ campaign_id: campaign, email: to.toLowerCase(), kind, link: event.data.click?.link ?? null });
+  // a complaint is a firm "stop"
+  if (kind === "complained") await admin.from("platform_unsubscribes").upsert({ email: to.toLowerCase() });
+  return true;
+}
+
 export async function POST(request: Request) {
   const raw = await request.text();
   if (!verifyWebhook(raw, request.headers, process.env.RESEND_WEBHOOK_SECRET)) return NextResponse.json({ error: "bad signature" }, { status: 401 });
@@ -74,6 +98,10 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "bad body" }, { status: 400 });
   }
+  // Delivery reports for the owner's newsletters (tagged campaign=<id>).
+  const tracked = await recordCampaignEvent(event as CampaignEvent);
+  if (tracked) return NextResponse.json({ tracked: true });
+
   if (event.type !== "email.received" || !event.data) return NextResponse.json({ ignored: true });
 
   const d = event.data;

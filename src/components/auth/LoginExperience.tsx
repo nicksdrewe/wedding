@@ -28,6 +28,38 @@ const INPUT =
   "w-full rounded-2xl border border-ink/15 bg-white px-4 py-3.5 font-reading text-[15px] text-ink shadow-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20";
 const LINK = "font-serif text-xs text-ink-soft underline decoration-ink/30 underline-offset-2 hover:text-sec";
 
+// The three ways in, offered up front so nobody has to back out of the wrong one.
+const WAYS: { step: Step; label: string }[] = [
+  { step: "login", label: "Password" },
+  { step: "code", label: "I have a code" },
+  { step: "email", label: "Send me a code" },
+];
+
+function WayPicker({ step, onPick }: { step: Step; onPick: (s: Step) => void }) {
+  const i = Math.max(0, WAYS.findIndex((w) => w.step === step));
+  return (
+    <div role="tablist" aria-label="How would you like to sign in?" className="relative mt-7 grid grid-cols-3 rounded-full border border-ink/10 bg-white/70 p-1 shadow-sm backdrop-blur">
+      <span
+        aria-hidden="true"
+        className="absolute bottom-1 top-1 rounded-full bg-forest shadow-md transition-transform duration-500"
+        style={{ left: 4, width: "calc((100% - 8px) / 3)", transform: `translateX(${i * 100}%)`, transitionTimingFunction: "cubic-bezier(0.3, 1.4, 0.5, 1)" }}
+      />
+      {WAYS.map((w) => (
+        <button
+          key={w.step}
+          type="button"
+          role="tab"
+          aria-selected={w.step === step}
+          onClick={() => onPick(w.step)}
+          className={`relative z-[1] min-h-10 rounded-full px-2 font-serif text-[12.5px] font-semibold transition-colors duration-300 ${w.step === step ? "text-cream" : "text-ink-soft hover:text-ink"}`}
+        >
+          {w.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function remember(key: string, value: string | null) {
   try {
     if (value) window.localStorage.setItem(key, value);
@@ -72,7 +104,9 @@ export function LoginExperience({ next = "/hub", startAt }: { next?: string; sta
       }
       if (cancelled) return;
       const saved = recall(PENDING_EMAIL_KEY);
-      if (recall(HAS_PASSWORD_KEY)) {
+      const known = recall(HAS_PASSWORD_KEY);
+      if (known) {
+        if (known.includes("@")) setEmail(known);
         setStep("login");
       } else if (saved) {
         setEmail(saved);
@@ -174,7 +208,7 @@ export function LoginExperience({ next = "/hub", startAt }: { next?: string; sta
       setError("That email and password don't match.");
       return;
     }
-    remember(HAS_PASSWORD_KEY, "1");
+    remember(HAS_PASSWORD_KEY, email);
     go("quick");
   }
 
@@ -187,28 +221,22 @@ export function LoginExperience({ next = "/hub", startAt }: { next?: string; sta
         <div className="w-full max-w-[380px]">
           <SplitWord key={`${word}-${step}`} word={word} end={end} />
 
+          {step !== "set" && <WayPicker step={step} onPick={to} />}
+
           {step === "email" && (
-            <form onSubmit={sendCode} className="mt-8 flex flex-col gap-3">
-              <p className="font-reading text-[15px] text-ink-soft">Pop in your email and we&rsquo;ll send you a code.</p>
+            <form onSubmit={sendCode} className="mt-5 flex flex-col gap-3">
+              <p className="font-reading text-[15px] text-ink-soft">Pop in your email and we&rsquo;ll send you a code. First time here? Start with this.</p>
               <input type="email" required autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className={INPUT} />
               <div className="pt-1">
                 <GalaxyButton disabled={busy} power={0.34}>
                   {busy ? "Sending…" : "Send my code"}
                 </GalaxyButton>
               </div>
-              <div className="flex justify-between pt-1">
-                <button type="button" onClick={() => to("code")} className={LINK}>
-                  I already have a code
-                </button>
-                <button type="button" onClick={() => to("login")} className={LINK}>
-                  I have a password
-                </button>
-              </div>
             </form>
           )}
 
           {step === "code" && (
-            <form onSubmit={verifyCode} className="mt-8 flex flex-col gap-3">
+            <form onSubmit={verifyCode} className="mt-5 flex flex-col gap-3">
               <p className="font-reading text-[15px] text-ink-soft">Enter the code from your email.</p>
               <input type="email" required autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className={INPUT} />
               <input
@@ -259,15 +287,18 @@ export function LoginExperience({ next = "/hub", startAt }: { next?: string; sta
           )}
 
           {step === "login" && (
-            <form onSubmit={signInWithPassword} className="mt-8 flex flex-col gap-3">
+            <form onSubmit={signInWithPassword} className="mt-5 flex flex-col gap-3">
               <input type="email" required autoComplete="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className={INPUT} />
               <input type="password" required autoComplete="current-password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className={INPUT} />
               <div className="pt-1">
                 <GalaxyButton disabled={busy}>{busy ? "Signing you in…" : "Login"}</GalaxyButton>
               </div>
-              <button type="button" onClick={() => to("email")} className={`${LINK} self-start pt-1`}>
-                First time, or forgotten your password? Get a code
-              </button>
+              <p className="pt-1 font-reading text-[13px] text-ink-soft">
+                First time, or forgotten it?{" "}
+                <button type="button" onClick={() => to("email")} className={LINK}>
+                  Send me a code
+                </button>
+              </p>
             </form>
           )}
 

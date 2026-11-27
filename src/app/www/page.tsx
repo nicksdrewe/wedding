@@ -7,6 +7,7 @@ import { SiteHeader, SiteFooter } from "./_components/Chrome";
 import { FAQ } from "./_components/faq";
 import { SystemDemo } from "./_components/SystemDemo";
 import { Magnetic, Reveal, Sunlight } from "./_components/Interactive";
+import { getCopy } from "@/lib/commercial/copy";
 import { BoardScene, BudgetScene, DayScene, GuestsScene, MessagesScene, PartyScene, TreeScene } from "./_components/Scenes";
 
 export const dynamic = "force-dynamic";
@@ -16,8 +17,6 @@ const CHAPTERS = [
     key: "board",
     colour: "sage",
     kicker: "Planning boards",
-    title: "Every decision, side by side.",
-    body: "Venues, caterers, the band, the cake. Line the options up with photos, prices, a pin on the map and your notes. Let the people you trust vote and comment, then pick the winner. The others step aside, and the price goes straight into your budget.",
     points: ["Photos, prices and map pins", "Votes and comments from family", "Winners lock into the budget"],
     Scene: BoardScene,
   },
@@ -25,8 +24,6 @@ const CHAPTERS = [
     key: "tree",
     colour: "plum",
     kicker: "The whole picture",
-    title: "See the entire wedding on one page.",
-    body: "Every decision sits in one tree, from the ceremony to the hen do. Open any branch to see what's decided, what's still up for grabs and what it's costing. When someone asks how it's all going, you can actually show them.",
     points: ["Decided, deciding, not started", "Costs rolled up at every level", "Branches for the stag and hen too"],
     Scene: TreeScene,
   },
@@ -34,8 +31,6 @@ const CHAPTERS = [
     key: "budget",
     colour: "gold",
     kicker: "Budget",
-    title: "Know what it costs before your bank does.",
-    body: "Rough figures while you're choosing, real ones once you've chosen, and a clear line on who's paying for what. Shared costs for the stag or the hen split themselves, so nobody has to send the awkward message.",
     points: ["Estimates, then actuals", "Who's contributing what", "Group costs split fairly"],
     Scene: BudgetScene,
   },
@@ -43,8 +38,6 @@ const CHAPTERS = [
     key: "guests",
     colour: "rose",
     kicker: "Guests & RSVPs",
-    title: "Every guest, every event, every dietary need.",
-    body: "Households, plus ones, the engagement party, the ceremony and the evening do. Guests reply from one link without a password, and you see who's coming to what, live. Nobody reconciles three spreadsheets the night before the caterer needs numbers.",
     points: ["RSVPs per event", "Plus ones and dietary needs", "No passwords for guests"],
     Scene: GuestsScene,
   },
@@ -52,8 +45,6 @@ const CHAPTERS = [
     key: "party",
     colour: "plum",
     kicker: "The wedding party",
-    title: "Secrets, kept.",
-    body: "The best man gets a planning board for the stag that the two of you can't see. The bridesmaids get theirs. Everyone gets exactly the pages you've given them, right down to whether they can see the prices.",
     points: ["Private boards for stag and hen", "Access by role or by person", "Prices shown only where you want"],
     Scene: PartyScene,
   },
@@ -61,8 +52,6 @@ const CHAPTERS = [
     key: "messages",
     colour: "teal",
     kicker: "Messages",
-    title: "Send it from your own address. Read the replies here.",
-    body: "Save the dates, coach times, the polite nudge to the people who haven't replied. Emails go out from your wedding's own address, to everyone or just the people who need it, and the answers land back in your inbox on the site.",
     points: ["Your names, your address", "Send to exactly the right people", "Replies collected in one inbox"],
     Scene: MessagesScene,
   },
@@ -70,8 +59,6 @@ const CHAPTERS = [
     key: "day",
     colour: "blue",
     kicker: "The day itself",
-    title: "On the day, nobody needs to ask.",
-    body: "Publish the running order and it's on every phone, with a nudge when something changes. The people helping know where to be, the guests know when to eat, and you get to just be there.",
     points: ["A running order on every phone", "Notifications when plans change", "Works like an app, no download"],
     Scene: DayScene,
   },
@@ -126,6 +113,7 @@ const ROLES = [
 export default async function CommercialHome() {
   const base = await siteBase();
   const start = `${base}/start`;
+  const c = await getCopy();
 
   const jsonLd = [
     {
@@ -169,29 +157,25 @@ export default async function CommercialHome() {
           <div className="ww-wrap ww-hero-grid">
             <div className="ww-hero-copy">
               <p className="ww-eyebrow">
-                <span className="ww-pill">Alpha</span> Invite-only, and free while we build it
+                <span className="ww-pill">Alpha</span> {c("hero.eyebrow")}
               </p>
               <h1 className="ww-h1">
-                Most wedding websites stop at the RSVP.
-                <em>Ours is where the planning happens.</em>
+                {c("hero.title")}
+                <em>{c("hero.titleItalic")}</em>
               </h1>
-              <p className="ww-lede">
-                A private site for your wedding, at your own address, that runs the whole thing: every guest and every reply,
-                the venues you&rsquo;re torn between, what it all costs and who&rsquo;s paying, the stag do you&rsquo;re not
-                allowed to see, and where everyone needs to be at quarter past three.
-              </p>
+              <p className="ww-lede">{c("hero.lede")}</p>
               <div className="ww-cta-row">
                 <Magnetic>
                   <Link href={start} className="ww-btn ww-btn-primary ww-btn-shine">
-                    Start your wedding site
+                    {c("hero.cta")}
                     <span className="ww-arrow" aria-hidden="true">→</span>
                   </Link>
                 </Magnetic>
                 <a href="#system" className="ww-btn ww-btn-ghost">
-                  See how it fits together
+                  {c("hero.cta2")}
                 </a>
               </div>
-              <p className="ww-fine">You&rsquo;ll need an invite code during the alpha.</p>
+              <p className="ww-fine">{c("hero.fine")}</p>
             </div>
             <div id="system">
               <SystemDemo />
@@ -204,13 +188,8 @@ export default async function CommercialHome() {
           <div className="ww-wrap">
             <Reveal>
               <p className="ww-kicker">Why this exists</p>
-              <h2 className="ww-h2">The website is the easy bit.</h2>
-              <p className="ww-sub">
-                The hard bit is the eighteen months before it, scattered across a spreadsheet, three group chats, a mood
-                board and someone&rsquo;s notes app. Wedding websites give you a pretty page. Planning apps give you a
-                checklist. Neither gives you the place where you, your families and your friends actually decide things
-                together.
-              </p>
+              <h2 className="ww-h2">{c("why.title")}</h2>
+              <p className="ww-sub">{c("why.body")}</p>
             </Reveal>
             <div className="ww-compare">
               <Reveal className="ww-compare-col ww-compare-them">
@@ -246,25 +225,22 @@ export default async function CommercialHome() {
           <div className="ww-wrap">
             <Reveal>
               <p className="ww-kicker">What&rsquo;s inside</p>
-              <h2 className="ww-h2">One system, not a pile of features.</h2>
-              <p className="ww-sub">
-                Choose a venue and the budget knows. Give someone a job and their phone knows. Change the plan and everyone
-                knows. Each part below is moving in time with the others, because that&rsquo;s how it works.
-              </p>
+              <h2 className="ww-h2">{c("inside.title")}</h2>
+              <p className="ww-sub">{c("inside.body")}</p>
             </Reveal>
 
             <div className="ww-chapters">
-              {CHAPTERS.map((c, i) => (
-                <Reveal key={c.key} className={`ww-chapter ${i % 2 ? "flip" : ""}`}>
-                  <div className={`ww-chapter-art tone-${c.colour}`}>
-                    <c.Scene />
+              {CHAPTERS.map((ch, i) => (
+                <Reveal key={ch.key} className={`ww-chapter ${i % 2 ? "flip" : ""}`}>
+                  <div className={`ww-chapter-art tone-${ch.colour}`}>
+                    <ch.Scene />
                   </div>
-                  <div className={`ww-chapter-copy tone-${c.colour}`}>
-                    <p className="ww-chapter-kicker">{c.kicker}</p>
-                    <h3>{c.title}</h3>
-                    <p>{c.body}</p>
+                  <div className={`ww-chapter-copy tone-${ch.colour}`}>
+                    <p className="ww-chapter-kicker">{ch.kicker}</p>
+                    <h3>{c(`chapter.${ch.key}.title`)}</h3>
+                    <p>{c(`chapter.${ch.key}.body`)}</p>
                     <ul>
-                      {c.points.map((p) => (
+                      {ch.points.map((p) => (
                         <li key={p}>{p}</li>
                       ))}
                     </ul>
@@ -280,7 +256,7 @@ export default async function CommercialHome() {
           <div className="ww-wrap">
             <Reveal>
               <p className="ww-kicker">And the rest</p>
-              <h2 className="ww-h2">The small things you&rsquo;d otherwise build yourself.</h2>
+              <h2 className="ww-h2">{c("breadth.title")}</h2>
             </Reveal>
           </div>
           <div className="ww-marquee" aria-hidden="true">
@@ -307,7 +283,7 @@ export default async function CommercialHome() {
           <div className="ww-wrap">
             <Reveal>
               <p className="ww-kicker">For everyone involved</p>
-              <h2 className="ww-h2">Everyone gets the right amount of wedding.</h2>
+              <h2 className="ww-h2">{c("roles.title")}</h2>
               <p className="ww-sub">One site, four very different views of it. Hover to see what each person gets.</p>
             </Reveal>
             <div className="ww-roles">
@@ -327,7 +303,7 @@ export default async function CommercialHome() {
           <div className="ww-wrap">
             <Reveal>
               <p className="ww-kicker">Getting going</p>
-              <h2 className="ww-h2">Set up in an evening. Useful until the last dance.</h2>
+              <h2 className="ww-h2">{c("steps.title")}</h2>
             </Reveal>
             <ol className="ww-steps">
               {[
@@ -350,11 +326,8 @@ export default async function CommercialHome() {
           <div className="ww-wrap ww-alpha">
             <Reveal>
               <p className="ww-kicker">The alpha</p>
-              <h2 className="ww-h2">We&rsquo;re building this with a small group of couples.</h2>
-              <p className="ww-sub">
-                It started as the site for one real wedding and grew from there. Right now it&rsquo;s invite-only and
-                free. If you&rsquo;ve been sent a code, you&rsquo;re in.
-              </p>
+              <h2 className="ww-h2">{c("alpha.title")}</h2>
+              <p className="ww-sub">{c("alpha.body")}</p>
             </Reveal>
             <Reveal className="ww-alpha-card" delay={120}>
               <Botanical seed={21} stems={2} width={120} height={180} spread={30} className="ww-alpha-flora" />
@@ -393,7 +366,7 @@ export default async function CommercialHome() {
           <Sunlight />
           <div className="ww-wrap ww-final-inner">
             <LogoMark size={64} tone="light" />
-            <h2 className="ww-h2">You&rsquo;ve got a wedding to plan. Give it somewhere to live.</h2>
+            <h2 className="ww-h2">{c("final.title")}</h2>
             <Magnetic>
               <Link href={start} className="ww-btn ww-btn-light ww-btn-shine">
                 Start your wedding site
