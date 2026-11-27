@@ -745,3 +745,7 @@ html[data-mode="dark"] .cat-node, html[data-mode="dark"] .gc-node { border-color
 
 @keyframes drawerIn { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* the logo is drawn in forest green; on the night garden it turns light */
+html[data-mode="dark"] { --logo-ink: #ece7dc; }
+html[data-mode="dark"] :is(.canopy, .surface-ink, .bg-forest, .bg-night, .from-forest) { --logo-ink: #f4f1ec; }
