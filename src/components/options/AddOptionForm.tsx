@@ -110,22 +110,30 @@ export function AddOptionForm({
       )}
       {fields.stay && (
         <>
-      <input
-        name="nights"
+      <label className="flex flex-col gap-1">
+        <span className="field-label !mb-0">Nights</span>
+        <input
+          name="nights"
         type="number"
         min={0}
         step={1}
-        placeholder="Nights"
         className="field w-24"
-      />
-      <input
-        name="sleeps"
+          placeholder="0"
+          title="How many nights"
+        />
+      </label>
+      <label className="flex flex-col gap-1">
+        <span className="field-label !mb-0">Sleeps</span>
+        <input
+          name="sleeps"
         type="number"
         min={0}
         step={1}
-        placeholder="Sleeps"
         className="field w-24"
-      />
+          placeholder="0"
+          title="How many people it sleeps"
+        />
+      </label>
         </>
       )}
       <button
