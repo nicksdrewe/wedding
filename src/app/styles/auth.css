@@ -627,3 +627,23 @@
 .auth-smallprint { position: absolute; bottom: 18px; left: 0; right: 0; text-align: center; font-family: var(--font-ui); font-size: 12px; }
 .auth-smallprint a { color: var(--color-ink-soft); text-decoration: underline; text-underline-offset: 3px; opacity: 0.8; }
 .auth-smallprint a:hover { opacity: 1; }
+
+/* Phones and tablets: the form and the privacy link stack, so a taller form
+   (the three ways to sign in) never runs over the link. The form centres in
+   the space when there's room and scrolls when there isn't. */
+@media (max-width: 1023px) {
+  .auth-paper {
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 32px 24px 16px;
+  }
+  .auth-paper > :first-child {
+    margin-block: auto;
+  }
+  .auth-smallprint {
+    position: static;
+    flex: none;
+    margin-top: 28px;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

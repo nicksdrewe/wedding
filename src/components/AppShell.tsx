@@ -30,7 +30,7 @@ import useClickOutside from "@/hooks/useClickOutside";
 import { Backdrop } from "@/components/ui/Backdrop";
 import { sectionFor } from "@/lib/design/sections";
 import { useWedding } from "@/components/WeddingProvider";
-import { ExamplesToggle } from "@/components/ExamplesToggle";
+import { ExamplesBarOption, ExamplesToggle, HeaderExamplesToggle } from "@/components/ExamplesToggle";
 import { ROOT_DOMAIN } from "@/lib/wedding/host";
 
 // App Shell Design Spec §1 — the shared top nav (+ mobile bottom tab bar)
@@ -374,7 +374,7 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
 
           {/* Right: identity + sign out. */}
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            {isCouple && <ExamplesToggle withHint />}
+            {isCouple && <HeaderExamplesToggle />}
             {name && <span className="hidden text-[13px] text-ink-soft lg:inline">{name}</span>}
             <button
               type="button"
@@ -557,6 +557,7 @@ export function AppShell({ profile, tags = [], children }: AppShellProps) {
                   Fill every planning page with a made-up wedding to see how it all works. Switch it off and it all
                   disappears; your own plans are never touched.
                 </p>
+                <ExamplesBarOption />
               </div>
             )}
 

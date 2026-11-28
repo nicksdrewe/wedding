@@ -51,7 +51,7 @@ function WayPicker({ step, onPick }: { step: Step; onPick: (s: Step) => void }) 
           role="tab"
           aria-selected={w.step === step}
           onClick={() => onPick(w.step)}
-          className={`relative z-[1] min-h-10 rounded-full px-2 font-serif text-[12.5px] font-semibold transition-colors duration-300 ${w.step === step ? "text-cream" : "text-ink-soft hover:text-ink"}`}
+          className={`relative z-[1] min-h-10 whitespace-nowrap rounded-full px-1 font-serif text-[11.5px] font-semibold min-[400px]:px-2 min-[400px]:text-[12.5px] transition-colors duration-300 ${w.step === step ? "text-cream" : "text-ink-soft hover:text-ink"}`}
         >
           {w.label}
         </button>

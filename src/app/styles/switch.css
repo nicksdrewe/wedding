@@ -91,11 +91,32 @@
 }
 
 /* the first-visit hint that points at the switch */
+.examples-hint-layer {
+  position: fixed;
+  top: var(--hint-top);
+  right: var(--hint-right);
+  z-index: 70;
+}
+/* phones: the note sits in the middle of the screen, arrow still pointing up at the switch */
+@media (max-width: 639px) {
+  .examples-hint-layer {
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: rgba(12, 16, 13, 0.35);
+    animation: fadeIn 400ms ease both 700ms;
+  }
+  .examples-hint-layer .examples-hint {
+    width: min(320px, 100%);
+  }
+  .examples-hint-layer .examples-hint__arrow {
+    right: 18px;
+  }
+}
 .examples-hint {
-  position: absolute;
-  top: calc(100% + 18px);
-  right: -6px;
-  z-index: 60;
+  position: relative;
+  display: block;
   width: 260px;
   padding: 14px 16px 14px;
   border-radius: 18px;

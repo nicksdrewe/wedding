@@ -1122,3 +1122,96 @@
   pointer-events: none;
   transition: left 0.15s ease-out, top 0.15s ease-out;
 }
+
+/* Phones: the dock becomes a full-width tab bar with labels you can read and
+   targets you can hit, sitting above the home indicator. */
+@media (max-width: 640px) {
+  .pc-main {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+  .pc-dock {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transform: none;
+    animation: pcBarIn 0.6s 0.1s cubic-bezier(0.2, 0.9, 0.25, 1.1) both;
+  }
+  @keyframes pcBarIn {
+    from {
+      transform: translateY(100%);
+    }
+  }
+  .pc-dock-glass {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0;
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    border-radius: 20px 20px 0 0;
+    border-width: 1px 0 0;
+  }
+  .pc-dock-glass::before {
+    border-radius: 20px 20px 0 0;
+  }
+  .pc-dock-item,
+  .pc-dock-item:hover,
+  .pc-dock-item:has(+ .pc-dock-item:hover),
+  .pc-dock-item:hover + .pc-dock-item {
+    transform: none;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 6px 0 4px;
+    min-height: 54px;
+    border-radius: 14px;
+  }
+  .pc-dock-item.is-out {
+    margin: 0;
+  }
+  .pc-dock-item.is-out::before {
+    left: 0;
+    top: 12px;
+    bottom: 12px;
+  }
+  .pc-dock-icon,
+  .pc-dock-item:hover .pc-dock-icon {
+    width: auto;
+    height: auto;
+    background: none;
+    border: 0;
+    box-shadow: none;
+  }
+  .pc-dock-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+  /* the label sits under the icon, always visible */
+  .pc-dock-tip,
+  .pc-dock-item:hover .pc-dock-tip {
+    position: static;
+    opacity: 1;
+    transform: none;
+    padding: 0;
+    background: none;
+    color: inherit;
+    font-size: 10px;
+    font-weight: 600;
+    max-width: 100%;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.1;
+  }
+  .pc-dock-item {
+    flex-direction: column-reverse !important;
+  }
+  .pc-dock-item.is-on {
+    background: color-mix(in srgb, var(--pc-cyan) 12%, transparent);
+  }
+  .pc-dock-item.is-on::after {
+    display: none;
+  }
+  .pc-dock-item:active {
+    transform: scale(0.94);
+  }
+}
