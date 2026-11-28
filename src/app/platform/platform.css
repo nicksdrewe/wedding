@@ -1199,9 +1199,15 @@
     white-space: normal;
     text-align: center;
     line-height: 1.1;
+    /* always two lines tall, so one-line and two-line labels leave every icon level */
+    height: 2.2em;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
   }
   .pc-dock-item {
     flex-direction: column-reverse !important;
+    justify-content: flex-start;
   }
   .pc-dock-item.is-on {
     background: color-mix(in srgb, var(--pc-cyan) 12%, transparent);

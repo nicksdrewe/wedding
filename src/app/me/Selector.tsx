@@ -216,32 +216,32 @@ export function Selector({ weddings, owner, email }: { weddings: Card[]; owner: 
     const root = rootRef.current;
     const moon = moonRef.current;
     if (!root || !moon) return;
+    // Every frame at night, so the dark patch stays on the moon however the page
+    // moves: rubber-band overscroll, phone toolbars sliding, the title's tilt.
+    let last = "";
     const place = () => {
       const m = moon.getBoundingClientRect();
       const cx = m.left + m.width / 2;
       const cy = m.top + m.height / 2;
-      root.querySelectorAll<HTMLElement>(".me-mask").forEach((el) => {
-        const r = el.getBoundingClientRect();
-        el.style.setProperty("--mx", `${cx - r.left}px`);
-        el.style.setProperty("--my", `${cy - r.top}px`);
+      const els = root.querySelectorAll<HTMLElement>(".me-mask");
+      const rects = [...els].map((el) => el.getBoundingClientRect());
+      const key = `${cx},${cy},${m.width},${rects.map((r) => `${r.left},${r.top}`).join(",")}`;
+      if (key === last) return;
+      last = key;
+      els.forEach((el, i) => {
+        el.style.setProperty("--mx", `${cx - rects[i].left}px`);
+        el.style.setProperty("--my", `${cy - rects[i].top}px`);
         el.style.setProperty("--mr", `${m.width / 2 + 1}px`);
       });
     };
-    // follow the moon while it rises or sets and the title settles in
     let raf = 0;
     const until = performance.now() + 2200;
     const loop = () => {
       place();
-      if (performance.now() < until) raf = requestAnimationFrame(loop);
+      if (mode === "night" || performance.now() < until) raf = requestAnimationFrame(loop);
     };
     loop();
-    window.addEventListener("resize", place);
-    window.addEventListener("scroll", place, { passive: true });
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", place);
-      window.removeEventListener("scroll", place);
-    };
+    return () => cancelAnimationFrame(raf);
   }, [mode]);
 
   const flip = () => {
