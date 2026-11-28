@@ -1127,12 +1127,14 @@
    targets you can hit, sitting above the home indicator. */
 @media (max-width: 640px) {
   .pc-main {
-    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+    padding-bottom: calc(110px + env(safe-area-inset-bottom));
   }
+  /* lifted off the bottom edge and inset from the sides, so rounded phone
+     corners never clip it */
   .pc-dock {
-    left: 0;
-    right: 0;
-    bottom: 0;
+    left: 10px;
+    right: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom));
     transform: none;
     animation: pcBarIn 0.6s 0.1s cubic-bezier(0.2, 0.9, 0.25, 1.1) both;
   }
@@ -1145,12 +1147,8 @@
     display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 0;
-    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
-    border-radius: 20px 20px 0 0;
-    border-width: 1px 0 0;
-  }
-  .pc-dock-glass::before {
-    border-radius: 20px 20px 0 0;
+    padding: 6px 4px;
+    border-radius: 22px;
   }
   .pc-dock-item,
   .pc-dock-item:hover,

@@ -208,6 +208,42 @@ export function Selector({ weddings, owner, email }: { weddings: Card[]; owner: 
     } catch {}
     setMode(m);
   }, []);
+  // Where the moon sits behind the heading: the part of each letter in front of
+  // it is drawn in dark parchment (see .me-mask), so pale words stay readable.
+  const moonRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const root = rootRef.current;
+    const moon = moonRef.current;
+    if (!root || !moon) return;
+    const place = () => {
+      const m = moon.getBoundingClientRect();
+      const cx = m.left + m.width / 2;
+      const cy = m.top + m.height / 2;
+      root.querySelectorAll<HTMLElement>(".me-mask").forEach((el) => {
+        const r = el.getBoundingClientRect();
+        el.style.setProperty("--mx", `${cx - r.left}px`);
+        el.style.setProperty("--my", `${cy - r.top}px`);
+        el.style.setProperty("--mr", `${m.width / 2 + 1}px`);
+      });
+    };
+    // follow the moon while it rises or sets and the title settles in
+    let raf = 0;
+    const until = performance.now() + 2200;
+    const loop = () => {
+      place();
+      if (performance.now() < until) raf = requestAnimationFrame(loop);
+    };
+    loop();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, { passive: true });
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place);
+    };
+  }, [mode]);
+
   const flip = () => {
     const next = mode === "day" ? "night" : "day";
     setMode(next);
@@ -236,13 +272,13 @@ export function Selector({ weddings, owner, email }: { weddings: Card[]; owner: 
   const waiting = weddings.reduce((n, w) => n + w.events.filter((e) => e.attending === null).length + (w.couple?.unread ?? 0), 0);
 
   return (
-    <div className={`me ${leaving ? "is-leaving" : ""}`} data-sky={mode}>
+    <div ref={rootRef} className={`me ${leaving ? "is-leaving" : ""}`} data-sky={mode}>
       <div className="me-skies" aria-hidden="true">
         <div className="me-sky-layer day" />
         <div className="me-sky-layer dusk" />
         <div className="me-sky-layer night" />
         <div className="me-sun" />
-        <div className="me-moon" />
+        <div className="me-moon" ref={moonRef} />
       </div>
       <Sky mode={mode} />
       <div className="me-aurora" aria-hidden="true" />
@@ -253,11 +289,11 @@ export function Selector({ weddings, owner, email }: { weddings: Card[]; owner: 
         </span>
       </button>
       <header className="me-head">
-        <p className="me-eyebrow">{hello}</p>
+        <p className="me-eyebrow me-mask">{hello}</p>
         <h1 className="me-title">
-          <span>Your</span> <em>weddings</em>
+          <span className="me-mask">Your</span> <em className="me-mask">weddings</em>
         </h1>
-        <p className="me-sub">
+        <p className="me-sub me-mask">
           {weddings.length === 0
             ? "You're not on any wedding's list yet. When a couple adds you, it'll appear here."
             : `${weddings.length} ${weddings.length === 1 ? "wedding" : "weddings"}${waiting ? `, and ${waiting} thing${waiting === 1 ? "" : "s"} waiting for you` : ", and nothing waiting on you"}.`}
